@@ -1,0 +1,14 @@
+*.a
+*.o
+*.py[co]
+*.so
+.dll
+*.sw[nop]
+*~
+.#*
+[#]*#
+*.tar
+*.tgz
+*.gz
+*.bz2
+.coverage
