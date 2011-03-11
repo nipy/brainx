@@ -825,8 +825,12 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     within_mod = 'none', part_coeff = 'none',les_dam='none'):
     """This function takes in a graph and a partition and makes a figure that
     has each node labeled according to its partition assignment"""
-
+    
+    #set up figure
     fig=plt.figure()
+    plt.axis('off')
+    
+    #set up nodes
     nnod = g.number_of_nodes()
 
     if nod_labels == None:
@@ -836,7 +840,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
 
     nod_labels = array_to_string(nod_labels)
 
-    
+    #set up node locations
     if pos == None:
         pos=nx.circular_layout(g)
         
@@ -846,7 +850,10 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     
     niter = 0
     edge_list_between = []
-    for m,val in part.iteritems():
+    #for m,val in part.iteritems():
+    for m in part:
+
+        val = part[m]
 
         if niter <len(col):
             if within_mod == 'none': #note: assumes part_coeff also there
