@@ -94,7 +94,8 @@ def test_random_modular_graph_between_fraction():
                     
                     #compare to what the actual values are
                     yield nt.assert_almost_equal(btwn_fraction,
-                                                 btwn_real_frac, 1 )
+                                                 btwn_real_frac, 1,
+                    "This is a stochastic test, repeat to confirm failure")
 
     
 @parametric

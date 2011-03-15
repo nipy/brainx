@@ -1,3 +1,4 @@
+# encoding: utf-8
 """Detect modules in a network.
 
 Citation: He Y, Wang J, Wang L, Chen ZJ, Yan C, et al. (2009) Uncovering
@@ -641,7 +642,10 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
         raise ValueError(e)
 
     # Compute the probabilities to generate the graph with, both for
-    # within-module (p_in) and between-modules (p_out):
+    # within-module (p_in) and between-modules (p_out).  See ﻿[1] L. Danon,
+    # A. Díaz-Guilera, J. Duch, and A. Arenas, “Comparing community structure
+    # identifcation,” Journal of Statistical Mechanics: Theory and Experiment,
+    # 2005. for definitions of these quantities.
     z_out = between_fraction*av_degree
     p_in = (av_degree-z_out)/(nnod_mod-1.0)
     p_out = float(z_out)/(nnod-nnod_mod)
@@ -665,18 +669,18 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
     # by -1, and then we can do the thresholding over negative and positive
     # values. As long as we correct for this, it's a much simpler approach.
     mat[mask==1] *= -1
-
+    
     adj = np.zeros((nnod, nnod))
     # Careful to flip the sign of the thresholding for p_in, since we used the
     # -1 trick above
-    adj[np.logical_and(0 >= mat, mat > -p_in)] = 1
+    adj[np.logical_and(-p_in < mat, mat <= 0)] = 1
     adj[np.logical_and(0 < mat, mat < p_out)] = 1
 
     # no self-links
     util.fill_diagonal(adj, 0)
+    
     # Our return object is a graph, not the adjacency matrix
     return nx.from_numpy_matrix(adj)
-
 
 
 def rename_keys(dct, key):
