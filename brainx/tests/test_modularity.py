@@ -492,14 +492,16 @@ def SA():
 @parametric
 def test_mutual_information():
     """ Test the function which returns the mutual information in two
-    partitions"""
+    partitions
 
-    #nnod_mod, av_degrees, nmods
+    XXX - This test is currently incomplete - it only checks the most basic
+    case of MI(x, x)==1, but doesn't do any non-trivial checks.
+    """
+
+    # nnod_mod, av_degrees, nmods
     networks = [ [4, [2, 3], [2, 4, 6]],
                  [8, [4, 6], [4, 6, 8]],
                  [40, [20], [2]] ]
-
-    tolerance = 2
 
     for nnod_mod, av_degrees, nmods in networks:
         for nmod in nmods:
@@ -527,9 +529,7 @@ def test_mutual_information():
                 graph_partition.node_update(0,0,1)
 
                 mi2 = mod.mutual_information(ppart,graph_partition.index)
-                mi2_correct = mi
-                
-                yield npt.assert_almost_equal(mi2,mi2_correct,tolerance)
+                yield npt.assert_array_less(mi2, 1)
 
 
 @parametric
