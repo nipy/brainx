@@ -383,9 +383,10 @@ def test_rename_keys():
     mod.rename_keys(a, 2)
     yield npt.assert_equal(a, {0:0,1:1,2:3})
 
-    a = {0:0,1:1,2:2,3:[]}
+    # If called with the last key in dict, it should leave the input alone
+    a = {0:0,1:1,2:2,3:3}
     mod.rename_keys(a, 3)
-    yield npt.assert_equal(a, {0:0,1:1,2:2})
+    yield npt.assert_equal(a, a)
 
 
 def danon_benchmark():

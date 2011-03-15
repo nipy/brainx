@@ -690,15 +690,26 @@ def rename_keys(dct, key):
 
     Parameters
     ----------
-    XXX
+    dct : dict
+      Input dict with all integer keys.
+
+    key : int
+      Key after which all other keys are downshifted by one.
     
     Returns
     -------
-    XXX
+    None.  The input dict is modified in place.
     """
  
-    for m in range(key,len(dct)):
-        dct[m] = dct.pop(m+1)
+    for m in range(key, len(dct)):
+        try:
+            dct[m] = dct.pop(m+1)
+        except KeyError:
+            # If we can't pop a key, it's simply missing from the dict and we
+            # can safely ignore it.  This is likely to happen at the edge of
+            # the dict, if the function is called on the last key.
+            pass
+
 
 def rand_partition(g, num_mods=None):
     """This function takes in a graph and returns a dictionary of labels for
