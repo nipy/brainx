@@ -937,3 +937,83 @@ def antisymm_rand_arr(size,sample_func=np.random.random):
            [-0.5449, -0.8918, -0.5289,  0.    ]])
       """
     return structured_rand_arr(size,sample_func,ltfac=-1.0,fill_diag=0)
+
+
+def diag_stack(tup):
+    """Stack arrays in sequence diagonally (block wise).
+    
+    Take a sequence of arrays and stack them diagonally to make a single block
+    array.
+    
+    
+    Parameters
+    ----------
+    tup : sequence of ndarrays
+        Tuple containing arrays to be stacked. The arrays must have the same
+        shape along all but the first two axes.
+    
+    Returns
+    -------
+    stacked : ndarray
+        The array formed by stacking the given arrays.
+    
+    See Also
+    --------
+    hstack : Stack arrays in sequence horizontally (column wise).
+    vstack : Stack arrays in sequence vertically (row wise).
+    dstack : Stack arrays in sequence depth wise (along third dimension).
+    concatenate : Join a sequence of arrays together.
+    vsplit : Split array into a list of multiple sub-arrays vertically.
+    
+    
+    Examples
+    --------
+    """
+    # Find number of rows and columns needed
+    shapes = np.array([a.shape for a in tup], int)
+    sums = shapes.sum(0)
+    nrow = sums[0]
+    ncol = sums[1]
+    out = np.zeros((nrow, ncol), tup[0].dtype)
+    row_offset = 0
+    col_offset = 0
+    for arr in tup:
+        nr, nc = arr.shape
+        row_end = row_offset+nr
+        col_end = col_offset+nc
+        out[row_offset:row_end, col_offset:col_end] = arr
+        row_offset, col_offset = row_end, col_end
+    return out
+
+def array_to_string(part):
+    """The purpose of this function is to convert an array of numbers into
+    a list of strings. Mainly for use with the plot_partition function that
+    requires a dict of strings for node labels.
+
+    """
+
+    out_part=dict.fromkeys(part)
+    
+    for m in part.iterkeys():
+        out_part[m]=str(part[m])
+    
+    return out_part
+
+def compare_dicts(d1,d2):
+    """Function that reads in two dictionaries of sets (i.e. a graph partition) and assess how similar they are.
+    Needs to be updated so that it can adjust this measure to include partitions that are pretty close."""
+    
+
+    if len(d1)>len(d2):
+        longest_dict=len(d1)
+    else:
+        longest_dict=len(d2)
+    check=0
+    #loop through the keys in the first dict
+    for m1,val1 in d1.iteritems():
+        #compare to the values in each key of the second dict
+        for m2,val2 in d2.iteritems():
+            if val1 == val2:
+                check+=1
+    return float(check)/longest_dict
+        
