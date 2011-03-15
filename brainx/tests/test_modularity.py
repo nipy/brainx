@@ -228,13 +228,21 @@ def test_apply_module_split():
                 part = mod.perfect_partition(nmod,nnod/nmod)
 
                 #Make a random partition for the graph
-                part_rand = mod.rand_partition(g)
+                part_rand = mod.rand_partition(g, nnod/2)
 
-                #List of modules in the partition
-                r_mod=range(len(part_rand))
+                #List of modules in the partition that have two or more nodes
+                r_mod = []
+                for m, nodes in part_rand.iteritems():
+                    if len(nodes)>2:
+                        r_mod.append(m)
+
+                # Note: The above can be written in this more compact, if
+                # slightly less intuitively clear, list comprehension:
+                # r_mod = [ m for m, nodes in part_rand.iteritems() if
+                #          len(nodes)>2 ]
 
                 #Module that we are splitting
-                for m in r_mod[::10]:
+                for m in r_mod:
 
                     graph_partition = mod.GraphPartition(g,part_rand)
 
@@ -251,7 +259,6 @@ def test_apply_module_split():
 
                     # split modules
                     #delta_energy_meas = graph_partition.module_split(m,n1,n2)
-
                     split_modules,e1,a1,delta_energy_meas,type,m,n1,n2 = \
                                graph_partition.compute_module_split(m,n1,n2)
 
@@ -283,7 +290,6 @@ def test_apply_module_split():
                     # Test that the initial list of nodes in the module are
                     # equal to the nodes in m1 and m2 (split modules)
                     yield npt.assert_equal(n_init,n_all)
-               
 
                     
 @parametric

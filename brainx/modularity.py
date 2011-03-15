@@ -249,6 +249,7 @@ class GraphPartition(object):
         Parameters
         ----------
         m : module identifier
+        
         n1, n2 : sets of nodes
           The two sets of nodes in which the nodes originally in module m will
           be split.  Note: It is the responsibility of the caller to ensure
@@ -259,7 +260,8 @@ class GraphPartition(object):
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
 
-        # create a dict that contains the new modules 0 and 1 that have the sets n1 and n2 of nodes from module m.
+        # create a dict that contains the new modules 0 and 1 that have the
+        # sets n1 and n2 of nodes from module m. 
         split_modules = {0: n1, 1: n2} 
 
         #make an empty matrix for computing "modularity" level values
@@ -272,8 +274,7 @@ class GraphPartition(object):
         e1, a1 = self._edge_info(e1, a1, split_modules)
 
         # Compute the change in modularity
-        delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]- a1[1]**2) ) - \
-            (e0[m]-a0[m]**2)
+        delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]- a1[1]**2) ) - (e0[m]-a0[m]**2)
         
         return split_modules, e1, a1, -delta_q,'split',m,n1,n2
 
@@ -699,15 +700,26 @@ def rename_keys(dct, key):
     for m in range(key,len(dct)):
         dct[m] = dct.pop(m+1)
 
-def rand_partition(g):
+def rand_partition(g, num_mods=None):
     """This function takes in a graph and returns a dictionary of labels for
-    each node. Eventually it needs to be part of the simulated annealing program,
-    but for now it will just make a random partition."""
+    each node. Eventually it needs to be part of the simulated annealing
+    program, but for now it will just make a random partition.
+
+    Parameters
+    ----------
+    g : graph
+      Graph for which the partition is to be computed.
+
+    num_mods : optional, int
+      If given, the random partition will have these many modules.  If not
+      given, the number of modules in the partition will be chosen as at
+      random, up to the number of nodes in the graph."""
 
     num_nodes = g.number_of_nodes()
 
     # randomly select a number of modules
-    num_mods = random.randint(1,num_nodes)
+    if num_mods is None:
+        num_mods = random.randint(1, num_nodes)
 
     # randomize the order of nodes into a list
     rand_nodes = np.random.permutation(num_nodes)
