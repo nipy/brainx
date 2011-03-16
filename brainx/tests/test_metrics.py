@@ -13,10 +13,8 @@ import nose.tools as nt
 import numpy as np
 import numpy.testing as npt
 
-# Hack until we make brainx an actually installable package
-sys.path.append('..')
-import metrics
-reload(metrics)  # for interactive testing
+# Our own imports
+from brainx import metrics
 
 #-----------------------------------------------------------------------------
 # Functions

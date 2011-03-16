@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# encoding: utf-8
 """Detect modules in a network.
 
 Citation: He Y, Wang J, Wang L, Chen ZJ, Yan C, et al. (2009) Uncovering
@@ -21,22 +21,17 @@ import copy
 # Third-party modules
 import networkx as nx
 import numpy as np
+import numpy.testing as npt
 
 from matplotlib import pyplot as plt
-from matplotlib import colors
-import matplotlib.cm as cm
-import time
 
 # Our own modules
 import util
 
-# Fancy testing support, eventually this will go into ipython (where it was
-# written in the first place)
-from decotest  import (as_unittest, ParametricTestCase, parametric)
-
 #-----------------------------------------------------------------------------
 # Class declarations
 #-----------------------------------------------------------------------------
+
 class GraphPartition(object):
     """Represent a graph partition."""
 
@@ -125,7 +120,8 @@ class GraphPartition(object):
         return mod_e, mod_a
 
     def modularity_newman(self):
-        """ Function using other version of expressing modularity, from the Newman papers (2004 Physical Review)
+        """ Function using other version of expressing modularity, from the
+        Newman papers (2004 Physical Review)
 
         Parameters:
         g = graph
@@ -254,6 +250,7 @@ class GraphPartition(object):
         Parameters
         ----------
         m : module identifier
+        
         n1, n2 : sets of nodes
           The two sets of nodes in which the nodes originally in module m will
           be split.  Note: It is the responsibility of the caller to ensure
@@ -264,7 +261,8 @@ class GraphPartition(object):
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
 
-        # create a dict that contains the new modules 0 and 1 that have the sets n1 and n2 of nodes from module m.
+        # create a dict that contains the new modules 0 and 1 that have the
+        # sets n1 and n2 of nodes from module m. 
         split_modules = {0: n1, 1: n2} 
 
         #make an empty matrix for computing "modularity" level values
@@ -277,8 +275,7 @@ class GraphPartition(object):
         e1, a1 = self._edge_info(e1, a1, split_modules)
 
         # Compute the change in modularity
-        delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]- a1[1]**2) ) - \
-            (e0[m]-a0[m]**2)
+        delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]- a1[1]**2) ) - (e0[m]-a0[m]**2)
         
         return split_modules, e1, a1, -delta_q,'split',m,n1,n2
 
@@ -614,52 +611,6 @@ class GraphPartition(object):
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
-def diag_stack(tup):
-    """Stack arrays in sequence diagonally (block wise).
-    
-    Take a sequence of arrays and stack them diagonally to make a single block
-    array.
-    
-    
-    Parameters
-    ----------
-    tup : sequence of ndarrays
-        Tuple containing arrays to be stacked. The arrays must have the same
-        shape along all but the first two axes.
-    
-    Returns
-    -------
-    stacked : ndarray
-        The array formed by stacking the given arrays.
-    
-    See Also
-    --------
-    hstack : Stack arrays in sequence horizontally (column wise).
-    vstack : Stack arrays in sequence vertically (row wise).
-    dstack : Stack arrays in sequence depth wise (along third dimension).
-    concatenate : Join a sequence of arrays together.
-    vsplit : Split array into a list of multiple sub-arrays vertically.
-    
-    
-    Examples
-    --------
-    """
-    # Find number of rows and columns needed
-    shapes = np.array([a.shape for a in tup], int)
-    sums = shapes.sum(0)
-    nrow = sums[0]
-    ncol = sums[1]
-    out = np.zeros((nrow, ncol), tup[0].dtype)
-    row_offset = 0
-    col_offset = 0
-    for arr in tup:
-        nr, nc = arr.shape
-        row_end = row_offset+nr
-        col_end = col_offset+nc
-        out[row_offset:row_end, col_offset:col_end] = arr
-        row_offset, col_offset = row_end, col_end
-    return out
-
 
 def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
     """
@@ -693,7 +644,10 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
         raise ValueError(e)
 
     # Compute the probabilities to generate the graph with, both for
-    # within-module (p_in) and between-modules (p_out):
+    # within-module (p_in) and between-modules (p_out).  See ﻿[1] L. Danon,
+    # A. Díaz-Guilera, J. Duch, and A. Arenas, “Comparing community structure
+    # identifcation,” Journal of Statistical Mechanics: Theory and Experiment,
+    # 2005. for definitions of these quantities.
     z_out = between_fraction*av_degree
     p_in = (av_degree-z_out)/(nnod_mod-1.0)
     p_out = float(z_out)/(nnod-nnod_mod)
@@ -707,7 +661,7 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
 
     # Create the masking matrix
     blocks = [np.ones((nnod_mod, nnod_mod))] * nmod
-    mask = diag_stack(blocks)
+    mask = util.diag_stack(blocks)
 
     # Threshold the random matrix to create an actual adjacency graph.
 
@@ -717,32 +671,18 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
     # by -1, and then we can do the thresholding over negative and positive
     # values. As long as we correct for this, it's a much simpler approach.
     mat[mask==1] *= -1
-
+    
     adj = np.zeros((nnod, nnod))
     # Careful to flip the sign of the thresholding for p_in, since we used the
     # -1 trick above
-    adj[np.logical_and(0 >= mat, mat > -p_in)] = 1
+    adj[np.logical_and(-p_in < mat, mat <= 0)] = 1
     adj[np.logical_and(0 < mat, mat < p_out)] = 1
 
     # no self-links
     util.fill_diagonal(adj, 0)
+    
     # Our return object is a graph, not the adjacency matrix
     return nx.from_numpy_matrix(adj)
-
-
-def array_to_string(part):
-    """The purpose of this function is to convert an array of numbers into
-    a list of strings. Mainly for use with the plot_partition function that
-    requires a dict of strings for node labels.
-
-    """
-
-    out_part=dict.fromkeys(part)
-    
-    for m in part.iterkeys():
-        out_part[m]=str(part[m])
-    
-    return out_part
 
 
 def rename_keys(dct, key):
@@ -751,25 +691,47 @@ def rename_keys(dct, key):
 
     Parameters
     ----------
-    XXX
+    dct : dict
+      Input dict with all integer keys.
+
+    key : int
+      Key after which all other keys are downshifted by one.
     
     Returns
     -------
-    XXX
+    None.  The input dict is modified in place.
     """
  
-    for m in range(key,len(dct)):
-        dct[m] = dct.pop(m+1)
+    for m in range(key, len(dct)):
+        try:
+            dct[m] = dct.pop(m+1)
+        except KeyError:
+            # If we can't pop a key, it's simply missing from the dict and we
+            # can safely ignore it.  This is likely to happen at the edge of
+            # the dict, if the function is called on the last key.
+            pass
 
-def rand_partition(g):
+
+def rand_partition(g, num_mods=None):
     """This function takes in a graph and returns a dictionary of labels for
-    each node. Eventually it needs to be part of the simulated annealing program,
-    but for now it will just make a random partition."""
+    each node. Eventually it needs to be part of the simulated annealing
+    program, but for now it will just make a random partition.
+
+    Parameters
+    ----------
+    g : graph
+      Graph for which the partition is to be computed.
+
+    num_mods : optional, int
+      If given, the random partition will have these many modules.  If not
+      given, the number of modules in the partition will be chosen as at
+      random, up to the number of nodes in the graph."""
 
     num_nodes = g.number_of_nodes()
 
     # randomly select a number of modules
-    num_mods = random.randint(1,num_nodes)
+    if num_mods is None:
+        num_mods = random.randint(1, num_nodes)
 
     # randomize the order of nodes into a list
     rand_nodes = np.random.permutation(num_nodes)
@@ -821,16 +783,12 @@ def perfect_partition(nmod,nnod_mod):
     
     return part
 
+
 def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     within_mod = 'none', part_coeff = 'none',les_dam='none'):
     """This function takes in a graph and a partition and makes a figure that
     has each node labeled according to its partition assignment"""
-    
-    #set up figure
-    fig=plt.figure()
-    plt.axis('off')
-    
-    #set up nodes
+
     nnod = g.number_of_nodes()
 
     if nod_labels == None:
@@ -840,7 +798,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
 
     nod_labels = array_to_string(nod_labels)
 
-    #set up node locations
+    
     if pos == None:
         pos=nx.circular_layout(g)
         
@@ -850,10 +808,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     
     niter = 0
     edge_list_between = []
-    #for m,val in part.iteritems():
-    for m in part:
-
-        val = part[m]
+    for m,val in part.iteritems():
 
         if niter <len(col):
             if within_mod == 'none': #note: assumes part_coeff also there
@@ -922,24 +877,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     #plt.close()
     #plt.show()
 
-def compare_dicts(d1,d2):
-    """Function that reads in two dictionaries of sets (i.e. a graph partition) and assess how similar they are.
-    Needs to be updated so that it can adjust this measure to include partitions that are pretty close."""
-    
 
-    if len(d1)>len(d2):
-        longest_dict=len(d1)
-    else:
-        longest_dict=len(d2)
-    check=0
-    #loop through the keys in the first dict
-    for m1,val1 in d1.iteritems():
-        #compare to the values in each key of the second dict
-        for m2,val2 in d2.iteritems():
-            if val1 == val2:
-                check+=1
-    return float(check)/longest_dict
-        
 
 def mutual_information(d1,d2):
     """Function that reads in two dictionaries of sets (i.e. a graph partition) and assess how similar they are using mutual information as in Danon, Diaz-Guilera, Duch & Arenas, J Statistical Mechanics 2005.
@@ -953,7 +891,6 @@ def mutual_information(d1,d2):
     dlist = [d1,d2]
     #first get rid of any empty values and relabel the keys accordingly
     new_d2 = dict()
-    old_d2=d2
     for d in dlist:
         items = d.items()
         sort_by_length = [[len(v[1]),v[0]] for v in items]
@@ -990,6 +927,7 @@ def mutual_information(d1,d2):
     den = nansum(nsum_row*log(nsum_row/nn)) + nansum(nsum_col*log(nsum_col/nn))
 
     return -2*num/den
+
         
 def decide_if_keeping(dE,temperature):
     """Function which uses the rule from Guimera & Amaral (2005) Nature paper to decide whether or not to keep new partition
@@ -1011,7 +949,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         bad_accept_mod_ratio_max = 0.8 ,
                         bad_accept_nod_ratio_max = 0.8, accept_mod_ratio_min =
                         0.05, accept_nod_ratio_min = 0.05,
-                        extra_info = False):
+                        extra_info = False,
+                        debug = False):
 
     """ This function does simulated annealing on a graph
 
@@ -1028,13 +967,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
 
     #Make a random partition for the graph
     nnod = g.number_of_nodes()
-    nnod2 = nnod**2
     part = dict()
     #check if there is only one module or nnod modules
     while (len(part) <= 1) or (len(part) == nnod): 
         part = rand_partition(g)
     
-
     # make a graph partition object
     graph_partition = GraphPartition(g,part)
     
@@ -1051,7 +988,6 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     
     #Initialize empty lists for keeping track of values
     energy_array = []#negative modularity
-    rej_array = []
     temp_array = []
     energy_best = 0
     
@@ -1085,6 +1021,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             temp_array.append(temperature)
             
             if keep:
+
                 # this applies changes in place if energy decreased; the
                 # modules will either be merged or split depending on a random
                 # coin flip
@@ -1102,6 +1039,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                 if delta_energy > 0 :
                     bad_accept_mod += 1
 
+                if debug:
+                    debug_partition = GraphPartition(g, graph_partition.index)
+                    npt.assert_almost_equal(debug_partition.modularity(),
+                                            graph_partition.modularity(), 11)
+                    
                 #maybe store the best one here too?
                 #graph_partition.store_best()
 
@@ -1120,6 +1062,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             #break out if we are accepting too many "bad" options (early on)
             #break out if we are accepting too few options (later on)
             if count_mod > 10:
+                # Only compute this quantity after enough steps for these
+                # ratios to make any sense (they are ~1 at the first step).
                 bad_accept_mod_ratio =  float(bad_accept_mod)/(count_bad_mod)
                 accept_mod_ratio = float(accept_mod)/(count_mod)
                 #print 'ba_mod_r', bad_accept_mod_ratio  # dbg
@@ -1128,6 +1072,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                     #print 'MOD BREAK'
                     break
 
+            # Second loop over node changes
             bad_accept_nod = 0
             accept_nod = 0
             count_nod = 0
@@ -1157,6 +1102,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         bad_accept_nod += 1
                     #maybe store the best one here too?
                     #graph_partition.store_best()
+                    if debug:
+                        debug_partition = GraphPartition(g,
+                                                         graph_partition.index)
+                        npt.assert_almost_equal(debug_partition.modularity(),
+                                                graph_partition.modularity(), 11)
                     
                 #else:
                     #graph_partition = GraphPartition(g,graph_partition.index)
@@ -1213,615 +1163,3 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
         #return graph_partition
         print graph_part_final.modularity()
         return graph_part_final
-
-
-#-----------------------------------------------------------------------------
-# Tests
-#-----------------------------------------------------------------------------
-import nose.tools as nt
-import numpy.testing as npt
-
-
-def test_random_modular_graph_between_fraction():
-    """Test for graphs with non-zero between_fraction"""
-    # We need to measure the degree within/between modules
-    nnods = 120, 240, 360
-    nmods = 2, 3, 4
-    av_degrees = 8, 10, 16
-    btwn_fractions = 0, 0.1, 0.3, 0.5
-
-    for nnod in nnods:
-        for nmod in nmods:
-            for av_degree in av_degrees:
-                for btwn_fraction in btwn_fractions:
-                    g = random_modular_graph(nnod, nmod, av_degree,
-                                             btwn_fraction)
-
-                    # First, check the average degree.
-                    av_degree_actual = np.mean(g.degree())
-                    # Since we are generating random graphs, the actual average
-                    # degree we get may be off from the reuqested one by a bit.  We
-                    # allow it to be off by up to 1.
-                    #print 'av deg:',av_degree, av_degree_actual  # dbg
-                    yield (nt.assert_true, abs(av_degree-av_degree_actual) < 1, 
-                           "av deg: %.2f  av deg actual: %.2f" % (av_degree,
-                                                                  av_degree_actual))
-
-
-                    # Now, check the between fraction
-                    mat = nx.adj_matrix(g)
-
-                    #compute the total number of edges in the real graph
-                    nedg = nx.number_of_edges(g)
-                    
-                     # sanity checks:
-                    if nnod%nmod:
-                        raise ValueError("nmod must divide nnod evenly")
-
-                    #Compute the of nodes per module
-                    nnod_mod = nnod/nmod
-
-                    #compute what the values are in the real graph
-                    blocks = [np.ones((nnod_mod, nnod_mod))] * nmod
-                    mask = diag_stack(blocks)
-                    mask[mask==0] = 2
-                    mask = np.triu(mask,1)
-                    btwn_real = np.sum(mat[mask == 2].flatten())
-                    btwn_real_frac = btwn_real / nedg
-                    
-                    #compare to what the actual values are
-                    yield ( nt.assert_almost_equal, btwn_fraction,
-                            btwn_real_frac, 1 )
-
-    
-def test_diag_stack():
-    """Manual verification of simple stacking."""
-    a = np.empty((2,2))
-    a.fill(1)
-    b = np.empty((3,3))
-    b.fill(2)
-    c = np.empty((2,3))
-    c.fill(3)
-
-    d = diag_stack((a,b,c))
-
-    d_true = np.array([[ 1.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
-       [ 1.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
-       [ 0.,  0.,  2.,  2.,  2.,  0.,  0.,  0.],
-       [ 0.,  0.,  2.,  2.,  2.,  0.,  0.,  0.],
-       [ 0.,  0.,  2.,  2.,  2.,  0.,  0.,  0.],
-       [ 0.,  0.,  0.,  0.,  0.,  3.,  3.,  3.],
-       [ 0.,  0.,  0.,  0.,  0.,  3.,  3.,  3.]])
-
-    npt.assert_equal(d, d_true)
-
-
-def test_modularity():
-    """Test the values that go into the modularity calculation after randomly creating a graph"""
-    # Given a partition with the correct labels of the input graph, verify that
-    # the modularity returns 1
-
-    # We need to measure the degree within/between modules
-    nnods = 120, 240, 360
-    nmods = 2, 3, 4
-    av_degrees = 8, 10, 16
-
-    for nnod in nnods:
-        for nmod in nmods:
-            for av_degree in av_degrees:
-                g = random_modular_graph(nnod, nmod, av_degree)
-                #Compute the of nodes per module
-                nnod_mod = nnod/nmod
-                #Make a "correct" partition for the graph
-                part = perfect_partition(nmod,nnod_mod)
-                #Make a graphpartition object
-                graph_partition = GraphPartition(g,part)
-                #call modularity
-                mod_meas = graph_partition.modularity()
-                mod_true = 1.0 - 1.0/nmod
-                yield (npt.assert_almost_equal, mod_meas, mod_true, 2)
-
-
-@parametric
-def test_apply_module_merge():
-    """Test the GraphPartition operation that merges modules so that it returns
-    a change in modularity that reflects the difference between the modularity
-    of the new and old parititions"""
-
-    # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-                
-                g = random_modular_graph(nnod, nmod, av_degree)
-
-                #Make a "correct" partition for the graph
-                part = perfect_partition(nmod,nnod/nmod)
-
-                #Make a random partition for the graph
-                part_rand = dict()
-                while len(part_rand) <= 1: #check if there is only one module
-                    part_rand = rand_partition(g)
-                
-                #List of modules in the partition
-                r_mod=range(len(part))
-
-                #Loop through pairs of modules
-                for i in range(1):
-                    #select two modules to merge
-                    mod_per = np.random.permutation(r_mod)
-                    m1 = mod_per[0]; m2 = mod_per[1]
-                    
-
-                    #make a graph partition object
-                    graph_partition = GraphPartition(g,part)
-                    
-                    #index of nodes within the original module (before split)
-                    n1_init = list(graph_partition.index[m1])
-                    n2_init = list(graph_partition.index[m2])
-                    n_all_init = n1_init+n2_init
-
-                    #calculate modularity before splitting
-                    mod_init = graph_partition.modularity()
-
-                    #merge modules
-                    merge_module,e1,a1,delta_energy_meas,type,m1,m2,m2 = graph_partition.compute_module_merge(m1,m2)
-
-
-                    graph_part2 = copy.deepcopy(graph_partition)
-                    graph_part2.apply_module_merge(m1,m2,merge_module,e1,a1)
-                    #index of nodes within the modules after merging
-                    n_all = list(graph_part2.index[min(m1,m2)])
-
-                    
-                    # recalculate modularity after splitting
-                    mod_new = graph_part2.modularity()
-
-                    # difference between new and old modularity
-                    delta_energy_true = -(mod_new - mod_init)
-
-                    # Test the measured difference in energy against the
-                    # function that calculates the difference in energy
-                    yield npt.assert_almost_equal(delta_energy_meas, delta_energy_true)
-                    # Check that the list of nodes in the two original modules
-                    # is equal to the list of nodes in the merged module
-                    n_all_init.sort()
-                    n_all.sort()
-                    yield npt.assert_equal(n_all_init, n_all)
-                    
-                    # Test that the keys are equivalent after merging modules 
-                    yield npt.assert_equal(r_mod[:-1],
-                                           sorted(graph_part2.index.keys()))
-
-
-@parametric 
-def test_apply_module_split():
-    """Test the GraphPartition operation that splits modules so that it returns
-    a change in modularity that reflects the difference between the modularity
-    of the new and old parititions. Also test that the module that was split now contains the correct nodes."""
-
-    #nnods = [120, 240, 360]
-    #nmods = [2, 3, 4]
-    #av_degree=8
-    # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [2, 3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-
-                g = random_modular_graph(nnod, nmod, av_degree)
-
-                #Make a "correct" partition for the graph
-                part = perfect_partition(nmod,nnod/nmod)
-
-                #Make a random partition for the graph
-                part_rand = rand_partition(g)
-
-                #List of modules in the partition
-                r_mod=range(len(part_rand))
-
-                #Module that we are splitting
-                for m in r_mod[::10]:
-
-                    graph_partition = GraphPartition(g,part_rand)
-
-                    #index of nodes within the original module (before split)
-                    n_init = list(graph_partition.index[m])
-
-                    #calculate modularity before splitting
-                    mod_init = graph_partition.modularity()
-
-                    #assign nodes to 2 groups, take every other one
-                    n1=list(graph_partition.index[m])[::2]
-                    n2=list(graph_partition.index[m])[1::2]
-                    #n_all_old = n1 + n2
-
-                    # split modules
-                    #delta_energy_meas = graph_partition.module_split(m,n1,n2)
-
-                    split_modules,e1,a1,delta_energy_meas,type,m,n1,n2 = graph_partition.compute_module_split(m,n1,n2)
-
-                    graph_part2 = copy.deepcopy(graph_partition)
-                    graph_part2.apply_module_split(m,n1,n2,split_modules,e1,a1)
-                    
-                    #index of nodes within the modules after splitting
-                    n1_new = list(graph_part2.index[m])
-                    n2_new = list(graph_part2.index[len(graph_part2)-1])
-                    n_all = n1_new + n2_new
-
-                    # recalculate modularity after splitting
-                    mod_new = graph_part2.modularity()
-
-                    # difference between new and old modularity
-                    delta_energy_true = -(mod_new - mod_init)
-
-                    # Test that the measured change in energy by splitting a
-                    # module is equal to the function output from module_split
-                    yield npt.assert_almost_equal(delta_energy_meas,
-                                                  delta_energy_true)
-                    # Test that the nodes in the split modules are equal to the
-                    # original nodes of the module
-                    yield npt.assert_equal(n1, n1_new)
-                    yield npt.assert_equal(n2, n2_new)
-                    n_init.sort()
-                    n_all.sort()
-
-                    # Test that the initial list of nodes in the module are
-                    # equal to the nodes in m1 and m2 (split modules)
-                    yield npt.assert_equal(n_init,n_all)
-               
-
-                    
-@parametric
-def test_apply_node_move():
-    """Test the GraphPartition operation that moves a single node so that it
-    returns a change in modularity that reflects the difference between the
-    modularity of the new and old parititions"""
-
-    # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [2, 3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-    
-                g = random_modular_graph(nnod, nmod, av_degree)
-
-                #Make a "correct" partition for the graph
-                part = perfect_partition(nmod,nnod/nmod)
-                
-                #Make a random partition for the graph
-                part_rand = dict()
-                while len(part_rand) <= 1: #check if there is only one module
-                    part_rand = rand_partition(g)
-
-                #List of modules in the partition
-                r_mod=range(len(part_rand))
-
-                #select two modules to change node assignments
-                mod_per = np.random.permutation(r_mod)
-                m1 = mod_per[0]; m2 = mod_per[1]
-
-                #Make a graph_partition object
-                graph_partition = GraphPartition(g,part_rand)
-                
-                #pick a random node to move between modules m1 and m2
-                node_list=list(graph_partition.index[m1])
-                nod_per = np.random.permutation(node_list)
-                n = nod_per[0]
-  
-                #list of nodes within the original modules (before node move)
-                n1_init = list(nod_per) #list(graph_partition.index[m1])
-                n2_init = list(graph_partition.index[m2])
-                n1_new = copy.deepcopy(n1_init)
-                n2_new = copy.deepcopy(n2_init)
-
-                # calculate modularity before node move
-                mod_init = graph_partition.modularity()
-
-                # move node
-                #delta_energy_meas = graph_partition.node_update(n,m1,m2)
-
-                node_moved_mods,e1,a1,delta_energy_meas,n,m1,m2 = graph_partition.compute_node_update(n,m1,m2)
-
-                graph_part2 = copy.deepcopy(graph_partition)
-                graph_part2.apply_node_update(n,m1,m2,node_moved_mods,e1,a1)
-                # remove the first node from m1--because we defined n to equal the first element of the randomized node_list
-                n1_new.pop(0)
-                
-                # append the node to m2
-                n2_new.append(n)
-
-                # recalculate modularity after splitting
-                mod_new = graph_part2.modularity()
-                
-                # difference between new and old modularity
-                delta_energy_true = -(mod_new - mod_init)
-                print delta_energy_meas,delta_energy_true
-
-                # Test that the measured change in energy is equal to the true change in
-                # energy calculated in the node_update function
-                yield npt.assert_almost_equal(delta_energy_meas, delta_energy_true)
-                #yield npt.assert_equal(n1, n1_new)
-                #yield npt.assert_equal(n2, n2_new)
-                #yield npt.assert_equal(n_init.sort(),n_all.sort())
-
-
-
-@parametric
-def test_random_mod():
-    """ Test the GraphPartition operation that selects random modules to merge
-    and split
-    XXX not working yet"""
-    
-    #nnod_mod, av_degrees, nmods
-    networks = [ [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-            
-    n_iter = 100
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-
-                g = random_modular_graph(nnod, nmod, av_degree)
-                part = dict()
-                while (len(part) <= 1) or (len(part) == nnod):
-                    part = rand_partition(g)
-
-                graph_partition = GraphPartition(g,part)
-
-                for i in range(n_iter):
-                    graph_partition.random_mod()
-
-                    #check that the partition has > 1 modules
-                    true = len(graph_partition)>1
-                    yield npt.assert_equal(true,1)
-
-                    #check that the partition has < nnod modules
-                    true = len(graph_partition)<nnod
-                    yield npt.assert_equal(true,1)
-
-                
-
-def test_random_nod():
-    """ Test the GraphPartition operation that selects random nodes to move
-    between modules """
-
-
-@parametric
-def test_decide_if_keeping():
-    """ Test the function which decides whether or not to keep the new
-    partition"""
-
-    dEs = [-.5,-.4,-.3,-.2,-.1,0,.1,.2,.3,.4,.5]
-    temperatures = [.01,1,10,100]
-    iter = 1000
-    tolerance = 1
-
-    for temp in temperatures:
-        for dE in dEs:
-            keep_list = np.empty(iter)
-            for i in range(iter):
-                keep_list[i] = float(decide_if_keeping(dE,temp))
-
-            if dE <= 0:
-                keep_correct = np.ones(iter)
-                yield npt.assert_equal(keep_list,keep_correct)
-            else:
-                mean_keep = np.mean(keep_list)
-                mean_correct = math.exp(-dE/temp)
-                yield npt.assert_almost_equal(mean_keep,mean_correct, tolerance)
-
-
-@parametric
-def test_mutual_information():
-    """ Test the function which returns the mutual information in two
-    partitions"""
-
-    #nnod_mod, av_degrees, nmods
-    networks = [ [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]],
-                 [40, [20], [2]] ]
-
-    tolerance = 2
-
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-                #make a graph object
-                g = random_modular_graph(nnod, nmod, av_degree)
-
-                #Compute the of nodes per module
-                nnod_mod = nnod/nmod
-                #Make a "correct" partition for the graph
-                ppart = perfect_partition(nmod,nnod_mod)
-
-                #graph_out, mod_array =simulated_annealing(g, temperature =
-                #temperature,temp_scaling = temp_scaling, tmin=tmin)
-
-                #test the perfect case for now: two of the same partition
-                #returns 1
-                mi  = mutual_information(ppart,ppart)
-                yield npt.assert_equal(mi,1)
-
-                #move one node and test that mutual_information comes out
-                #correctly
-                graph_partition = GraphPartition(g,ppart)
-                graph_partition.node_update(0,0,1)
-
-                mi2 = mutual_information(ppart,graph_partition.index)
-                mi2_correct = mi
-                
-                yield npt.assert_almost_equal(mi2,mi2_correct,tolerance)
-
-@parametric
-def test_rename_keys():
-    a = {0:0,1:1,2:2,4:4,5:5}
-    rename_keys(a, 3)
-    yield npt.assert_equal(a, {0:0,1:1,2:2,3:4,4:5})
-
-    a = {0:0,1:1,3:3,}
-    rename_keys(a, 2)
-    yield npt.assert_equal(a, {0:0,1:1,2:3})
-
-    a = {0:0,1:1,2:2,3:[]}
-    rename_keys(a, 3)
-    yield npt.assert_equal(a, {0:0,1:1,2:2})
-
-def betweenness_to_modularity(g,ppart):
-    """Function to convert between betweenness fractions and modularity
-    Parameters:
-    ----------
-    g = graph object
-    ppart = perfect partition
-    
-    Returns:
-    --------
-    mod = best modularity associated with this graph object
-    """
-
-    graph_partition = GraphPartition(g,ppart)
-    return graph_partition.modularity()
-    
-    
-def danon_test():
-    """This test comes from Danon et al 2005. It will create the line plot of Mututal Information vs. betweenness fraction to assess the performance of the simulated annealing algorithm."""
-    networks = [[32, [16], [6]]]
-    btwn_fracs = [float(i)/100 for i in range(0,80,3)]
-
-    temperature = 0.1
-    temp_scaling = 0.9995
-    tmin=1e-4
-
-    num_reps = range(1)
-    mi_arr=np.empty((len(btwn_fracs),len(num_reps)))
-
-    #keep time
-    for rep in num_reps:
-        t1 = time.clock()
-        for nnod_mod, av_degrees, nmods in networks:
-            for nmod in nmods:
-                nnod = nnod_mod*nmod
-                for av_degree in av_degrees:
-                    x_mod = []
-                    for ix,btwn_frac in enumerate(btwn_fracs):
-                        print 'btwn_frac: ',btwn_frac
-                        g = random_modular_graph(nnod, nmod, av_degree,btwn_frac)
-                        #Compute the # of nodes per module
-                        nnod_mod = nnod/nmod
-                        #Make a "correct" partition for the graph
-                        ppart = perfect_partition(nmod,nnod_mod)
-
-                        graph_out, graph_dict =simulated_annealing(g,
-                        temperature = temperature,temp_scaling = temp_scaling,
-                        tmin=tmin, extra_info = True)
-
-                        #print "SA partition",graph_out.index
-                        mi = mutual_information(ppart,graph_out.index)
-                        t2 = time.clock()
-                        print 'Elapsed time: ', (float(t2-t1)/60), ' minutes'
-                        print 'partition similarity: ',mi
-                        mi_arr[ix,rep] = mi
-                        plot_partition(g,graph_out.index,'mi: '+ str(mi),'danon_test_6mod'+str(btwn_frac)+'_graph.png')
-                        x_mod.append(betweenness_to_modularity(g,ppart))
-                        
-                    
-                    mi_arr_avg = np.mean(mi_arr,1)
-                    plt.figure()
-                    plt.plot(btwn_fracs,mi_arr_avg)
-                    plt.xlabel('Betweenness fraction')
-                    plt.ylabel('Mutual information')
-                    plt.savefig('danon_test_6mod/danontest_btwn.png')
-
-                    plt.figure()
-                    plt.plot(x_mod,mi_arr_avg)
-                    plt.xlabel('Modularity')
-                    plt.ylabel('Mutual information')
-                    plt.savefig('danon_test_6mod/danontest_mod.png')
-    
-    #plt.figure()
-    #plt.plot(graph_dict['energy'], label = 'energy')
-    #plt.plot(graph_dict['temperature'], label = 'temperature')
-    #plt.xlabel('Iteration')
-    
-    return mi_arr
-
-   
-    
-#@parametric
-def SA():
-    """ Test the simulated annealing script"""
-
-    
-    #nnod_mod, av_degrees, nmods
-    #networks = [ [4, [2, 3], [2, 4, 6]]]#,
-    #networks =  [ [8, [4, 6], [4, 6, 8]]]
-    #networks = [[40, [20], [2]]]
-    networks = [[32, [16], [4]]]
-    #networks = [[64, [12], [6]]]
-    btwn_fracs = [0]
-    temperature = 10
-    temp_scaling = 0.9995
-    tmin=1e-4
-    nochange_ratio_min=0.01
-    
-    #keep time
-    
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-                for btwn_frac in btwn_fracs:
-                    t1=time.clock()
-                    g = random_modular_graph(nnod, nmod, av_degree,btwn_frac)
-                    #Compute the # of nodes per module
-                    nnod_mod = nnod/nmod
-                    #Make a "correct" partition for the graph
-                    ppart = perfect_partition(nmod,nnod_mod)
-
-                    graph_out, energy_array, rej_array, temp_array =simulated_annealing(g,
-                    temperature = temperature,temp_scaling = temp_scaling,
-                    tmin=tmin, nochange_ratio_min = nochange_ratio_min)
-
-                    print "perfect partition", ppart
-                    print "SA partition",graph_out.index
-                    
-                    t2 = time.clock()
-                    print 'Elapsed time: ', float(t2-t1)/60, 'minutes'
-                    print 'partition similarity: ',mutual_information(ppart,graph_out.index)
-                    return graph_out, g, energy_array, rej_array, ppart, temp_array
-    
-
-#-----------------------------------------------------------------------------
-# Main script
-#-----------------------------------------------------------------------------
-if __name__ == '__main__':
-    if 0:
-        mi_arr = danon_test()  
-    if 0:
-        apply_module_merge()
-        graph_out,g_out, energy_array,rej_array,ppart, temp_array = SA()
-        plt.figure()
-        plt.plot(temp_array)
-        plt.title('Temp_array')
-        plt.figure()
-        plt.plot(energy_array)
-        plt.title('Energy Array')
-        plt.show()
-
-        plot_partition(g_out,graph_out.index)
-    
-    plt.show()

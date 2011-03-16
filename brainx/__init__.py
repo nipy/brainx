@@ -1,3 +1,6 @@
+"""Top-level init file for brainx package.
+"""
+
 def patch_nx():
     """Temporary fix for NX's watts_strogatz routine, which has a bug in versions 1.1-1.3
     """

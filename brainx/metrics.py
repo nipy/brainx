@@ -253,7 +253,7 @@ def graph_summary(G):
     
     # Average path length
     lp = path_lengths(G)
-    clust = np.array(nx.clustering(G))
+    clust = np.array(nx.clustering(G).values())
     glob_eff = glob_efficiency(G)
     loc_eff = local_efficiency(G)
     
@@ -274,14 +274,14 @@ def nodal_summaryOut(G, n_nodes):
     -------
 
     A dict with: lp, clust, b_cen, c_cen, nod_eff, loc_eff, degree."""
-
+    
     lp = nodal_pathlengths(G,n_nodes) #can't use the regular one, because it substitutes [] for disconnected nodes
-    clust = np.array(nx.clustering(G))
+    clust = np.array(nx.clustering(G).values())
     b_cen = np.array(nx.betweenness_centrality(G).values())
     c_cen = np.array(nx.closeness_centrality(G).values())
     nod_eff=nodal_efficiency(G)
     loc_eff=local_efficiency(G)
-    deg = G.degree()
+    deg = G.degree().values()
 
     return dict(lp=lp, clust=clust, b_cen=b_cen, c_cen=c_cen, nod_eff=nod_eff,
                 loc_eff=loc_eff,deg=deg)
