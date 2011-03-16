@@ -315,18 +315,31 @@ class GraphPartition(object):
         #self.mod_e[m2] = e_new[1]
         #self.mod_a[m2] = a_new[1]
 
-        #EN: Not sure if this is necessary, but sometimes it finds a partition with an empty module...
+        #EN: Not sure if this is necessary, but sometimes it finds a partition
+        #with an empty module...
+        ## CG: should not be necessary... but may mess things up by renaming
+        #keys in dictionary but not updating mod_e and mod_a.  Maybe we should
+        #take care of this case earlier to ensure that it can not happen?
+        #Otherwise need to create a new function to update/recompute mod_e and
+        #mod_a.
         
         # This checks whether there is an empty module. If so, renames the keys.
-        if len(self.index[m1])<1:
-            self.index.pop(m1)
-            rename_keys(self.index,m1)
+        #if len(self.index[m1])<1:
+        #    self.index.pop(m1)
+        #    rename_keys(self.index,m1)
         # This checks whether there is an empty module. If so, renames the keys.
+        #if len(self.index[m2])<1:
+        #    self.index.pop(m2)
+        #    rename_keys(self.index,m2)
+
+        # For now, rather than renumbering, just check if this ever happens
+        if len(self.index[m1])<1:
+            print '** EMPTY MODULE AFTER MODULE SPLIT'
+            1/0
         if len(self.index[m2])<1:
-            self.index.pop(m2)
-            rename_keys(self.index,m2)
-
-
+            print '** EMPTY MODULE AFTER MODULE SPLIT'
+            1/0
+            
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules
 
@@ -457,7 +470,7 @@ class GraphPartition(object):
         # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
         # greater than 0.5 means we will merge the modules.
         
-        if num_mods >= self.num_nodes-1:
+        if num_mods >= self.num_nodes-1: ### CG: why are we subtracting 1 here?
             coin_flip = 1 #always merge if each node is in a separate module
         elif num_mods <= 2:
             coin_flip = 0 #always split if there's only one module
@@ -479,18 +492,21 @@ class GraphPartition(object):
             # cannot have a module with less than 1 node
             while len(self.index[m1]) <= 1:
 
-                #reselect the first  module
+                #reselect the first module
                 rand_mods = np.random.permutation(range(num_mods))
                 m1 = rand_mods[0]
                 #m1 = random.randint(0,num_mods)
+                ### CG: why not just work your way through the list?
 
             # list of nodes within that module
             list_nods = list(self.index[m1])
 
             # randomly partition the list of nodes into 2
             nod_split_ind = random.randint(1,len(list_nods)) #can't pick the first node as the division
-            n1 = set(list_nods[:nod_split_ind])
-            n2 = set(list_nods[nod_split_ind:])
+            ### CG: but it's ok to put up to the last because
+            ## random.randint is exclusive on the second number
+            n1 = set(list_nods[:nod_split_ind]) #at least 1 large
+            n2 = set(list_nods[nod_split_ind:]) #at least 1 large
 
             #We may want to return output of merging/splitting directly, but
             #for now we're returning inputs for those modules.
