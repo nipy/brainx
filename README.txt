@@ -22,7 +22,22 @@ directory, use::
 
   python setup_egg.py develop --prefix=$HOME/.local
 
-  
+
+Testing
+=======
+
+To run the test suite, once you have installed it as per the above
+instructions,  simply use::
+
+  nosetests brainx
+
+or for more informative details::
+
+  nosetests -vvs brainx
+
+For further information, type ``nosetests -h``.
+
+
 License information
 ===================
 

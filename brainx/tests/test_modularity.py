@@ -604,3 +604,26 @@ def test_decide_if_keeping():
                 mean_keep = np.mean(keep_list)
                 mean_correct = math.exp(-dE/temp)
                 yield npt.assert_almost_equal(mean_keep,mean_correct, tolerance)
+
+def test_sim_anneal_simple():
+    """Very simple simulated_annealing test with a small network"""
+
+    #
+    nnod, nmod, av_degree, btwn_frac = 24, 3, 4, 0
+    g = mod.random_modular_graph(nnod, nmod, av_degree, btwn_frac)
+
+    #Compute the # of nodes per module
+    nnod_mod = nnod/nmod
+    #Make a "correct" partition for the graph
+    ppart = mod.perfect_partition(nmod,nnod_mod)
+
+    temperature = 10
+    temp_scaling = 0.95
+    tmin=1
+
+    graph_out, graph_dict = mod.simulated_annealing(g,
+               temperature = temperature, temp_scaling = temp_scaling,
+               tmin=tmin, extra_info = True, debug=True)
+
+    mi = mod.mutual_information(ppart, graph_out.index)
+    #nt.assert_equal(mi, 1)

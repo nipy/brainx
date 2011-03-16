@@ -21,6 +21,7 @@ import copy
 # Third-party modules
 import networkx as nx
 import numpy as np
+import numpy.testing as npt
 
 from matplotlib import pyplot as plt
 
@@ -926,6 +927,7 @@ def mutual_information(d1,d2):
     den = nansum(nsum_row*log(nsum_row/nn)) + nansum(nsum_col*log(nsum_col/nn))
 
     return -2*num/den
+
         
 def decide_if_keeping(dE,temperature):
     """Function which uses the rule from Guimera & Amaral (2005) Nature paper to decide whether or not to keep new partition
@@ -947,7 +949,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         bad_accept_mod_ratio_max = 0.8 ,
                         bad_accept_nod_ratio_max = 0.8, accept_mod_ratio_min =
                         0.05, accept_nod_ratio_min = 0.05,
-                        extra_info = False):
+                        extra_info = False,
+                        debug = False):
 
     """ This function does simulated annealing on a graph
 
@@ -969,7 +972,6 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     while (len(part) <= 1) or (len(part) == nnod): 
         part = rand_partition(g)
     
-
     # make a graph partition object
     graph_partition = GraphPartition(g,part)
     
@@ -1019,6 +1021,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             temp_array.append(temperature)
             
             if keep:
+
                 # this applies changes in place if energy decreased; the
                 # modules will either be merged or split depending on a random
                 # coin flip
@@ -1036,6 +1039,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                 if delta_energy > 0 :
                     bad_accept_mod += 1
 
+                if debug:
+                    debug_partition = GraphPartition(g, graph_partition.index)
+                    npt.assert_almost_equal(debug_partition.modularity(),
+                                            graph_partition.modularity(), 11)
+                    
                 #maybe store the best one here too?
                 #graph_partition.store_best()
 
@@ -1094,6 +1102,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         bad_accept_nod += 1
                     #maybe store the best one here too?
                     #graph_partition.store_best()
+                    if debug:
+                        debug_partition = GraphPartition(g,
+                                                         graph_partition.index)
+                        npt.assert_almost_equal(debug_partition.modularity(),
+                                                graph_partition.modularity(), 11)
                     
                 #else:
                     #graph_partition = GraphPartition(g,graph_partition.index)
