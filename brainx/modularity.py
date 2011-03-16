@@ -15,7 +15,6 @@ doi:10.1088/1742-5468/2005/09/P09008
 
 # Modules from the stdlib
 import math
-import random
 import copy
 
 # Third-party modules
@@ -334,10 +333,10 @@ class GraphPartition(object):
 
         # For now, rather than renumbering, just check if this ever happens
         if len(self.index[m1])<1:
-            print '** EMPTY MODULE AFTER MODULE SPLIT'
+            print '** EMPTY MODULE AFTER MODULE SPLIT, OLD MOD'
             1/0
         if len(self.index[m2])<1:
-            print '** EMPTY MODULE AFTER MODULE SPLIT'
+            print '** EMPTY MODULE AFTER MODULE SPLIT, NEW MOD'
             1/0
             
     def node_update(self, n, m1, m2):
@@ -472,10 +471,10 @@ class GraphPartition(object):
         
         if num_mods >= self.num_nodes-1: ### CG: why are we subtracting 1 here?
             coin_flip = 1 #always merge if each node is in a separate module
-        elif num_mods <= 2:
+        elif num_mods <= 2: ### Why 2 and not 1?
             coin_flip = 0 #always split if there's only one module
         else:
-            coin_flip = random.random()
+            coin_flip = np.random.random()
             
 
         #randomly select two modules to operate on
@@ -498,20 +497,29 @@ class GraphPartition(object):
                 #m1 = random.randint(0,num_mods)
                 ### CG: why not just work your way through the list?
 
-            # list of nodes within that module
-            list_nods = list(self.index[m1])
-
-            # randomly partition the list of nodes into 2
-            nod_split_ind = random.randint(1,len(list_nods)) #can't pick the first node as the division
-            ### CG: but it's ok to put up to the last because
-            ## random.randint is exclusive on the second number
-            n1 = set(list_nods[:nod_split_ind]) #at least 1 large
-            n2 = set(list_nods[nod_split_ind:]) #at least 1 large
+            n1,n2 = self.determine_node_split(m1)
 
             #We may want to return output of merging/splitting directly, but
             #for now we're returning inputs for those modules.
             
             return self.compute_module_split(m1,n1,n2)
+
+    def determine_node_split(self,m1):
+        """ Determine hwo to split notes within a module
+        """
+
+        # list of nodes within that module
+        list_nods = list(self.index[m1])
+
+        # randomly partition the list of nodes into 2
+        nod_split_ind = np.random.randint(1,len(list_nods)) #can't pick the first node as the division
+
+        ### CG: but it's ok to put up to the last because
+        ## np.random.randint is exclusive on the second number
+        n1 = set(list_nods[:nod_split_ind]) #at least 1 large
+        n2 = set(list_nods[nod_split_ind:]) #at least 1 large
+
+        return n1,n2
 
 
     def random_mod_old(self):
@@ -747,7 +755,7 @@ def rand_partition(g, num_mods=None):
 
     # randomly select a number of modules
     if num_mods is None:
-        num_mods = random.randint(1, num_nodes)
+        num_mods = np.random.randint(1, num_nodes)
 
     # randomize the order of nodes into a list
     rand_nodes = np.random.permutation(num_nodes)
@@ -958,7 +966,7 @@ def decide_if_keeping(dE,temperature):
     if dE <= 0:
         return True
     else:
-        return random.random() < math.exp(-dE/temperature)
+        return np.random.random() < math.exp(-dE/temperature)
 
     
 def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
