@@ -209,33 +209,8 @@ def test_apply_module_merge():
                                            sorted(graph_part2.index.keys()))
 
 
-@parametric 
-def test_apply_module_split():
-    """Test the GraphPartition operation that splits modules so that it returns
-    a change in modularity that reflects the difference between the modularity
-    of the new and old parititions. Also test that the module that was split
-    now contains the correct nodes.""" 
 
-    #nnods = [120, 240, 360]
-    #nmods = [2, 3, 4]
-    #av_degree=8
-    # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [2, 3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-
-                g = mod.random_modular_graph(nnod, nmod, av_degree)
-
-                #Make a "correct" partition for the graph
-                part = mod.perfect_partition(nmod,nnod/nmod)
-
-                #Make a random partition for the graph
-                part_rand = mod.rand_partition(g, nnod/2)
-
+<<<<<<< HEAD
                 #List of modules in the partition that have two or more nodes
                 r_mod = []
                 for m, nodes in part_rand.iteritems():
@@ -298,6 +273,79 @@ def test_apply_module_split():
                     yield npt.assert_equal(n_init,n_all)
 
                     
+=======
+@parametric
+def test_apply_node_move():
+    """Test the GraphPartition operation that moves a single node so that it
+    returns a change in modularity that reflects the difference between the
+    modularity of the new and old parititions"""
+
+    # nnod_mod, av_degrees, nmods
+    networks = [ [3, [2], [2, 3, 4]],
+                 [4, [2, 3], [2, 4, 6]],
+                 [8, [4, 6], [4, 6, 8]] ]
+
+    for nnod_mod, av_degrees, nmods in networks:
+        for nmod in nmods:
+            nnod = nnod_mod*nmod
+            for av_degree in av_degrees:
+    
+                g = mod.random_modular_graph(nnod, nmod, av_degree)
+
+                #Make a "correct" partition for the graph
+                part = mod.perfect_partition(nmod,nnod/nmod)
+                
+                #Make a random partition for the graph
+                part_rand = dict()
+                while len(part_rand) <= 1: #check if there is only one module
+                    part_rand = mod.rand_partition(g)
+
+                #List of modules in the partition
+                r_mod=range(len(part_rand))
+
+                #select two modules to change node assignments
+                mod_per = np.random.permutation(r_mod)
+                m1 = mod_per[0]; m2 = mod_per[1]
+
+                #Make a graph_partition object
+                graph_partition = mod.GraphPartition(g,part_rand)
+                
+                #pick a random node to move between modules m1 and m2
+                node_list=list(graph_partition.index[m1])
+                nod_per = np.random.permutation(node_list)
+                n = nod_per[0]
+  
+                #list of nodes within the original modules (before node move)
+                n1_init = list(nod_per) #list(graph_partition.index[m1])
+                n2_init = list(graph_partition.index[m2])
+                n1_new = copy.deepcopy(n1_init)
+                n2_new = copy.deepcopy(n2_init)
+
+                # calculate modularity before node move
+                mod_init = graph_partition.modularity()
+
+                # move node
+                #delta_energy_meas = graph_partition.node_update(n,m1,m2)
+
+                node_moved_mods,e1,a1,delta_energy_meas,n,m1,m2 = \
+                              graph_partition.compute_node_update(n,m1,m2)
+
+                graph_part2 = copy.deepcopy(graph_partition)
+                graph_part2.apply_node_update(n,m1,m2,node_moved_mods,e1,a1)
+                # remove the first node from m1--because we defined n to equal
+                # the first element of the randomized node_list 
+                n1_new.pop(0)
+                
+                # append the node to m2
+                n2_new.append(n)
+
+                # recalculate modularity after splitting
+                mod_new = graph_part2.modularity()
+                
+                # difference between new and old modularity
+                delta_energy_true = -(mod_new - mod_init)
+                print delta_energy_meas,delta_energy_true
+>>>>>>> c15b9539bbcb03815ce8c4bd3b2a69d2dbb169a2
 
 @parametric
 def test_rename_keys():
@@ -453,16 +501,38 @@ def test_mutual_information():
 
                 #test the perfect case for now: two of the same partition
                 #returns 1
-                mi  = mod.mutual_information(ppart,ppart)
-                yield npt.assert_equal(mi,1)
+                mi_orig  = mod.mutual_information(ppart,ppart)
+                yield npt.assert_equal(mi_orig,1)
 
                 #move one node and test that mutual_information comes out
                 #correctly
                 graph_partition = mod.GraphPartition(g,ppart)
                 graph_partition.node_update(0,0,1)
 
-                mi2 = mod.mutual_information(ppart,graph_partition.index)
-                yield npt.assert_array_less(mi2, 1)
+                mi = mod.mutual_information(ppart,graph_partition.index)
+                yield npt.assert_array_less(mi, mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
+                #merge modules and check that mutual information comes out
+                #correctly/lower
+                graph_partition2 = mod.GraphPartition(g,ppart)
+                merged_module, e_new, a_new, d,t,m1,m2,x = graph_partition2.compute_module_merge(0,1)
+                graph_partition2.apply_module_merge(m1,m2,merged_module,e_new,a_new)
+                mi2 = mod.mutual_information(ppart,graph_partition2.index)
+                yield npt.assert_array_less(mi2,mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
+                #split modules and check that mutual information comes out
+                #correclty/lower
+                graph_partition3 = mod.GraphPartition(g,ppart)
+                n1 = list(graph_partition3.index[0])[::2]
+                n2 = list(graph_partition3.index[0])[1::2]
+                split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
+                graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
+                mi3 = mod.mutual_information(ppart,graph_partition3.index)
+                yield npt.assert_array_less(mi3,mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
 
 
 @parametric
@@ -553,6 +623,7 @@ def test_sim_anneal_simple():
     mi = mod.mutual_information(ppart, graph_out.index)
     #nt.assert_equal(mi, 1)
 
+<<<<<<< HEAD
 
 @parametric
 def test_apply_node_move():
@@ -560,16 +631,31 @@ def test_apply_node_move():
     """Test the GraphPartition operation that moves a single node so that it
     returns a change in modularity that reflects the difference between the
     modularity of the new and old parititions"""
+=======
+@parametric 
+def test_apply_module_split():
+    """Test the GraphPartition operation that splits modules so that it returns
+    a change in modularity that reflects the difference between the modularity
+    of the new and old parititions.
+    Also test that the module that was split now contains the correct nodes,
+    the correct modularity update, the correct energy,and that no empty modules
+    result from it.""" 
+>>>>>>> c15b9539bbcb03815ce8c4bd3b2a69d2dbb169a2
 
     # nnod_mod, av_degrees, nmods
     networks = [ [3, [2], [2, 3, 4]],
                  [4, [2, 3], [2, 4, 6]],
                  [8, [4, 6], [4, 6, 8]] ]
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> c15b9539bbcb03815ce8c4bd3b2a69d2dbb169a2
     for nnod_mod, av_degrees, nmods in networks:
         for nmod in nmods:
             nnod = nnod_mod*nmod
             for av_degree in av_degrees:
+<<<<<<< HEAD
     
                 g = mod.random_modular_graph(nnod, nmod, av_degree)
                 
@@ -641,3 +727,119 @@ def test_apply_node_move():
                 #yield npt.assert_equal(n1, n1_new)
                 #yield npt.assert_equal(n2, n2_new)
                 #yield npt.assert_equal(n_init.sort(),n_all.sort())
+=======
+
+                g = mod.random_modular_graph(nnod, nmod, av_degree)
+
+                #Make a "correct" partition for the graph
+                part = mod.perfect_partition(nmod,nnod/nmod)
+
+                #Make a random partition for the graph
+                part_rand = mod.rand_partition(g, nnod/2)
+
+                #List of modules in the partition that have two or more nodes
+                r_mod = []
+                for m, nodes in part_rand.iteritems():
+                    if len(nodes)>2:
+                        r_mod.append(m)
+
+                # Note: The above can be written in this more compact, if
+                # slightly less intuitively clear, list comprehension:
+                # r_mod = [ m for m, nodes in part_rand.iteritems() if
+                #          len(nodes)>2 ]
+
+                #Module that we are splitting
+                for m in r_mod:
+
+                    graph_partition = mod.GraphPartition(g,part_rand)
+
+                    #index of nodes within the original module (before split)
+                    n_init = list(graph_partition.index[m])
+
+                    #calculate modularity before splitting
+                    mod_init = graph_partition.modularity()
+
+                    # assign nodes to two groups
+                    n1_orig,n2_orig = graph_partition.determine_node_split(m)
+                                        
+                    # make sure neither of these is empty
+                    yield nt.assert_true(len(n1_orig)>= 1)
+                    yield nt.assert_true(len(n2_orig)>= 1)
+
+                    #make sure that there are no common nodes between the two
+                    node_intersection = set.intersection(n1_orig,n2_orig)
+                    yield nt.assert_equal(node_intersection,set([]))
+
+                    #make sure that sum of the two node sets equals the
+                    #original set
+                    node_union = set.union(n1_orig,n2_orig)
+                    yield npt.assert_equal(np.sort(list(node_union)),np.sort(n_init))
+
+                    # split modules
+                    split_modules,e1,a1,delta_energy_meas,type,m,n1,n2 = \
+                               graph_partition.compute_module_split(m,n1_orig,n2_orig)
+
+                    #note: n1 and n2 are output from this function (as well as
+                    #inputs) because the function is called from within another
+                    #(rand_mod) def but then output to the simulated script, so
+                    #the node split needs to be passed along.
+
+                    #as a simple confirmation, can make sure they match
+                    yield npt.assert_equal(n1_orig,n1)
+                    yield npt.assert_equal(n2_orig,n2)
+
+                    #split_moduels should be a dictionary with two modules
+                    #(0,1) that contain the node sets n1 and n2 respectively.
+                    #test this.
+                    yield npt.assert_equal(split_modules[0],n1)
+                    yield npt.assert_equal(split_modules[1],n2)
+
+                    #make a new graph partition equal to the old one and apply
+                    #the module split to it (graph_part2)
+                    graph_part2 = copy.deepcopy(graph_partition)
+                    graph_part2.apply_module_split(m,n1,n2,split_modules,e1,a1)
+
+                    #make a third graph partition using only the original graph
+                    #and the partition from graph_part2
+                    graph_part3 = mod.GraphPartition(g,graph_part2.index)
+                    
+                    #index of nodes within the modules after splitting
+                    n1_new = list(graph_part2.index[m])
+                    n2_new = list(graph_part2.index[len(graph_part2)-1])
+                    n_all = n1_new + n2_new
+
+                    # recalculate modularity after splitting
+                    mod_new = graph_part2.modularity()
+                    mod_new_3 = graph_part3.modularity()
+
+                    # difference between new and old modularity
+                    delta_energy_true = -(mod_new - mod_init)
+
+                    # Test that the measured change in energy by splitting a
+                    # module is equal to the function output from module_split
+                    yield npt.assert_almost_equal(delta_energy_meas,
+                                                  delta_energy_true)
+                    
+                    # Test that the nodes in the split modules are equal to the
+                    # original nodes of the module
+                    yield npt.assert_equal(np.sort(list(n1)), n1_new)
+                    yield npt.assert_equal(np.sort(list(n2)), n2_new)
+
+                    n_init.sort()
+                    n_all.sort()
+                    # Test that the initial list of nodes in the module are
+                    # equal to the nodes in m1 and m2 (split modules)
+                    yield npt.assert_equal(n_init,n_all)
+
+                    # Test that the computed modularity found when
+                    # apply_module_split is used is equal to the modularity you
+                    # would find if using that partition and that graph
+                    yield npt.assert_almost_equal(mod_new,mod_new_3)
+
+                    # Check that there are no empty modules in the final
+                    # partition
+                    for m in graph_part2.index:
+                        yield nt.assert_true(len(graph_part2.index[m]) > 0)
+
+
+>>>>>>> c15b9539bbcb03815ce8c4bd3b2a69d2dbb169a2
