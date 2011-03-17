@@ -440,16 +440,38 @@ def test_mutual_information():
 
                 #test the perfect case for now: two of the same partition
                 #returns 1
-                mi  = mod.mutual_information(ppart,ppart)
-                yield npt.assert_equal(mi,1)
+                mi_orig  = mod.mutual_information(ppart,ppart)
+                yield npt.assert_equal(mi_orig,1)
 
                 #move one node and test that mutual_information comes out
                 #correctly
                 graph_partition = mod.GraphPartition(g,ppart)
                 graph_partition.node_update(0,0,1)
 
-                mi2 = mod.mutual_information(ppart,graph_partition.index)
-                yield npt.assert_array_less(mi2, 1)
+                mi = mod.mutual_information(ppart,graph_partition.index)
+                yield npt.assert_array_less(mi, mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
+                #merge modules and check that mutual information comes out
+                #correctly/lower
+                graph_partition2 = mod.GraphPartition(g,ppart)
+                merged_module, e_new, a_new, d,t,m1,m2,x = graph_partition2.compute_module_merge(0,1)
+                graph_partition2.apply_module_merge(m1,m2,merged_module,e_new,a_new)
+                mi2 = mod.mutual_information(ppart,graph_partition2.index)
+                yield npt.assert_array_less(mi2,mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
+                #split modules and check that mutual information comes out
+                #correclty/lower
+                graph_partition3 = mod.GraphPartition(g,ppart)
+                n1 = list(graph_partition3.index[0])[::2]
+                n2 = list(graph_partition3.index[0])[1::2]
+                split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
+                graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
+                mi3 = mod.mutual_information(ppart,graph_partition3.index)
+                yield npt.assert_array_less(mi3,mi_orig)
+                ## NOTE: CORRECTNESS NOT TESTED YET
+
 
 
 @parametric
@@ -545,7 +567,9 @@ def test_apply_module_split():
     """Test the GraphPartition operation that splits modules so that it returns
     a change in modularity that reflects the difference between the modularity
     of the new and old parititions.
-    Also test that the module that was split now contains the correct nodes.""" 
+    Also test that the module that was split now contains the correct nodes,
+    the correct modularity update, the correct energy,and that no empty modules
+    result from it.""" 
 
     # nnod_mod, av_degrees, nmods
     networks = [ [3, [2], [2, 3, 4]],
