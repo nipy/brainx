@@ -821,7 +821,7 @@ def structured_rand_arr(size, sample_func=np.random.random,
     sample_func : function, optional.
       Must be a function which when called with a 2-tuple of ints, returns a
       2-d array of that shape.  By default, np.random.random is used, but any
-      other sampling function can be used as long as matches this API.
+      other sampling function can be used as long as it matches this API.
 
     utfac : float, optional
       Multiplicative factor for the upper triangular part of the matrix.
@@ -883,13 +883,13 @@ def symm_rand_arr(size,sample_func=np.random.random,fill_diag=None):
 
     Parameters
     ----------
-    n : int
+    size : int
       Size of the output array.
 
     sample_func : function, optional.
       Must be a function which when called with a 2-tuple of ints, returns a
       2-d array of that shape.  By default, np.random.random is used, but any
-      other sampling function can be used as long as matches this API.
+      other sampling function can be used as long as it matches this API.
 
     fill_diag : float, optional
       If given, use this value to fill in the diagonal.
