@@ -444,10 +444,11 @@ class GraphPartition(object):
         
         # This checks whether there is an empty module. If so, renames the keys.
         if len(self.index[m1])<1:
-            self.index.pop(m1)
-            rename_keys(self.index,m1)
-            if m1 < m2:
-                m2 = m2 - 1 #only need to rename this index if m1 is before m2
+            raise ValueError('Empty module after node move')
+            #self.index.pop(m1)
+            #rename_keys(self.index,m1)
+            #if m1 < m2:
+            #    m2 = m2 - 1 #only need to rename this index if m1 is before m2
             
         self.mod_e[m1] = e_new[0]
         self.mod_a[m1] = a_new[0]
@@ -1158,7 +1159,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
 
                 if keep:
                     
-                    graph_partition.apply_node_update(p1,p2,p3,calc_dict,e_new,a_new)
+                    nnn = graph_partition.apply_node_update(p1,p2,p3,calc_dict,e_new,a_new)
                     energy += delta_energy
                     accept_nod += 1
                     if delta_energy > 0 :
