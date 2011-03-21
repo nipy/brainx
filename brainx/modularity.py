@@ -913,57 +913,95 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     #plt.show()
 
 
+def confusion_matrix(d1, d2):
+    """Return the confusion matrix for two graph partitions.
 
-def mutual_information(d1,d2):
-    """Function that reads in two dictionaries of sets (i.e. a graph partition) and assess how similar they are using mutual information as in Danon, Diaz-Guilera, Duch & Arenas, J Statistical Mechanics 2005.
-    
-    Inputs:
-    ------
-    d1 = dictionary of 'real communities'
-    d2 = dictionary of 'found communities'
+    See Danon et al, 2005, for definition details.
+   
+    Parameters
+    ----------
+    d1 : dict
+      dictionary with first partition.
+    d2 : dict
+      dictionary with second partition.
+
+    Returns
+    -------
+    N : numpy 2d array.
+      Confusion matrix for d1 and d2.
     """
-    
-    dlist = [d1,d2]
-    #first get rid of any empty values and relabel the keys accordingly
+    # first get rid of any empty values and relabel the keys accordingly
     new_d2 = dict()
-    for d in dlist:
-        items = d.items()
-        sort_by_length = [[len(v[1]),v[0]] for v in items]
+    for d in [d1, d2]:
+        sort_by_length = [[len(v[1]),v[0]] for v in d.items()]
         sort_by_length.sort()
         
         counter=0
         for i in range(len(sort_by_length)):
-            #if the module is not empty...
+            # if the module is not empty...
             if sort_by_length[i][0]>0:
-                new_d2[counter]=d[sort_by_length[i][1]]
-                counter+=1
+                new_d2[counter] = d[sort_by_length[i][1]]
+                counter +=1
 
-        d2=new_d2
+        # XXX - Why is d2 reassigned here in both passes of the loop?
+        d2 = new_d2
     
-    #define a 'confusion matrix' where rows = 'real communities' and columns = 'found communities'
-    #The element of N (Nij) = the number of nodes in the real community i that appear in the found community j
+    # define a 'confusion matrix' where rows = 'real communities' and columns =
+    # 'found communities' The element of N (Nij) = the number of nodes in the
+    # real community i that appear in the found community j
+
+    # Compute the sets of the values of d1/d2 only once, to avoid quadratic
+    # recomputation.
     rows = len(d1)
     cols = len(d2)
+
+    sd1 = [set(d1[i]) for i in range(rows)]
+    sd2 = [set(d2[j]) for j in range(cols)]
+    
     N = np.empty((rows,cols))
-    rcol = range(cols)
-    for i in range(rows):
-        for j in rcol:
-            #N[i,j] = len(d1[i] & d2[j])
-            N[i,j] = len(set(d1[i]) & set(d2[j]))
-         
+    for i, sd1i in enumerate(sd1):
+        for j, sd2j in enumerate(sd2):
+            N[i,j] = len(sd1i & sd2j)
+
+    return N
+
+
+def mutual_information(d1, d2):
+    """Mutual information between two graph partitions.
+
+    Read in two dictionaries of sets (i.e. a graph partition) and assess how
+    similar they are using mutual information as in Danon, Diaz-Guilera, Duch &
+    Arenas, J Statistical Mechanics 2005.
+    
+    Parameters
+    ----------
+    d1 : dict
+      dictionary of 'real communities'
+    d2 : dict
+      dictionary of 'found communities'
+
+    Returns
+    -------
+    mi : float
+      Value of mutual information between the two partitions.
+    """
+    log = np.log
+    nansum = np.nansum
+    
+    N = confusion_matrix(d1, d2)
 
     nsum_row = N.sum(0)[np.newaxis, :]
     nsum_col = N.sum(1)[:, np.newaxis]
+
+    # nn is the total number of nodes
     nn = nsum_row.sum()
-    log = np.log
-    nansum = np.nansum
     
     num = nansum(N*log(N*nn/(nsum_row*nsum_col)))
     den = nansum(nsum_row*log(nsum_row/nn)) + nansum(nsum_col*log(nsum_col/nn))
 
     return -2*num/den
 
-        
+
 def decide_if_keeping(dE,temperature):
     """Function which uses the rule from Guimera & Amaral (2005) Nature paper to decide whether or not to keep new partition
 
