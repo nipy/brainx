@@ -1017,3 +1017,18 @@ def compare_dicts(d1,d2):
                 check+=1
     return float(check)/longest_dict
         
+
+def assert_no_empty_modules(part):
+    """Asserts that a partition contains no empty moudles.
+
+    This function raises a ValueError exception if the input partition has an
+    empty module.
+
+    Parameters
+    ----------
+    part : dict
+      A dict describing a graph partition.
+    """
+    for label, mod in part.iteritems():
+        if len(mod)==0:
+            raise ValueError("Module %s in partition is empty" % label)

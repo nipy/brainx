@@ -21,7 +21,6 @@ from brainx import modularity as mod
 from brainx import util
 from decotest  import (as_unittest, ParametricTestCase, parametric)
 
-
 # While debugging the library, reload everything
 map(reload,[mod,util])
 
@@ -160,7 +159,7 @@ def test_apply_module_merge():
                 #List of modules in the partition
                 r_mod=range(len(part))
 
-                # Loop through pairs of modules
+                #Loop through pairs of modules
                 for i in range(1): # DB: why is this necessary?
                     #select two modules to merge
                     mod_per = np.random.permutation(r_mod)
@@ -528,6 +527,9 @@ def test_sim_anneal_simple():
                temperature = temperature, temp_scaling = temp_scaling,
                tmin=tmin, extra_info = True, debug=True)
 
+    # Ensure that there are no empty modules
+    util.assert_no_empty_modules(graph_out.index)
+    
     mi = mod.mutual_information(ppart, graph_out.index)
     #nt.assert_equal(mi, 1)
 
