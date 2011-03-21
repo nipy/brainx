@@ -930,22 +930,6 @@ def confusion_matrix(d1, d2):
     N : numpy 2d array.
       Confusion matrix for d1 and d2.
     """
-    # first get rid of any empty values and relabel the keys accordingly
-    new_d2 = dict()
-    for d in [d1, d2]:
-        sort_by_length = [[len(v[1]),v[0]] for v in d.items()]
-        sort_by_length.sort()
-        
-        counter=0
-        for i in range(len(sort_by_length)):
-            # if the module is not empty...
-            if sort_by_length[i][0]>0:
-                new_d2[counter] = d[sort_by_length[i][1]]
-                counter +=1
-
-        # XXX - Why is d2 reassigned here in both passes of the loop?
-        d2 = new_d2
-    
     # define a 'confusion matrix' where rows = 'real communities' and columns =
     # 'found communities' The element of N (Nij) = the number of nodes in the
     # real community i that appear in the found community j
@@ -993,9 +977,17 @@ def mutual_information(d1, d2):
     nsum_row = N.sum(0)[np.newaxis, :]
     nsum_col = N.sum(1)[:, np.newaxis]
 
+    # Sanity checks: a zero in either of these can only happen if there was an
+    # empty module  in one of the input partitions.  Rather than manually check
+    # the entire partitions, we look for this problem at this stage, and bail
+    # if there was an empty module.
+    if (nsum_row==0).any():
+        raise ValueError("Empty module in second partition.")
+    if (nsum_col==0).any():
+        raise ValueError("Empty module in first partition.")
+
     # nn is the total number of nodes
     nn = nsum_row.sum()
-    
     num = nansum(N*log(N*nn/(nsum_row*nsum_col)))
     den = nansum(nsum_row*log(nsum_row/nn)) + nansum(nsum_col*log(nsum_col/nn))
 

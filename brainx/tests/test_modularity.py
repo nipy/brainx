@@ -337,6 +337,48 @@ def SA():
     
 
 @parametric
+def test_mutual_information_simple():
+    """MI computations with hand-validated values.
+    """
+    from math import log
+    # Define two simple partitions that are off by one assignment
+    a = {0:[0, 1], 1:[2, 3], 2:[4, 5]}
+    b = {0:[0, 1], 1:[2, 3, 4], 2:[5]}
+    N_true = np.array([ [2,0,0], [0,2,0], [0,1,1] ], dtype=float)
+    N = mod.confusion_matrix(a, b)
+    # test confusion matrix
+    yield npt.assert_equal(N, N_true)
+    # Now compute mi by hand
+    num = -6*log(3)-4*log(2)
+    den = -(3*log(2)+8*log(3)+log(6))
+    mi_true = num/den
+    mi = mod.mutual_information(a, b)
+    yield npt.assert_almost_equal(mi, mi_true)
+    # Let's now flip the labels and confirm that the computation is impervious
+    # to module labels
+    b2 = {2:[0, 1], 0:[2, 3, 4], 1:[5]}
+    yield npt.assert_almost_equal(mod.mutual_information(b, b2), 1)
+    yield npt.assert_almost_equal(mod.mutual_information(a, b2), mi)
+
+def test_mutual_information_empty():
+    """Validate that empty modules don't affect MI.
+    """
+    # Define two simple partitions that are off by one assignment
+    a = {0:[0, 1], 1:[2, 3], 2:[4, 5]}
+    b = {0:[0, 1], 1:[2, 3], 2:[4, 5], 3:[]}
+
+    try:
+        mod.mutual_information(a, b)
+    except ValueError, e:
+        nt.assert_equals(e.args[0], "Empty module in second partition.")
+        
+    try:
+        mod.mutual_information(b, a)
+    except ValueError, e:
+        nt.assert_equals(e.args[0], "Empty module in first partition.")
+        
+
+@parametric
 def test_mutual_information():
     """ Test the function which returns the mutual information in two
     partitions
