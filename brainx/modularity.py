@@ -176,6 +176,8 @@ class GraphPartition(object):
         
         Parameters
         ----------
+          m1: name (i.e., index) of one module
+          m2: name (i.e., index) of the other module
           
         Returns
         -------
@@ -214,12 +216,17 @@ class GraphPartition(object):
         
         Parameters
         ----------
-        XXX
+          m1: name (i.e., index) of one module
+          m2: name (i.e., index) of the other module
+          merged_module: set of all nodes from m1 and m2
+          e_new: mod_e of merged_module
+          a_new: mod_a of merged_module
         
         Returns
         -------
-        XXX
-          """
+          Does not return anything -- operates on self.mod_e and self.mod_a in
+          place
+        """
 
         # Below, we want to know that m1<m2, so we enforce that:
         if m1>m2:

@@ -161,7 +161,7 @@ def test_apply_module_merge():
                 r_mod=range(len(part))
 
                 #Loop through pairs of modules
-                for i in range(1):
+                for i in range(1): # DB: why is this necessary?
                     #select two modules to merge
                     mod_per = np.random.permutation(r_mod)
                     m1 = mod_per[0]; m2 = mod_per[1]
@@ -170,12 +170,12 @@ def test_apply_module_merge():
                     #make a graph partition object
                     graph_partition = mod.GraphPartition(g,part)
                     
-                    #index of nodes within the original module (before split)
+                    #index of nodes within the original module (before merge)
                     n1_init = list(graph_partition.index[m1])
                     n2_init = list(graph_partition.index[m2])
                     n_all_init = n1_init+n2_init
 
-                    #calculate modularity before splitting
+                    #calculate modularity before merging
                     mod_init = graph_partition.modularity()
 
                     #merge modules
@@ -207,7 +207,10 @@ def test_apply_module_merge():
                     yield npt.assert_equal(r_mod[:-1],
                                            sorted(graph_part2.index.keys()))
 
-
+                    # Test that the values in the mod_e and mod_a matrices for
+                    # the merged module are correct.
+                    yield npt.assert_equal(graph_part2.mod_e[min(m1,m2)],e1)
+                    yield npt.assert_equal(graph_part2.mod_a[min(m1,m2)],a1)
 
 
 @parametric
