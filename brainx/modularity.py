@@ -340,11 +340,9 @@ class GraphPartition(object):
 
         # For now, rather than renumbering, just check if this ever happens
         if len(self.index[m1])<1:
-            print '** EMPTY MODULE AFTER MODULE SPLIT, OLD MOD'
-            1/0
+            raise ValueError('Empty module after module split, old mod')
         if len(self.index[m2])<1:
-            print '** EMPTY MODULE AFTER MODULE SPLIT, NEW MOD'
-            1/0
+            raise ValueError('Empty module after module split, new mod')
             
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules

@@ -160,13 +160,12 @@ def test_apply_module_merge():
                 #List of modules in the partition
                 r_mod=range(len(part))
 
-                #Loop through pairs of modules
+                # Loop through pairs of modules
                 for i in range(1): # DB: why is this necessary?
                     #select two modules to merge
                     mod_per = np.random.permutation(r_mod)
                     m1 = mod_per[0]; m2 = mod_per[1]
                     
-
                     #make a graph partition object
                     graph_partition = mod.GraphPartition(g,part)
                     
@@ -359,6 +358,7 @@ def test_mutual_information_simple():
     b2 = {2:[0, 1], 0:[2, 3, 4], 1:[5]}
     yield npt.assert_almost_equal(mod.mutual_information(b, b2), 1)
     yield npt.assert_almost_equal(mod.mutual_information(a, b2), mi)
+
 
 def test_mutual_information_empty():
     """Validate that empty modules don't affect MI.
