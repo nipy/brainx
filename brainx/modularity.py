@@ -404,7 +404,7 @@ class GraphPartition(object):
         n2 = self.index[m2]
 
         node_moved_mods = {0: n1 - set([n]),1: n2 | set([n])}
-            
+        
         # Before we overwrite the mod vectors, compute the contribution to
         # modularity from before the change
         e1 = [0,0]
@@ -448,12 +448,16 @@ class GraphPartition(object):
         if len(self.index[m1])<1:
             self.index.pop(m1)
             rename_keys(self.index,m1)
+            if m1 < m2:
+                m2 = m2 - 1 #only need to rename this index if m1 is before m2
             
         self.mod_e[m1] = e_new[0]
         self.mod_a[m1] = a_new[0]
         self.mod_e[m2] = e_new[1]
         self.mod_a[m2] = a_new[1]
 
+        return m2
+    
     def random_mod(self):
         """Makes a choice whether to merge or split modules in a partition
         

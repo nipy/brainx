@@ -21,6 +21,7 @@ from brainx import modularity as mod
 from brainx import util
 from decotest  import (as_unittest, ParametricTestCase, parametric)
 
+
 # While debugging the library, reload everything
 map(reload,[mod,util])
 
@@ -211,87 +212,7 @@ def test_apply_module_merge():
                     yield npt.assert_equal(graph_part2.mod_e[min(m1,m2)],e1)
                     yield npt.assert_equal(graph_part2.mod_a[min(m1,m2)],a1)
 
-@parametric
-def test_apply_node_move():
-    """Test the GraphPartition operation that moves a single node so that it
-    returns a change in modularity that reflects the difference between the
-    modularity of the new and old parititions"""
 
-    # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [2, 3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
-                 [8, [4, 6], [4, 6, 8]] ]
-
-    for nnod_mod, av_degrees, nmods in networks:
-        for nmod in nmods:
-            nnod = nnod_mod*nmod
-            for av_degree in av_degrees:
-    
-                g = mod.random_modular_graph(nnod, nmod, av_degree)
-
-                #Make a "correct" partition for the graph
-                #part = mod.perfect_partition(nmod,nnod/nmod)
-                
-                #Make a random partition for the graph
-                part_rand = dict()
-                while len(part_rand) <= 1: #check if there is only one module
-                    part_rand = mod.rand_partition(g)
-
-                #List of modules in the partition
-                r_mod=range(len(part_rand))
-
-                #select two modules to change node assignments
-                mod_per = np.random.permutation(r_mod)
-                m1 = mod_per[0]; m2 = mod_per[1]
-
-                #Make a graph_partition object
-                graph_partition = mod.GraphPartition(g,part_rand)
-                
-                #pick a random node to move between modules m1 and m2
-                node_list=list(graph_partition.index[m1])
-                nod_per = np.random.permutation(node_list)
-                n = nod_per[0]
-  
-                #list of nodes within the original modules (before node move)
-                n1_init = list(nod_per) #list(graph_partition.index[m1])
-                n2_init = list(graph_partition.index[m2])
-                n1_new = copy.deepcopy(n1_init)
-                n2_new = copy.deepcopy(n2_init)
-
-                # calculate modularity before node move
-                mod_init = graph_partition.modularity()
-
-                # move node
-                #delta_energy_meas = graph_partition.node_update(n,m1,m2)
-
-                node_moved_mods,e1,a1,delta_energy_meas,n,m1,m2 = \
-                              graph_partition.compute_node_update(n,m1,m2)
-
-                graph_part2 = copy.deepcopy(graph_partition)
-                graph_part2.apply_node_update(n,m1,m2,node_moved_mods,e1,a1)
-                # remove the first node from m1--because we defined n to equal
-                # the first element of the randomized node_list 
-                #n1_new.pop(0)
-                
-                # append the node to m2
-                #n2_new.append(n)
-
-                # recalculate modularity after splitting
-                mod_new = graph_part2.modularity()
-                
-                # difference between new and old modularity
-                delta_energy_true = -(mod_new - mod_init)
-                #print delta_energy_meas,delta_energy_true
-
-                # Test that the measured change in energy is equal to the true
-                # change in energy calculated in the node_update function
-                yield npt.assert_almost_equal(delta_energy_meas,
-                                              delta_energy_true)
-                #yield npt.assert_equal(n1, n1_new)
-                #yield npt.assert_equal(n2, n2_new)
-                #yield npt.assert_equal(n_init.sort(),n_all.sort())
-
-                    
 @parametric
 def test_rename_keys():
     a = {0:0,1:1,2:2,4:4,5:5}
@@ -700,3 +621,80 @@ def test_apply_module_split():
                         yield nt.assert_true(len(graph_part2.index[m]) > 0)
 
 
+@parametric
+def test_apply_node_move():
+#if 1:
+    
+    """Test the GraphPartition operation that moves a single node so that it
+    returns a change in modularity that reflects the difference between the
+    modularity of the new and old parititions"""
+
+    # nnod_mod, av_degrees, nmods
+    networks = [ [3, [2], [2, 3, 4]],
+                 [4, [2, 3], [2, 4, 6]],
+                 [8, [4, 6], [4, 6, 8]] ]
+
+    for nnod_mod, av_degrees, nmods in networks:
+        for nmod in nmods:
+            nnod = nnod_mod*nmod
+            for av_degree in av_degrees:
+                print nnod_mod,nmod,av_degree
+                g = mod.random_modular_graph(nnod, nmod, av_degree)
+
+                #Make a "correct" partition for the graph
+                #part = mod.perfect_partition(nmod,nnod/nmod)
+
+                #Make a random partition for the graph
+                part_rand = dict()
+                while len(part_rand) <= 1: #check if there is only one module
+                    part_rand = mod.rand_partition(g)
+
+                #List of modules in the partition
+                r_mod=range(len(part_rand))
+
+                #select two modules to change node assignments
+                mod_per = np.random.permutation(r_mod)
+                m1 = mod_per[0]; m2 = mod_per[1]
+
+                #Make a graph_partition object
+                graph_partition = mod.GraphPartition(g,part_rand)
+
+                #pick a random node to move between modules m1 and m2
+                node_list=list(graph_partition.index[m1])
+                nod_per = np.random.permutation(node_list)
+                n = nod_per[0]
+
+                #list of nodes within the original modules (before node move)
+                n1_init = list(nod_per) #list(graph_partition.index[m1])
+                n2_init = list(graph_partition.index[m2])
+                n1_new = copy.deepcopy(n1_init)
+                n2_new = copy.deepcopy(n2_init)
+
+                # calculate modularity before node move
+                mod_init = graph_partition.modularity()
+
+                # move node from m1 to m2
+                node_moved_mods,e1,a1,delta_energy_meas,n,m1,m2 = \
+                              graph_partition.compute_node_update(n,m1,m2)
+                
+                graph_part2 = copy.deepcopy(graph_partition)
+                m2_new = graph_part2.apply_node_update(n,m1,m2,node_moved_mods,e1,a1)
+
+                #if the keys get renamed, the m1,m2 numbers are no longer the same
+                                
+                #test that m2 now contains n
+                yield nt.assert_true(n in graph_part2.index[m2_new])
+                #if n not in graph_part2.index[m2_new]:
+                #    1/0
+                
+                # recalculate modularity after splitting
+                mod_new = graph_part2.modularity()
+
+                # difference between new and old modularity
+                delta_energy_true = -(mod_new - mod_init)
+                #print delta_energy_meas,delta_energy_true
+                
+                # Test that the measured change in energy is equal to the true
+                # change in energy calculated in the node_update function
+                yield npt.assert_almost_equal(delta_energy_meas,delta_energy_true)
+                
