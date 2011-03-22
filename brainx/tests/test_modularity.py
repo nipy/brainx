@@ -674,9 +674,12 @@ def test_apply_node_move():
     modularity of the new and old parititions"""
 
     # nnod_mod, av_degrees, nmods
-    networks = [ [3, [2], [2, 3, 4]],
-                 [4, [2, 3], [2, 4, 6]],
+    #networks = [ [3, [2], [2, 3, 4]],
+    #             [4, [2, 3], [2, 4, 6]],
+    #             [8, [4, 6], [4, 6, 8]] ]
+    networks = [ [4, [2, 3], [2, 4, 6]],
                  [8, [4, 6], [4, 6, 8]] ]
+
 
     for nnod_mod, av_degrees, nmods in networks:
         for nmod in nmods:
@@ -696,12 +699,16 @@ def test_apply_node_move():
                 #List of modules in the partition
                 r_mod=range(len(part_rand))
 
+                #Make a graph_partition object
+                graph_partition = mod.GraphPartition(g,part_rand)
+
                 #select two modules to change node assignments
                 mod_per = np.random.permutation(r_mod)
                 m1 = mod_per[0]; m2 = mod_per[1]
-
-                #Make a graph_partition object
-                graph_partition = mod.GraphPartition(g,part_rand)
+                while len(graph_partition.index[m1]) <= 1:
+                    mod_per = np.random.permutation(r_mod)
+                    m1 = mod_per[0]
+                    m2 = mod_per[1]
 
                 #pick a random node to move between modules m1 and m2
                 node_list=list(graph_partition.index[m1])
