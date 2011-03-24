@@ -1107,6 +1107,10 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                     debug_partition = GraphPartition(g, graph_partition.index)
                     npt.assert_almost_equal(debug_partition.modularity(),
                                             graph_partition.modularity(), 11)
+                    for mod in graph_partition.index:
+                        if len(graph_partition.index[mod]) < 1:
+                            raise ValueError('Empty module after module %s,SA' % (movetype))
+
                     
                 #maybe store the best one here too?
                 #graph_partition.store_best()
@@ -1171,6 +1175,12 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                                                          graph_partition.index)
                         npt.assert_almost_equal(debug_partition.modularity(),
                                                 graph_partition.modularity(), 11)
+                        
+                            
+                        for mod in graph_partition.index:
+                            if len(graph_partition.index[mod]) < 1:
+                                raise ValueError('Empty module after ndoe move,SA')
+                                
                     
                 #else:
                     #graph_partition = GraphPartition(g,graph_partition.index)
@@ -1211,6 +1221,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             'energy: %.2e' %energy, 'best: %.2e' %energy_best
         temperature *= temp_scaling
 
+
+
     #NEED TO APPLY THE BEST PARTITION JUST IN CASE...
     #make a new graph object, apply the best partition
     #graph_partition.index = graph_partition.bestindex
@@ -1218,7 +1230,17 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     graph_part_final = GraphPartition(g,graph_partition.bestindex)
     print graph_partition.modularity()
     print graph_part_final.modularity()
-    
+
+
+    if debug:
+        debug_partition = GraphPartition(g, graph_partition_final.index)
+        npt.assert_almost_equal(debug_partition.modularity(),
+                                graph_partition_final.modularity(), 11)
+
+        for mod in graph_partition_final.index:
+            if len(graph_partition_final.index[mod]) < 1:
+                raise ValueError('LAST CHECK: Empty module after module %s,SA' % (movetype))
+
     if extra_info:
         extra_dict = dict(energy = energy_array, temp = temp_array)
         #return graph_partition, extra_dict
