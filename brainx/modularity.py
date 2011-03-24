@@ -830,7 +830,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     else:
         nod_labels = dict(zip(range(nnod),nod_labels))
 
-    nod_labels = array_to_string(nod_labels)
+    #nod_labels = array_to_string(nod_labels)
 
     
     if pos == None:
