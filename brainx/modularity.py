@@ -1251,6 +1251,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
         finalmodval = graph_part_final.modularity()
         print finalmodval
         print -energy_best
+        print graph_part_final.index
+        
         print np.abs(finalmodval - (-energy_best))
         
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
