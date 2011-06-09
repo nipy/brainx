@@ -823,6 +823,8 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     """This function takes in a graph and a partition and makes a figure that
     has each node labeled according to its partition assignment"""
 
+
+    write_labels = False
     nnod = g.number_of_nodes()
 
     if nod_labels == None:
@@ -830,8 +832,10 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     else:
         nod_labels = dict(zip(range(nnod),nod_labels))
 
-    #nod_labels = array_to_string(nod_labels)
 
+    plt.figure()
+    plt.subplot(111)
+    plt.axis('off')
     
     if pos == None:
         pos=nx.circular_layout(g)
@@ -846,15 +850,9 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
 
         if niter <len(col):
             if within_mod == 'none': #note: assumes part_coeff also there
-                for v in val:
-                    if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(4,1,0))
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)
             else:
                 for v in val:
-                    if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(4,1,0))
-
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
                     else:
@@ -862,15 +860,9 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
         else:
             #print 'out of colors!!'
             if within_mod == 'none': #note: assumes part_coeff also there
-                for v in val:
-                    if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(4,1,0))
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col2[niter],node_size=50)
             else:
                 for v in val:
-                    if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(4,1,0))
-
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col2[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
                     else:
@@ -901,11 +893,20 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
         else:
             nx.draw_networkx_edges(g,pos,edgelist=edge_list_within,edge_color=col2[niter])
         niter += 1
-        
-    nx.draw_networkx_labels(g,pos,nod_labels,font_size=6)    
+
+
     #nx.draw_networkx_edges(g,pos,edgelist=nx.edges(g))
     nx.draw_networkx_edges(g,pos,edgelist=edge_list_between,edge_color='k')
+    if write_labels:
+        nx.draw_networkx_labels(g,pos,nod_labels,font_size=6)    
 
+    #add loop for damage labels
+    if les_dam != 'none':
+        for m,val in part.iteritems():
+            for v in val:
+                if les_dam[v] > 0:
+                    plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v]+100,c='orange',marker=(4,1,0))
+ 
     plt.title(title)
     #plt.savefig(fname)
     #plt.close()
