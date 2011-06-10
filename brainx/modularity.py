@@ -848,28 +848,29 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
             if within_mod == 'none': #note: assumes part_coeff also there
                 for v in val:
                     if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(4,1,0))
-                nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)
+                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
+                nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)        
             else:
                 for v in val:
                     if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(4,1,0))
-
+                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(10,1,0))
+                        
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
                     else:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col[niter],node_size=part_coeff[v] * 500+50,node_shape='o',linewidths=0.5)
+                    
         else:
             #print 'out of colors!!'
             if within_mod == 'none': #note: assumes part_coeff also there
                 for v in val:
                     if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(4,1,0))
+                        plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col2[niter],node_size=50)
             else:
                 for v in val:
                     if les_dam != 'none':
-                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(4,1,0))
+                        plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(10,1,0))
 
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col2[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
@@ -980,10 +981,10 @@ def mutual_information(d1, d2):
     # empty module  in one of the input partitions.  Rather than manually check
     # the entire partitions, we look for this problem at this stage, and bail
     # if there was an empty module.
-    if (nsum_row==0).any():
-        raise ValueError("Empty module in second partition.")
-    if (nsum_col==0).any():
-        raise ValueError("Empty module in first partition.")
+##     if (nsum_row==0).any():
+##         raise ValueError("Empty module in second partition.")
+##     if (nsum_col==0).any():
+##         raise ValueError("Empty module in first partition.")
 
     # nn is the total number of nodes
     nn = nsum_row.sum()
