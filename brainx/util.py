@@ -29,9 +29,33 @@ def format_matrix(data,s,b,lk,co,nouptri = False):
     
     #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)
+
     if not nouptri:
         cmat = np.triu(cmat,1)
+        
+    return cmat
 
+def format_matrix2(data,s,sc,c,lk,co,nouptri = False):
+    """ Function which formats matrix for a particular subject and particular block (thresholds, upper-tris it) so that we can make a graph object out of it
+
+    Parameters:
+    -----------
+    data = full data array
+    s = subject
+    b = block
+    lk = lookup table for study
+    co = cost value to threshold at
+"""
+
+    cmat = data[sc,c,s]
+    th = cost2thresh2(co,s,sc,c,lk,[]) #get the right threshold
+    
+    #cmat = replace_diag(cmat) #replace diagonals with zero
+    cmat = thresholded_arr(cmat,th,fill_val=0)
+
+    if not nouptri:
+        cmat = np.triu(cmat,1)
+        
     return cmat
 
 
@@ -406,6 +430,35 @@ def cost2thresh(cost,sub,bl,lk,last):
     #print th    
     return th
 
+def cost2thresh2(cost,sub,sc,c,lk,last):
+    """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
+    
+    inputs:
+    cost: cost value for which we need the associated threshold
+    sub: subject number
+    bl: block number
+    lk: lookup table (block x subject x cost
+    last: last threshold value
+
+    output:
+    th: threshold value for this cost"""
+
+    #print cost,sub,bl
+    
+    ind=np.where(lk[sc,c,sub][1]==cost)
+    th=lk[sc,c,sub][0][ind]
+    
+    if len(th)>1:
+        th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
+        print 'multiple thresh'
+    elif len(th)<1:
+        th=last #if there is no associated thresh value because of repeats, just use the previous one
+        print 'use previous thresh'
+    else:
+        th=th[0]
+      
+    #print th    
+    return th
 
 def network_ind(ntwk_type,n_nodes):
     """Reads in a network type, number of nodes total and returns the indices of that network"""
