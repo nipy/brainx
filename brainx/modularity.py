@@ -114,7 +114,8 @@ class GraphPartition(object):
             mod_a[m] = perc_btwn+perc_within #all of the A's
             #mod_e.append(perc_within)
             #mod_a.append(perc_btwn+perc_within)
-
+            if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
+                1/0
             
         return mod_e, mod_a
 
@@ -129,6 +130,8 @@ class GraphPartition(object):
         Returns:
         mod = modularity
         """
+        if np.isnan((np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()):
+            1/0
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
     modularity = modularity_newman
@@ -853,6 +856,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
+                        
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)        
             else:
                 for v in val:
@@ -870,6 +874,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
+                        
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col2[niter],node_size=50)
             else:
                 for v in val:
@@ -918,8 +923,8 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
         for m,val in part.iteritems():
             for v in val:
                 if les_dam[v] > 0:
-                    plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v]+100,c='orange',marker=(4,1,0))
- 
+                    plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v]+100,c='orange',marker=(10,1,0))
+                    
     plt.title(title)
     #plt.savefig(fname)
     #plt.close()
@@ -1071,7 +1076,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     
     energy = -graph_partition.modularity()
     energy_array.append(energy)
-
+    
     while temperature > tmin:
         # Initialize counters
         bad_accept_mod = 0
@@ -1249,8 +1254,8 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
         npt.assert_almost_equal(debug_partition.modularity(),
                                 graph_part_final.modularity(), 11)
 
-        for mod in graph_partition_final.index:
-            if len(graph_partition_final.index[mod]) < 1:
+        for mod in graph_part_final.index:
+            if len(graph_part_final.index[mod]) < 1:
                 raise ValueError('LAST CHECK: Empty module after module %s,SA' % (movetype))
 
     if extra_info:
