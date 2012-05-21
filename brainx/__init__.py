@@ -15,13 +15,13 @@ def patch_nx():
         
         nx._watts_strogatz_graph_ori = nx.watts_strogatz_graph        
 
-        def patched_ws(n, k, p, create_using=None, seed=None):
+        def patched_ws(n, k, p, seed=None):
             if k<2:
                 g = nx.Graph()
                 g.add_nodes_from(range(n))
                 return g
             else:
-                return nx._watts_strogatz_graph_ori(n, k, p, create_using, seed)
+                return nx._watts_strogatz_graph_ori(n, k, p, seed)
 
         patched_ws.__doc__ = nx._watts_strogatz_graph_ori.__doc__
 
