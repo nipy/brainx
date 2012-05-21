@@ -61,7 +61,6 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
 
 def cost_size(nnodes):
     tot_edges = .5*nnodes*(nnodes-1)
-    
     costs =  np.array(range(int(tot_edges)+1),dtype=float)/tot_edges
     edges_short = tot_edges/2
     return costs,tot_edges,edges_short
