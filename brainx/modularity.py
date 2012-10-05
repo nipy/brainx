@@ -21,6 +21,8 @@ import copy
 import networkx as nx
 import numpy as np
 import numpy.testing as npt
+import numpy.linalg as nl
+import scipy.linalg as sl
 
 from matplotlib import pyplot as plt
 
@@ -41,7 +43,7 @@ class GraphPartition(object):
         ----------
         graph : network graph instance
           Graph to which the partition index refers to.
-          
+
         index : dict
           A dict that maps module labels to sets of nodes, this describes the
           partition in full.
@@ -56,10 +58,10 @@ class GraphPartition(object):
         # Store references to the original graph and label dict
         self.index = copy.deepcopy(index)
         #self.graph = graph
-        
+
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
-        
+
         # Just to be sure, we don't want to count self-links, so we zero out the
         # diagonal.
         util.fill_diagonal(self.graph_adj_matrix, 0)
@@ -74,7 +76,7 @@ class GraphPartition(object):
 
         # Now, build the edge information used in modularity computations
         self.mod_e, self.mod_a = self._edge_info()
-    
+
 
     def copy(self):
         return copy.deepcopy(self)
@@ -84,7 +86,7 @@ class GraphPartition(object):
 
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
         """Create the vectors of edge information.
-        
+
         Returns
         -------
           mod_e: diagonal of the edge matrix E
@@ -95,7 +97,7 @@ class GraphPartition(object):
         if mod_e is None: mod_e = [0] * num_mod
         if mod_a is None: mod_a = [0] * num_mod
         if index is None: index = self.index
-        
+
         norm_factor = 1.0/(2.0*self.num_edges)
         mat = self.graph_adj_matrix
         set_nodes = self._node_set
@@ -116,7 +118,7 @@ class GraphPartition(object):
             #mod_a.append(perc_btwn+perc_within)
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
                 1/0
-            
+
         return mod_e, mod_a
 
     def modularity_newman(self):
@@ -135,7 +137,7 @@ class GraphPartition(object):
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
     modularity = modularity_newman
-    
+
     #modularity = modularity_guimera
 
 
@@ -170,18 +172,18 @@ class GraphPartition(object):
     ##         M += ((link_s/L) - (deg_s/(2*L))**2)
 
     ##     return M
-    
+
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.
 
         This updates in place the mod_e and mod_a arrays (both of which lose a
         row).  The new, merged module will be identified as m1.
-        
+
         Parameters
         ----------
           m1: name (i.e., index) of one module
           m2: name (i.e., index) of the other module
-          
+
         Returns
         -------
 
@@ -192,31 +194,31 @@ class GraphPartition(object):
 
         # Pull from m2 the nodes and merge them into m1
         merged_module = self.index[m1] | self.index[m2]
-        
+
         #make an empty matrix for computing "modularity" level values
         e1 = [0]
         a1 = [0]
         e0, a0 = self.mod_e, self.mod_a
-        
+
         # The values that change: _edge_info with arguments will update the e,
         # a vectors only for the modules in index
         e1, a1 = self._edge_info(e1, a1, {0:merged_module})
-        
+
         # Compute the change in modularity
         delta_q =  (e1[0]-a1[0]**2) - \
             ( (e0[m1]-a0[m1]**2) + (e0[m2]-a0[m2]**2) )
 
         #print 'NEW: ',e1,a1,e0[m1],a0[m1],e0[m2],a0[m2]
-  
+
         return merged_module, e1[0], a1[0], -delta_q, 'merge',m1,m2,m2
 
-    
+
     def apply_module_merge(self, m1, m2, merged_module, e_new, a_new):
         """Merges two modules in a given partition.
 
         This updates in place the mod_e and mod_a arrays (both of which lose a
         row).  The new, merged module will be identified as m1.
-        
+
         Parameters
         ----------
           m1: name (i.e., index) of one module
@@ -224,7 +226,7 @@ class GraphPartition(object):
           merged_module: set of all nodes from m1 and m2
           e_new: mod_e of merged_module
           a_new: mod_a of merged_module
-        
+
         Returns
         -------
           Does not return anything -- operates on self.mod_e and self.mod_a in
@@ -241,38 +243,38 @@ class GraphPartition(object):
 
         # We need to shift the keys to account for the fact that we popped out
         # m2
-        
+
         rename_keys(self.index,m2)
-        
+
         self.mod_e[m1] = e_new
         self.mod_a[m1] = a_new
         self.mod_e.pop(m2)
         self.mod_a.pop(m2)
-        
-        
+
+
     def compute_module_split(self, m, n1, n2):
         """Splits a module into two new ones.
 
         This updates in place the mod_e and mod_a arrays (both of which lose a
         row).  The new, merged module will be identified as m1.
-        
+
         Parameters
         ----------
         m : module identifier
-        
+
         n1, n2 : sets of nodes
           The two sets of nodes in which the nodes originally in module m will
           be split.  Note: It is the responsibility of the caller to ensure
           that the set n1+n2 is the full set of nodes originally in module m.
-          
+
         Returns
         -------
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
 
         # create a dict that contains the new modules 0 and 1 that have the
-        # sets n1 and n2 of nodes from module m. 
-        split_modules = {0: n1, 1: n2} 
+        # sets n1 and n2 of nodes from module m.
+        split_modules = {0: n1, 1: n2}
 
         #make an empty matrix for computing "modularity" level values
         e1 = [0,0]
@@ -285,16 +287,16 @@ class GraphPartition(object):
 
         # Compute the change in modularity
         delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]- a1[1]**2) ) - (e0[m]-a0[m]**2)
-        
+
         return split_modules, e1, a1, -delta_q,'split',m,n1,n2
 
-    
+
     def apply_module_split(self, m, n1, n2, split_modules, e_new, a_new):
         """Splits a module into two new ones.
 
         This updates in place the mod_e and mod_a arrays (both of which lose a
         row).  The new, merged module will be identified as m1.
-        
+
         Parameters
         ----------
         m : module identifier
@@ -302,7 +304,7 @@ class GraphPartition(object):
           The two sets of nodes in which the nodes originally in module m will
           be split.  Note: It is the responsibility of the caller to ensure
           that the set n1+n2 is the full set of nodes originally in module m.
-          
+
         Returns
         -------
           The change in modularity resulting from the change
@@ -311,16 +313,16 @@ class GraphPartition(object):
         # To reuse slicing code, use m1/m2 lables like in merge code
         m1 = m
         m2 = len(self)
-        
+
         #Add a new module to the end of the index dictionary
         self.index[m1] = split_modules[0] #replace m1 with n1
         self.index[m2] = split_modules[1] #add in new module, fill with n2
-        
+
         self.mod_e[m1] = e_new[0]
         self.mod_a[m1] = a_new[0]
         self.mod_e.insert(m2,e_new[1])
         self.mod_a.insert(m2,a_new[1])
-        
+
         #self.mod_e[m2] = e_new[1]
         #self.mod_a[m2] = a_new[1]
 
@@ -331,7 +333,7 @@ class GraphPartition(object):
         #take care of this case earlier to ensure that it can not happen?
         #Otherwise need to create a new function to update/recompute mod_e and
         #mod_a.
-        
+
         # This checks whether there is an empty module. If so, renames the keys.
         #if len(self.index[m1])<1:
         #    self.index.pop(m1)
@@ -346,7 +348,7 @@ class GraphPartition(object):
             raise ValueError('Empty module after module split, old mod')
         if len(self.index[m2])<1:
             raise ValueError('Empty module after module split, new mod')
-            
+
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules
 
@@ -373,7 +375,7 @@ class GraphPartition(object):
         if len(self.index[m1])<1:
             self.index.pop(m1)
             rename_keys(self.index,m1)
-            
+
         # Before we overwrite the mod vectors, compute the contribution to
         # modularity from before the change
         e0, a0 = self.mod_e, self.mod_a
@@ -400,12 +402,12 @@ class GraphPartition(object):
         -------
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
-        
+
         n1 = self.index[m1]
         n2 = self.index[m2]
 
         node_moved_mods = {0: n1 - set([n]),1: n2 | set([n])}
-        
+
         # Before we overwrite the mod vectors, compute the contribution to
         # modularity from before the change
         e1 = [0,0]
@@ -415,11 +417,11 @@ class GraphPartition(object):
         # The values that change: _edge_info with arguments will update the e,
         # a vectors only for the modules in index
         e1, a1 = self._edge_info(e1, a1, node_moved_mods)
-        
+
         #Compute the change in modularity
         delta_q =  ( (e1[0]-a1[0]**2) + (e1[1]-a1[1]**2)) - \
             ( (e0[m1]-a0[m1]**2) + (e0[m2]-a0[m2]**2) )
-        
+
         #print n,m1,m2,node_moved_mods,n1,n2
         return node_moved_mods, e1, a1, -delta_q, n, m1, m2
 
@@ -440,11 +442,11 @@ class GraphPartition(object):
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
 
-        
-        
+
+
         self.index[m1] = node_moved_mods[0]
         self.index[m2] = node_moved_mods[1]
-        
+
         # This checks whether there is an empty module. If so, renames the keys.
         if len(self.index[m1])<1:
             raise ValueError('Empty module after node move')
@@ -452,17 +454,17 @@ class GraphPartition(object):
             #rename_keys(self.index,m1)
             #if m1 < m2:
             #    m2 = m2 - 1 #only need to rename this index if m1 is before m2
-            
+
         self.mod_e[m1] = e_new[0]
         self.mod_a[m1] = a_new[0]
         self.mod_e[m2] = e_new[1]
         self.mod_a[m2] = a_new[1]
 
         return m2
-    
+
     def random_mod(self):
         """Makes a choice whether to merge or split modules in a partition
-        
+
         Returns:
         -------
         if splitting: m1, n1, n2
@@ -477,18 +479,18 @@ class GraphPartition(object):
 
         # number of modules in the partition
         num_mods=len(self)
-        
-        
+
+
         # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
         # greater than 0.5 means we will merge the modules.
-        
+
         if num_mods >= self.num_nodes-1: ### CG: why are we subtracting 1 here?
             coin_flip = 1 #always merge if each node is in a separate module
         elif num_mods <= 2: ### Why 2 and not 1?
             coin_flip = 0 #always split if there's only one module
         else:
             coin_flip = np.random.random()
-            
+
 
         #randomly select two modules to operate on
         rand_mods = np.random.permutation(range(num_mods))
@@ -499,7 +501,7 @@ class GraphPartition(object):
             #merge
             #return self.module_merge(m1,m2)
             return self.compute_module_merge(m1,m2)
-        else: 
+        else:
             #split
             # cannot have a module with less than 1 node
             while len(self.index[m1]) <= 1:
@@ -514,7 +516,7 @@ class GraphPartition(object):
 
             #We may want to return output of merging/splitting directly, but
             #for now we're returning inputs for those modules.
-            
+
             return self.compute_module_split(m1,n1,n2)
 
     def determine_node_split(self,m1):
@@ -537,7 +539,7 @@ class GraphPartition(object):
 
     def random_mod_old(self):
         """Makes a choice whether to merge or split modules in a partition
-        
+
         Returns:
         -------
         if splitting: m1, n1, n2
@@ -552,18 +554,18 @@ class GraphPartition(object):
 
         # number of modules in the partition
         num_mods=len(self)
-        
-        
+
+
         # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
         # greater than 0.5 means we will merge the modules.
-        
+
         if num_mods >= self.num_nodes-1:
             coin_flip = 1 #always merge if each node is in a separate module
         elif num_mods <= 2:
             coin_flip = 0 #always split if there's only one module
         else:
             coin_flip = random.random()
-            
+
         #randomly select two modules to operate on
         rand_mods = np.random.permutation(range(num_mods))
         m1 = rand_mods[0]
@@ -573,7 +575,7 @@ class GraphPartition(object):
             #merge
             #return self.module_merge(m1,m2)
             return self.module_merge(m1,m2)
-        else: 
+        else:
             #split
             # cannot have a module with less than 1 node
             while len(self.index[m1]) <= 1:
@@ -593,9 +595,9 @@ class GraphPartition(object):
 
             #We may want to return output of merging/splitting directly, but
             #for now we're returning inputs for those modules.
-            
+
             return self.module_split(m1,n1,n2)
-       
+
     def random_node(self):
         """ Randomly reassign one node from one module to another
 
@@ -614,24 +616,24 @@ class GraphPartition(object):
         # initialize a variable so we can search the modules to find one with
         # at least 1 node
         node_len = 0
-        
+
         # select 2 random modules (the first must have at least 2 nodes in it)
         while node_len <= 1:
-            
+
             # randomized list of modules
             rand_mods=np.random.permutation(range(num_mods))
-            
+
             node_len = len(self.index[rand_mods[0]])
-        
+
         m1 = rand_mods[0]
         m2 = rand_mods[1]
 
-            
+
         # select a random node within one module
         node_list = list(self.index[m1])
         rand_perm = np.random.permutation(node_list)
         n = rand_perm[0]
-        
+
         return self.compute_node_update(n,m1,m2)
 
     def store_best(self):
@@ -639,12 +641,12 @@ class GraphPartition(object):
 
         #attempting to initialize this every time this function is called...make sure this works
         self.bestindex = dict()
-        
+
         #Store references to the original graph and label dict
         self.bestindex = copy.deepcopy(self.index)
-        
-        
-        
+
+
+
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
@@ -708,7 +710,7 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
     # by -1, and then we can do the thresholding over negative and positive
     # values. As long as we correct for this, it's a much simpler approach.
     mat[mask==1] *= -1
-    
+
     adj = np.zeros((nnod, nnod))
     # Careful to flip the sign of the thresholding for p_in, since we used the
     # -1 trick above
@@ -717,7 +719,7 @@ def random_modular_graph(nnod, nmod, av_degree, between_fraction=0.0):
 
     # no self-links
     util.fill_diagonal(adj, 0)
-    
+
     # Our return object is a graph, not the adjacency matrix
     return nx.from_numpy_matrix(adj)
 
@@ -733,12 +735,12 @@ def rename_keys(dct, key):
 
     key : int
       Key after which all other keys are downshifted by one.
-    
+
     Returns
     -------
     None.  The input dict is modified in place.
     """
- 
+
     for m in range(key, len(dct)):
         try:
             dct[m] = dct.pop(m+1)
@@ -775,7 +777,7 @@ def rand_partition(g, num_mods=None):
 
     # We'll use this twice below, don't re-generate it.
     mod_range = range(num_mods)
-    
+
     # set up a dictionary containing each module and the nodes under it.
     # Note: the following loop *does* cover the entire range, even if it
     # doesn't appear obvious immediately.  The easiest way to see this is to
@@ -796,12 +798,12 @@ def rand_partition(g, num_mods=None):
 ##     # initialize the first element of the node list
 ##     init_node=0
 ##     for m in range_mods:
-        
+
 ##         #length of the current module
 ##         len_mod=rand_slices[s]-init_node
 ##         out[mod_ind] = rand_nodes[init_node:len_mod+init_node]
 ##         init_node=rand_slices[m]
-        
+
     # The output is the final partition
     return dict(zip(mod_range,out))
 
@@ -810,14 +812,14 @@ def perfect_partition(nmod,nnod_mod):
     """This function takes in the number of modules and number of nodes per module
     and returns the perfect partition depending on the number of modules
     where the module number is fixed according to random_modular_graph()"""
-    
+
     #empty dictionary to fill with the correct partition
     part=dict()
     #set up a dictionary containing each module and the nodes under it
     for m in range(nmod):
         part[m]=set(np.arange(nnod_mod)+m*nnod_mod) #dict([(nmod,nnod)])# for x in range(num_mods)])
         #print 'Part ' + str(m) + ': '+ str(part[m])
-    
+
     return part
 
 
@@ -839,14 +841,14 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     plt.figure()
     plt.subplot(111)
     plt.axis('off')
-    
+
     if pos == None:
         pos=nx.circular_layout(g)
-        
+
     #col=colors.cnames.keys()
     col = ['r','g','b','m','c','y']
     col2 = ['#000066','#000099','#660000','#CC6633','#FF0099','#FF00FF','#33FFFF','#663366','#FFCC33','#CCFF66','#FFCC99','#33CCCC','#FF6600','#FFCCFF','#CCFFFF','#CC6699','#CC9900','#FF6600','#99FF66','#CC0033','#99FFFF','#CC00CC','#CC99CC','#660066','#33CC66','#336699','#3399FF','#339900','#003300','#00CC00','#330033','#333399','#0033CC','#333333','#339966','#333300']
-    
+
     niter = 0
     edge_list_between = []
     for m,val in part.iteritems():
@@ -856,38 +858,38 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
-                        
-                nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)        
+
+                nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col[niter],node_size=50)
             else:
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(10,1,0))
-                
+
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
                     else:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col[niter],node_size=part_coeff[v] * 500+50,node_shape='o',linewidths=0.5)
-                    
+
         else:
             #print 'out of colors!!'
             if within_mod == 'none': #note: assumes part_coeff also there
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=100*les_dam[v],c='orange',marker=(10,1,0))
-                        
+
                 nx.draw_networkx_nodes(g,pos,nodelist=list(val),node_color=col2[niter],node_size=50)
             else:
                 for v in val:
                     if les_dam != 'none':
                         plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v],c='orange',marker=(10,1,0))
-                
+
                     if within_mod[v] > 1:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col2[niter],node_size=part_coeff[v] * 500+50,node_shape='s',linewidths=2)
                     else:
                         nx.draw_networkx_nodes(g,pos,nodelist=[v],node_color=col2[niter],node_size=part_coeff[v] * 500+50,node_shape='o',linewidths=0.5)
-                    
 
-            
+
+
         val_array = np.array(val)
         edge_list_within = []
         for edg in g.edges():
@@ -904,7 +906,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
                 edge_list_between.append(edg)
             elif len(n2_ind)>0 and len(n1_ind) == 0:
                 edge_list_between.append(edg)
-        
+
 
         if niter <len(col):
             nx.draw_networkx_edges(g,pos,edgelist=edge_list_within,edge_color=col[niter])
@@ -916,7 +918,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
     #nx.draw_networkx_edges(g,pos,edgelist=nx.edges(g))
     nx.draw_networkx_edges(g,pos,edgelist=edge_list_between,edge_color='k')
     if write_labels:
-        nx.draw_networkx_labels(g,pos,nod_labels,font_size=6)    
+        nx.draw_networkx_labels(g,pos,nod_labels,font_size=6)
 
     #add loop for damage labels
     if les_dam != 'none':
@@ -924,7 +926,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
             for v in val:
                 if les_dam[v] > 0:
                     plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v]+100,c='orange',marker=(10,1,0))
-                    
+
     plt.title(title)
     #plt.savefig(fname)
     #plt.close()
@@ -935,7 +937,7 @@ def confusion_matrix(d1, d2):
     """Return the confusion matrix for two graph partitions.
 
     See Danon et al, 2005, for definition details.
-   
+
     Parameters
     ----------
     d1 : dict
@@ -959,7 +961,7 @@ def confusion_matrix(d1, d2):
 
     sd1 = [set(d1[i]) for i in range(rows)]
     sd2 = [set(d2[j]) for j in range(cols)]
-    
+
     N = np.empty((rows,cols))
     for i, sd1i in enumerate(sd1):
         for j, sd2j in enumerate(sd2):
@@ -974,7 +976,7 @@ def mutual_information(d1, d2):
     Read in two dictionaries of sets (i.e. a graph partition) and assess how
     similar they are using mutual information as in Danon, Diaz-Guilera, Duch &
     Arenas, J Statistical Mechanics 2005.
-    
+
     Parameters
     ----------
     d1 : dict
@@ -989,7 +991,7 @@ def mutual_information(d1, d2):
     """
     log = np.log
     nansum = np.nansum
-    
+
     N = confusion_matrix(d1, d2)
 
     nsum_row = N.sum(0)[np.newaxis, :]
@@ -1016,7 +1018,7 @@ def decide_if_keeping(dE,temperature):
     """Function which uses the rule from Guimera & Amaral (2005) Nature paper to decide whether or not to keep new partition
 
     Parameters:
-    dE = delta energy 
+    dE = delta energy
     temperature = current state of the system
 =
     Returns:
@@ -1027,8 +1029,8 @@ def decide_if_keeping(dE,temperature):
     else:
         return np.random.random() < math.exp(-dE/temperature)
 
-    
-def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
+
+def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         bad_accept_mod_ratio_max = 0.8 ,
                         bad_accept_nod_ratio_max = 0.8, accept_mod_ratio_min =
                         0.05, accept_nod_ratio_min = 0.05,
@@ -1052,31 +1054,34 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     nnod = g.number_of_nodes()
     part = dict()
     #check if there is only one module or nnod modules
-    while (len(part) <= 1) or (len(part) == nnod): 
+    while (len(part) <= 1) or (len(part) == nnod):
         part = rand_partition(g)
-    
+
     # make a graph partition object
-    graph_partition = GraphPartition(g,part)
-    
+    if p0 is None:
+        graph_partition = GraphPartition(g,part)
+    else:
+        graph_partition = p0
+
     # The number of times we switch nodes in a partition and the number of
     # times we modify the partition, at each temperature.  These values were
     # suggested by Guimera and Amaral, Nature 443, p895.  This is achieved
     # simply by running two nested loops of length nnod
-    
+
     nnod = graph_partition.num_nodes
     rnod = range(nnod)
 
     #initialize some counters
     count = 0
-    
+
     #Initialize empty lists for keeping track of values
     energy_array = []#negative modularity
     temp_array = []
     energy_best = 0
-    
+
     energy = -graph_partition.modularity()
     energy_array.append(energy)
-    
+
     while temperature > tmin:
         # Initialize counters
         bad_accept_mod = 0
@@ -1084,25 +1089,25 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
         reject_mod = 0
         count_mod = 0
         count_bad_mod = 0.0001  # small offset to avoid occasional 1/0 errors
-        
+
         for i_mod in rnod:
             # counters for module change attempts
             count_mod+=1
             count+=1
-            
+
             # Assess energy change of a new partition without changing the partition
             calc_dict,e_new,a_new,delta_energy,movetype,p1,p2,p3 = graph_partition.random_mod()
-            
+
             # Increase the 'count_bad_mod' if the new partition increases the energy
             if delta_energy > 0:
                 count_bad_mod += 1
-            
+
             # Decide whether the new partition is better than the old
             keep = decide_if_keeping(delta_energy,temperature)
-            
+
             # Append the current temperature to the temp list
             temp_array.append(temperature)
-            
+
             if keep:
 
                 # this applies changes in place if energy decreased; the
@@ -1112,11 +1117,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                     graph_partition.apply_module_merge(p1,p2,calc_dict,e_new,a_new)
                 else:
                     graph_partition.apply_module_split(p1,p2,p3,calc_dict,e_new,a_new)
-                
+
                 # add the change in energy to the total energy
                 energy += delta_energy
                 accept_mod += 1 #counts times accept mod because lower energy
-                
+
                 # Increase the 'bad_accept_mod' if the new partition increases
                 # the energy and was accepted
                 if delta_energy > 0 :
@@ -1130,7 +1135,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                         if len(graph_partition.index[mod]) < 1:
                             raise ValueError('Empty module after module %s,SA' % (movetype))
 
-                    
+
                 #maybe store the best one here too?
                 #graph_partition.store_best()
 
@@ -1142,10 +1147,10 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             if energy < energy_best:
                 energy_best = energy
                 graph_partition.store_best()
-                
-                
-            energy_array.append(energy)   
-            
+
+
+            energy_array.append(energy)
+
             #break out if we are accepting too many "bad" options (early on)
             #break out if we are accepting too few options (later on)
             if count_mod > 10:
@@ -1164,7 +1169,7 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
             accept_nod = 0
             count_nod = 0
             count_bad_nod =  0.0001 # init at 1 to avoid 1/0 errors later
-            
+
             for i_nod in rnod:
                 count_nod+=1
                 count+=1
@@ -1177,11 +1182,11 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                 if delta_energy > 0:
                     count_bad_nod += 1
                 temp_array.append(temperature)
-                
+
                 keep = decide_if_keeping(delta_energy,temperature)
 
                 if keep:
-                    
+
                     nnn = graph_partition.apply_node_update(p1,p2,p3,calc_dict,e_new,a_new)
                     energy += delta_energy
                     accept_nod += 1
@@ -1194,22 +1199,22 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                                                          graph_partition.index)
                         npt.assert_almost_equal(debug_partition.modularity(),
                                                 graph_partition.modularity(), 11)
-                        
-                            
+
+
                         for mod in graph_partition.index:
                             if len(graph_partition.index[mod]) < 1:
                                 raise ValueError('Empty module after ndoe move,SA')
-                                
-                    
+
+
                 #else:
                     #graph_partition = GraphPartition(g,graph_partition.index)
 
                 if energy < energy_best:
                     energy_best = energy
                     graph_partition.store_best()
-                    
+
                 energy_array.append(energy)
-                
+
                 #break out if we are accepting too many "bad" options (early on)
                 #break out if we are accepting too few options (later on)
                 if count_nod > 10:
@@ -1225,13 +1230,13 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
                     if (accept_nod_ratio < accept_nod_ratio_min):
                         #print 'too many reject'
                         break
-                    
+
                     if 0: #for debugging. 0 suppresses this for now.
                         print 'T: %.2e' % temperature, \
                             'accept nod ratio: %.2e ' %accept_nod_ratio, \
                             'bad accept nod ratio: %.2e' % bad_accept_nod_ratio, \
                             'energy: %.2e' % energy
-         
+
         #print 'T: %.2e' % temperature, \
         #    'accept mod ratio: %.2e ' %accept_mod_ratio, \
         #    'bad accept mod ratio: %.2e' % bad_accept_mod_ratio, \
@@ -1265,16 +1270,187 @@ def simulated_annealing(g,temperature = 50, temp_scaling = 0.995, tmin=1e-5,
     else:
         #return graph_partition
         #print graph_part_final.modularity()
-        
+
         #check that the energy matches the computed modularity value of the partition
         finalmodval = graph_part_final.modularity()
         print finalmodval
         print -energy_best
         print graph_part_final.index
-        
+
         print np.abs(finalmodval - (-energy_best))
-        
+
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
             raise ValueError('mismatch in energy and modularity')
-        
+
         return graph_part_final,graph_part_final.modularity()
+
+
+def modularity_matrix(g):
+    """Modularity matrix of the graph.
+
+    The eigenvector corresponding to the largest eigenvalue of the modularity
+    matrix is analyzed to assign clusters.
+
+    """
+    A = np.asarray(nx.adjacency_matrix(g))
+    k = np.sum(A, axis=0)
+    M = np.sum(k) # 2x number of edges
+
+    return A - ((k * k[:, None]) / float(M))
+
+
+def newman_partition(g, max_div=np.inf):
+    """Greedy estimation of optimal partition of a graph, using
+    Newman (2006) spectral method.
+
+    Parameters
+    ----------
+    g : NetworkX Graph
+        Input graph.
+    max_div : int
+        Maximum number of times to sub-divide partitions.
+
+    Returns
+    -------
+    p : GraphPartition
+        Estimated optimal partitioning.
+
+    """
+    A = np.asarray(nx.adjacency_matrix(g))
+    k = np.sum(A, axis=0)
+    M = np.sum(A) # 2x number of edges
+    B = modularity_matrix(g)
+
+    p = range(len(g))
+
+    def _divide_partition(p, max_div=np.inf):
+        """
+        Parameters
+        ----------
+        p : array of ints
+            Node labels.
+        B : ndarray
+            Modularity matrix.
+
+        Returns
+        -------
+        pp, qq : list of ints
+            Partitioning of node labels.  If the partition is indivisible, then
+            only `pp` is returned.
+
+        """
+        if max_div <= 0:
+            return [p]
+
+        # Construct the subgraph modularity matrix
+        p = np.asarray(p)
+        A_ = A[p, p[:, None]]
+        k_ = np.sum(A_, axis=0)
+        M_ = np.sum(k_)
+
+        B_ = B[p, p[:, None]]
+        B_ = B_ - np.diag(k_ - k[p] * M_ / float(M))
+
+#        w, v = nl.eigh(B_)
+        w, v = sl.eigh(B_, eigvals=(len(B_) - 2, len(B_) - 1))
+
+        # Find the maximum eigenvalue of the modularity matrix
+        # If it is smaller than zero, then we won't be able to
+        # increase the modularity any further by partitioning.
+        n = np.argsort(w)[-1]
+        if w[n] <= 0:
+            return [p]
+
+        # Construct the partition vector s, that has value -1 corresponding
+        # to nodes in the first partition and 1 for nodes in the second
+        v_max = v[:, n]
+        mask = (v_max < 0)
+        s = np.ones_like(v_max)
+        s[mask] = -1
+
+        # Compute the increase in modularity due to this partitioning.
+        # If it is less than zero, we should rather not have partitioned.
+        q = s[None, :].dot(B_).dot(s)
+        if q <= 0:
+            return [p]
+
+        # Make the partitioning, and subdivide each
+        # partition in turn.
+
+        out = []
+        for pp in (p[mask], p[~mask]):
+            out.extend(_divide_partition(pp, max_div - 1))
+
+        return out
+
+    p = _divide_partition(p, max_div)
+
+    index = {}
+    for k, nodes in enumerate(p):
+        index[k] = set(nodes)
+
+    return GraphPartition(g, index)
+
+
+def adjust_partition(g, partition, max_iter=None):
+    """Adjust partition, using the heuristic method described in Newman (2006),
+    to have higher modularity.
+
+    Parameters
+    ----------
+    g : NetworkX graph
+        Input graph.
+    partition : GraphPartition
+        Existing partitioning.
+    max_iter : int, optional
+        Maximum number of improvement iterations.  By default,
+        continue until 10 iterations without any improvement.
+
+    Returns
+    -------
+    improved_partition : GraphPartition
+        Partition with higher modularity.
+
+    """
+    nodes = g.nodes()
+    P = set(range(len(partition)))
+
+    node_map = {}
+    for p in P:
+        for node in partition.index[p]:
+            node_map[node] = p
+
+    L = len(nodes)
+    no_improvement = 0
+    iterations = 0
+    max_iter = max_iter or np.inf
+    best_modularity = partition.modularity()
+
+    while nodes and no_improvement < 10 and iterations <= max_iter:
+        moves = []
+        move_modularity = []
+        iterations += 1
+
+        for n in nodes:
+            for p in P.difference([node_map[n]]):
+                moves.append((n, node_map[n], p))
+                M = -partition.compute_node_update(n, node_map[n], p)[3]
+                move_modularity.append(M)
+
+        (n, p0, p1) = moves[np.argmax(move_modularity)]
+        split_modules, e_new, a_new = partition.compute_node_update(n, p0, p1)[:3]
+        partition.apply_node_update(n, p0, p1, split_modules, e_new, a_new)
+        node_map[n] = p1
+        nodes.remove(n)
+
+        print '[%d/%d] -> %.4f' % (len(nodes), L, partition.modularity())
+
+        M = partition.modularity()
+        if M > best_modularity:
+            gp_best = copy.deepcopy(partition)
+            best_modularity = M
+            no_improvement = 0
+        else:
+            no_improvement += 1
+
+    return gp_best
