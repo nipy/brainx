@@ -483,11 +483,9 @@ def draw_networkx_edges(G, pos,
     try:
         import matplotlib
         import matplotlib.pylab as pylab
-        import matplotlib.numerix as nmex
-        import matplotlib.cbook as cb
+        import numpy as nmex
         from matplotlib.colors import colorConverter,Colormap
         from matplotlib.collections import LineCollection
-        import matplotlib.numerix.mlab as mlab
     except ImportError:
         raise ImportError, "Matplotlib required for draw()"
     except RuntimeError:
@@ -603,10 +601,10 @@ def draw_networkx_edges(G, pos,
                                 )
         
     # update view        
-    minx = mlab.amin(mlab.ravel(edge_pos[:,:,0]))
-    maxx = mlab.amax(mlab.ravel(edge_pos[:,:,0]))
-    miny = mlab.amin(mlab.ravel(edge_pos[:,:,1]))
-    maxy = mlab.amax(mlab.ravel(edge_pos[:,:,1]))
+    minx = nmex.amin(nmex.ravel(edge_pos[:,:,0]))
+    maxx = nmex.amax(nmex.ravel(edge_pos[:,:,0]))
+    miny = nmex.amin(nmex.ravel(edge_pos[:,:,1]))
+    maxy = nmex.amax(nmex.ravel(edge_pos[:,:,1]))
 
     w = maxx-minx
     h = maxy-miny
