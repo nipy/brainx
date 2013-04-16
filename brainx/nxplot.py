@@ -13,6 +13,7 @@ from matplotlib.colors import colorConverter
 from matplotlib.collections import LineCollection
 from matplotlib.patches import FancyArrow
 from matplotlib import pyplot as plt, mpl
+import matplotlib.cbook as cb
 
 import networkx as nx
 
