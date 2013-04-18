@@ -71,6 +71,9 @@ class GraphPartition(object):
         self.num_nodes = graph.number_of_nodes()
         self.num_edges = graph.number_of_edges()
 
+        if self.num_edges == 0:
+            raise ValueError("TODO: Cannot create a graph partition of only one node.")
+
         # Store the nodes as a set, needed for many operations
         self._node_set = set(graph.nodes())
 
@@ -1339,11 +1342,12 @@ def newman_partition(g, max_div=np.inf):
             only `pp` is returned.
 
         """
-        if max_div <= 0:
+        p = np.asarray(p)
+
+        if max_div <= 0 or p.size == 1:
             return [p]
 
         # Construct the subgraph modularity matrix
-        p = np.asarray(p)
         A_ = A[p, p[:, None]]
         k_ = np.sum(A_, axis=0)
         M_ = np.sum(k_)
