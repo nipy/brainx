@@ -30,6 +30,15 @@ from matplotlib import pyplot as plt
 import util
 
 #-----------------------------------------------------------------------------
+# Functions
+#-----------------------------------------------------------------------------
+def empty_module(msg='Empty module'):
+    """Raise an exception if an empty module is found"""
+
+    raise ValueError(msg)
+
+
+#-----------------------------------------------------------------------------
 # Class declarations
 #-----------------------------------------------------------------------------
 
@@ -348,9 +357,9 @@ class GraphPartition(object):
 
         # For now, rather than renumbering, just check if this ever happens
         if len(self.index[m1])<1:
-            raise ValueError('Empty module after module split, old mod')
+            empty_module('Empty module after module split, old mod')
         if len(self.index[m2])<1:
-            raise ValueError('Empty module after module split, new mod')
+            empty_module('Empty module after module split, new mod')
 
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules
@@ -452,7 +461,7 @@ class GraphPartition(object):
 
         # This checks whether there is an empty module. If so, renames the keys.
         if len(self.index[m1])<1:
-            raise ValueError('Empty module after node move')
+            empty_module('Empty module after node move')
             #self.index.pop(m1)
             #rename_keys(self.index,m1)
             #if m1 < m2:
@@ -1005,9 +1014,9 @@ def mutual_information(d1, d2):
     # the entire partitions, we look for this problem at this stage, and bail
     # if there was an empty module.
 ##     if (nsum_row==0).any():
-##         raise ValueError("Empty module in second partition.")
+##         empty_module("Empty module in second partition.")
 ##     if (nsum_col==0).any():
-##         raise ValueError("Empty module in first partition.")
+##         empty_module("Empty module in first partition.")
 
     # nn is the total number of nodes
     nn = nsum_row.sum()
@@ -1136,7 +1145,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
                                             graph_partition.modularity(), 11)
                     for mod in graph_partition.index:
                         if len(graph_partition.index[mod]) < 1:
-                            raise ValueError('Empty module after module %s,SA' % (movetype))
+                            empty_module('Empty module after module %s,SA' % (movetype))
 
 
                 #maybe store the best one here too?
@@ -1206,7 +1215,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
                         for mod in graph_partition.index:
                             if len(graph_partition.index[mod]) < 1:
-                                raise ValueError('Empty module after ndoe move,SA')
+                                empty_module('Empty module after ndoe move,SA')
 
 
                 #else:
@@ -1264,7 +1273,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
         for mod in graph_part_final.index:
             if len(graph_part_final.index[mod]) < 1:
-                raise ValueError('LAST CHECK: Empty module after module %s,SA' % (movetype))
+                empty_module('LAST CHECK: Empty module after module %s,SA' % (movetype))
 
     if extra_info:
         extra_dict = dict(energy = energy_array, temp = temp_array)

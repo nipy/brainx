@@ -4,17 +4,13 @@
 # Imports
 #-----------------------------------------------------------------------------
 
-# Stdlib
-import sys
 
 # Third party
-import networkx as nx
 import nose.tools as nt
 import numpy as np
 import numpy.testing as npt
 
 # Our own
-from decotest  import (as_unittest, ParametricTestCase, parametric)
 from brainx import util
 
 #-----------------------------------------------------------------------------
@@ -35,7 +31,7 @@ def test_regular_lattice():
             a = util.regular_lattice(n,k)
             msg = 'n,k = %s' % ( (n,k), )
             nedge = n * (k/2)  # even part of k
-            yield nt.assert_equal,a.number_of_edges(),nedge,msg
+            nt.assert_equal,a.number_of_edges(),nedge,msg
 
 def test_diag_stack():
     """Manual verification of simple stacking."""
@@ -58,13 +54,13 @@ def test_diag_stack():
 
     npt.assert_equal(d, d_true)
 
-@parametric
+
 def test_no_empty_modules():
     """Test the utility that validates partitions against empty modules.
     """
     a = {0: [1,2], 1:[3,4]}
     b = a.copy()
     b[2] = []
-    yield util.assert_no_empty_modules(a)
-    yield nt.assert_raises(ValueError, util.assert_no_empty_modules, b)
+    util.assert_no_empty_modules(a)
+    nt.assert_raises(ValueError, util.assert_no_empty_modules, b)
     

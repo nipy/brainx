@@ -126,7 +126,8 @@ def binop_factory(func):
 # For methods in the array interface that take an axis argument, the pattern is
 # always the same: extrude, operate, intrude.  So we just auto-generate these
 # functions here.
-binops = [('add',np.add), ('subtract',np.subtract), ('multiply',np.multiply), ('divide',np.divide) ]
+binops = [('add', np.add), ('subtract', np.subtract),
+          ('multiply', np.multiply), ('divide', np.divide) ]
 #binops = [('add',np.add), np.subtract, np.multiply, np.divide ]
 for name, func in binops:
     exec "%s = binop_factory(func)" % name
@@ -171,18 +172,19 @@ def test_reductions():
         ymeth = getattr(y, fname)
         for axis in [None,0,1,-1,-2]:
             zred = reduction(z,axis)
-            yield(nt.assert_equal, zred.x, xmeth(axis))
-            yield(nt.assert_equal, zred.y, ymeth(axis))
+            nt.assert_equal(zred.x, xmeth(axis))
+            nt.assert_equal(zred.y, ymeth(axis))
 
 
 def test_binops():
     x, y, z, w = mk_xyzw()
+    binop_names = [n for (n, op) in binops]
     for fname in binop_names:
         op = eval(fname)
         npop = getattr(np, fname)
         opres = op(z,w)
-        yield(nt.assert_equal, opres.x, npop(z.x, w.x) )
-        yield(nt.assert_equal, opres.y, npop(z.y, w.y) )
+        nt.assert_equal(opres.x, npop(z.x, w.x))
+        nt.assert_equal(opres.y, npop(z.y, w.y))
 
 # Test support utilities
 
