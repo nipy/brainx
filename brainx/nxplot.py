@@ -484,7 +484,7 @@ def draw_networkx_edges(G, pos,
     try:
         import matplotlib
         import matplotlib.pylab as pylab
-        import numpy as nmex
+        import numpy as np
         from matplotlib.colors import colorConverter,Colormap
         from matplotlib.collections import LineCollection
     except ImportError:
@@ -502,7 +502,7 @@ def draw_networkx_edges(G, pos,
         return None
 
     # set edge positions
-    edge_pos=nmex.asarray([(pos[e[0]],pos[e[1]]) for e in edgelist])
+    edge_pos=np.asarray([(pos[e[0]],pos[e[1]]) for e in edgelist])
     
     if not cb.iterable(width):
         lw = (width,)
@@ -512,16 +512,16 @@ def draw_networkx_edges(G, pos,
     if not cb.is_string_like(edge_color) \
            and cb.iterable(edge_color) \
            and len(edge_color)==len(edge_pos):
-        if nmex.alltrue([cb.is_string_like(c) 
+        if np.alltrue([cb.is_string_like(c) 
                          for c in edge_color]):
             # (should check ALL elements)
             # list of color letters such as ['k','r','k',...]
             edge_colors = tuple([colorConverter.to_rgba(c,alpha) 
                                  for c in edge_color])
-        elif nmex.alltrue([not cb.is_string_like(c) 
+        elif np.alltrue([not cb.is_string_like(c) 
                            for c in edge_color]):
             # If color specs are given as (rgb) or (rgba) tuples, we're OK
-            if nmex.alltrue([cb.iterable(c) and len(c) in (3,4)
+            if np.alltrue([cb.iterable(c) and len(c) in (3,4)
                              for c in edge_color]):
                 edge_colors = tuple(edge_color)
                 alpha=None
@@ -555,7 +555,7 @@ def draw_networkx_edges(G, pos,
     # just not work with an older mpl
     if edge_colors is None:
         if edge_cmap is not None: assert(isinstance(edge_cmap, Colormap))
-        edge_collection.set_array(nmex.asarray(edge_color))
+        edge_collection.set_array(np.asarray(edge_color))
         edge_collection.set_cmap(edge_cmap)
         if edge_vmin is not None or edge_vmax is not None:
             edge_collection.set_clim(edge_vmin, edge_vmax)
@@ -578,7 +578,7 @@ def draw_networkx_edges(G, pos,
             x2,y2=dst
             dx=x2-x1 # x offset
             dy=y2-y1 # y offset
-            d=nmex.sqrt(float(dx**2+dy**2)) # length of edge
+            d=np.sqrt(float(dx**2+dy**2)) # length of edge
             if d==0: # source and target at same position
                 continue
             if dx==0: # vertical edge
@@ -588,9 +588,9 @@ def draw_networkx_edges(G, pos,
                 ya=y2
                 xa=dx*p+x1
             else:
-                theta=nmex.arctan2(dy,dx)
-                xa=p*d*nmex.cos(theta)+x1
-                ya=p*d*nmex.sin(theta)+y1
+                theta=np.arctan2(dy,dx)
+                xa=p*d*np.cos(theta)+x1
+                ya=p*d*np.sin(theta)+y1
                 
             a_pos.append(((xa,ya),(x2,y2)))
 
@@ -602,10 +602,10 @@ def draw_networkx_edges(G, pos,
                                 )
         
     # update view        
-    minx = nmex.amin(nmex.ravel(edge_pos[:,:,0]))
-    maxx = nmex.amax(nmex.ravel(edge_pos[:,:,0]))
-    miny = nmex.amin(nmex.ravel(edge_pos[:,:,1]))
-    maxy = nmex.amax(nmex.ravel(edge_pos[:,:,1]))
+    minx = np.amin(np.ravel(edge_pos[:,:,0]))
+    maxx = np.amax(np.ravel(edge_pos[:,:,0]))
+    miny = np.amin(np.ravel(edge_pos[:,:,1]))
+    maxy = np.amax(np.ravel(edge_pos[:,:,1]))
 
     w = maxx-minx
     h = maxy-miny
