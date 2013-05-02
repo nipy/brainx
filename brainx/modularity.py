@@ -43,7 +43,13 @@ def empty_module(msg='Empty module'):
 #-----------------------------------------------------------------------------
 
 class GraphPartition(object):
-    """Represent a graph partition."""
+    """Represent a graph partition.
+
+    The main object keeping track of the data is the .index attribute, a dict
+    that maps integer module labels to node sets.  This dict's labels are
+    always assumed to start at 0 and not to point ever to empty modules.  If
+    empty modules are created during any module manipulations, they will be
+    removed from the index and the remaining modules will be relabeled."""
 
     def __init__(self, graph, index):
         """New partition, given a graph and a dict of module->nodes.
@@ -346,20 +352,16 @@ class GraphPartition(object):
         #Otherwise need to create a new function to update/recompute mod_e and
         #mod_a.
 
-        # This checks whether there is an empty module. If so, renames the keys.
-        #if len(self.index[m1])<1:
-        #    self.index.pop(m1)
-        #    rename_keys(self.index,m1)
-        # This checks whether there is an empty module. If so, renames the keys.
-        #if len(self.index[m2])<1:
-        #    self.index.pop(m2)
-        #    rename_keys(self.index,m2)
-
-        # For now, rather than renumbering, just check if this ever happens
+        # If there are empty modules after the operation, remove them from the
+        # index and rename the partition labels
         if len(self.index[m1])<1:
-            empty_module('Empty module after module split, old mod')
+            self.index.pop(m1)
+            rename_keys(self.index, m1)
+            return
         if len(self.index[m2])<1:
-            empty_module('Empty module after module split, new mod')
+            self.index.pop(m2)
+            rename_keys(self.index, m2)
+            return
 
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules
@@ -448,6 +450,12 @@ class GraphPartition(object):
           The module that n used to belong to.
         m2 : module identifier
           The module that n will now belong to.
+        node_moved_mods : tuple
+          The two sets of modules for modules m1 and m2.
+        e_new : 2-tuple of arrays
+          The E arrays for m1 and m2
+        a_new : 2-tuple of arrays
+          The A arrays for m1 and m2
 
         Returns
         -------
@@ -459,18 +467,27 @@ class GraphPartition(object):
         self.index[m1] = node_moved_mods[0]
         self.index[m2] = node_moved_mods[1]
 
+        # If we end up with an empty module, we need to remove it from the
+        # partition, and store the information only for the new one.
+
         # This checks whether there is an empty module. If so, renames the keys.
-        if len(self.index[m1])<1:
-            empty_module('Empty module after node move')
-            #self.index.pop(m1)
-            #rename_keys(self.index,m1)
+        if len(self.index[m1]) < 1:
+            #empty_module('Empty module after node move')
+            self.index.pop(m1)
+            rename_keys(self.index, m1)
+            # Once the index structure changes, the labeling of E and A arrays
+            # will need to be recomputed (we could propagate the changes
+            # throughout, but it's extremely brittle and easy to make a very
+            # hard to debug error. Safer to just recompute the arrays in this
+            # case).
+            self.mod_e, self.mod_a = self._edge_info()
             #if m1 < m2:
             #    m2 = m2 - 1 #only need to rename this index if m1 is before m2
-
-        self.mod_e[m1] = e_new[0]
-        self.mod_a[m1] = a_new[0]
-        self.mod_e[m2] = e_new[1]
-        self.mod_a[m2] = a_new[1]
+        else:
+            self.mod_e[m1] = e_new[0]
+            self.mod_a[m1] = a_new[0]
+            self.mod_e[m2] = e_new[1]
+            self.mod_a[m2] = a_new[1]
 
         return m2
 
@@ -1425,9 +1442,13 @@ def adjust_partition(g, partition, max_iter=None):
         Partition with higher modularity.
 
     """
+    # Static copy of the entire list of nodes in the graph
     nodes = g.nodes()
+    # Set of module labels in the initial partition
     P = set(range(len(partition)))
 
+    # Create a dict that maps nodes to the partition label they belong to.
+    # This is effectively a reverse of the partition.index.
     node_map = {}
     for p in P:
         for node in partition.index[p]:

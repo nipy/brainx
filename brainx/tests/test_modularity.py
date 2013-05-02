@@ -655,8 +655,6 @@ def test_apply_module_split():
 
 
 def test_apply_node_move():
-#if 1:
-
     """Test the GraphPartition operation that moves a single node so that it
     returns a change in modularity that reflects the difference between the
     modularity of the new and old parititions"""
