@@ -8,7 +8,12 @@ This module should *never* be imported as 'import *'
 
 import numpy as np
 import numpy.testing as nt
+import sys	
 
+# The functionality in this module is now better provided by
+# Pandas' DataFrame -- http://pandas.pydata.org/
+sys.stderr.write('brainx.recarrutil will be removed,'
+                 ' install pandas instead\n')
 
 # XXX - It's probably OK to import something, but for now let's ban * imports
 # altogether .
