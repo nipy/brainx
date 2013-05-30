@@ -634,8 +634,8 @@ def test_apply_module_split():
 
                     # Test that the nodes in the split modules are equal to the
                     # original nodes of the module
-                    npt.assert_equal(np.sort(list(n1)), n1_new)
-                    npt.assert_equal(np.sort(list(n2)), n2_new)
+                    nt.assert_equal(sorted(list(n1)), sorted(n1_new))
+                    nt.assert_equal(sorted(list(n2)), sorted(n2_new))
 
                     n_init.sort()
                     n_all.sort()
