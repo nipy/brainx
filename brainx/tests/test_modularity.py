@@ -20,10 +20,9 @@ import numpy.testing as npt
 # Our own
 from brainx import modularity as mod
 from brainx import util
-from decotest  import (as_unittest, ParametricTestCase, parametric)
 
 # While debugging the library, reload everything
-map(reload,[mod,util])
+#map(reload,[mod,util])
 
 #-----------------------------------------------------------------------------
 # Local utility functions
@@ -49,7 +48,6 @@ def betweenness_to_modularity(g,ppart):
 # Tests
 #-----------------------------------------------------------------------------
 
-@parametric
 def test_random_modular_graph_between_fraction():
     """Test for graphs with non-zero between_fraction"""
     # We need to measure the degree within/between modules
@@ -71,7 +69,7 @@ def test_random_modular_graph_between_fraction():
                     # degree we get may be off from the reuqested one by a bit.
                     # We allow it to be off by up to 1.
                     #print 'av deg:',av_degree, av_degree_actual  # dbg
-                    yield nt.assert_true (abs(av_degree-av_degree_actual)<1.25,
+                    nt.assert_true (abs(av_degree-av_degree_actual)<1.25,
                           """av deg: %.2f  av deg actual: %.2f -
                           This is a stochastic test - repeat to confirm.""" %
                                           (av_degree, av_degree_actual))
@@ -98,12 +96,11 @@ def test_random_modular_graph_between_fraction():
                     btwn_real_frac = btwn_real / nedg
 
                     #compare to what the actual values are
-                    yield nt.assert_almost_equal(btwn_fraction,
-                                                 btwn_real_frac, 1,
+                    nt.assert_almost_equal(btwn_fraction,
+                                           btwn_real_frac, 1,
                     "This is a stochastic test, repeat to confirm failure")
 
 
-@parametric
 def test_modularity():
     """Test the values that go into the modularity calculation after randomly
     creating a graph"""
@@ -128,10 +125,9 @@ def test_modularity():
                 #call modularity
                 mod_meas = graph_partition.modularity()
                 mod_true = 1.0 - 1.0/nmod
-                yield npt.assert_almost_equal(mod_meas, mod_true, 2)
+                npt.assert_almost_equal(mod_meas, mod_true, 2)
 
 
-@parametric
 def test_apply_module_merge():
     """Test the GraphPartition operation that merges modules so that it returns
     a change in modularity that reflects the difference between the modularity
@@ -194,38 +190,37 @@ def test_apply_module_merge():
 
                     # Test the measured difference in energy against the
                     # function that calculates the difference in energy
-                    yield npt.assert_almost_equal(delta_energy_meas,
+                    npt.assert_almost_equal(delta_energy_meas,
                                                   delta_energy_true)
                     # Check that the list of nodes in the two original modules
                     # is equal to the list of nodes in the merged module
                     n_all_init.sort()
                     n_all.sort()
-                    yield npt.assert_equal(n_all_init, n_all)
+                    npt.assert_equal(n_all_init, n_all)
 
                     # Test that the keys are equivalent after merging modules
-                    yield npt.assert_equal(r_mod[:-1],
+                    npt.assert_equal(r_mod[:-1],
                                            sorted(graph_part2.index.keys()))
 
                     # Test that the values in the mod_e and mod_a matrices for
                     # the merged module are correct.
-                    yield npt.assert_equal(graph_part2.mod_e[min(m1,m2)],e1)
-                    yield npt.assert_equal(graph_part2.mod_a[min(m1,m2)],a1)
+                    npt.assert_equal(graph_part2.mod_e[min(m1,m2)],e1)
+                    npt.assert_equal(graph_part2.mod_a[min(m1,m2)],a1)
 
 
-@parametric
 def test_rename_keys():
     a = {0:0,1:1,2:2,4:4,5:5}
     mod.rename_keys(a, 3)
-    yield npt.assert_equal(a, {0:0,1:1,2:2,3:4,4:5})
+    npt.assert_equal(a, {0:0,1:1,2:2,3:4,4:5})
 
     a = {0:0,1:1,3:3,}
     mod.rename_keys(a, 2)
-    yield npt.assert_equal(a, {0:0,1:1,2:3})
+    npt.assert_equal(a, {0:0,1:1,2:3})
 
     # If called with the last key in dict, it should leave the input alone
     a = {0:0,1:1,2:2,3:3}
     mod.rename_keys(a, 3)
-    yield npt.assert_equal(a, a)
+    npt.assert_equal(a, a)
 
 
 def danon_benchmark():
@@ -268,22 +263,22 @@ def danon_benchmark():
                         print 'Elapsed time: ', (float(t2-t1)/60), ' minutes'
                         print 'partition similarity: ',mi
                         mi_arr[ix,rep] = mi
-                        plot_partition(g,graph_out.index,'mi: '+ str(mi),'danon_test_6mod'+str(btwn_frac)+'_graph.png')
+                        ## plot_partition(g,graph_out.index,'mi: '+ str(mi),'danon_test_6mod'+str(btwn_frac)+'_graph.png')
                         x_mod.append(betweenness_to_modularity(g,ppart))
 
 
-                    mi_arr_avg = np.mean(mi_arr,1)
-                    plt.figure()
-                    plt.plot(btwn_fracs,mi_arr_avg)
-                    plt.xlabel('Betweenness fraction')
-                    plt.ylabel('Mutual information')
-                    plt.savefig('danon_test_6mod/danontest_btwn.png')
+                    ## mi_arr_avg = np.mean(mi_arr,1)
+                    ## plt.figure()
+                    ## plt.plot(btwn_fracs,mi_arr_avg)
+                    ## plt.xlabel('Betweenness fraction')
+                    ## plt.ylabel('Mutual information')
+                    ## plt.savefig('danon_test_6mod/danontest_btwn.png')
 
-                    plt.figure()
-                    plt.plot(x_mod,mi_arr_avg)
-                    plt.xlabel('Modularity')
-                    plt.ylabel('Mutual information')
-                    plt.savefig('danon_test_6mod/danontest_mod.png')
+                    ## plt.figure()
+                    ## plt.plot(x_mod,mi_arr_avg)
+                    ## plt.xlabel('Modularity')
+                    ## plt.ylabel('Mutual information')
+                    ## plt.savefig('danon_test_6mod/danontest_mod.png')
 
     #plt.figure()
     #plt.plot(graph_dict['energy'], label = 'energy')
@@ -293,7 +288,6 @@ def danon_benchmark():
     return mi_arr
 
 
-#@parametric
 def SA():
     """ Test the simulated annealing script"""
     #nnod_mod, av_degrees, nmods
@@ -335,7 +329,6 @@ def SA():
                     return graph_out, g, energy_array, rej_array, ppart, temp_array
 
 
-@parametric
 def test_mutual_information_simple():
     """MI computations with hand-validated values.
     """
@@ -346,18 +339,18 @@ def test_mutual_information_simple():
     N_true = np.array([ [2,0,0], [0,2,0], [0,1,1] ], dtype=float)
     N = mod.confusion_matrix(a, b)
     # test confusion matrix
-    yield npt.assert_equal(N, N_true)
+    npt.assert_equal(N, N_true)
     # Now compute mi by hand
     num = -6*log(3)-4*log(2)
     den = -(3*log(2)+8*log(3)+log(6))
     mi_true = num/den
     mi = mod.mutual_information(a, b)
-    yield npt.assert_almost_equal(mi, mi_true)
+    npt.assert_almost_equal(mi, mi_true)
     # Let's now flip the labels and confirm that the computation is impervious
     # to module labels
     b2 = {2:[0, 1], 0:[2, 3, 4], 1:[5]}
-    yield npt.assert_almost_equal(mod.mutual_information(b, b2), 1)
-    yield npt.assert_almost_equal(mod.mutual_information(a, b2), mi)
+    npt.assert_almost_equal(mod.mutual_information(b, b2), 1)
+    npt.assert_almost_equal(mod.mutual_information(a, b2), mi)
 
 
 def test_mutual_information_empty():
@@ -378,7 +371,6 @@ def test_mutual_information_empty():
         nt.assert_equals(e.args[0], "Empty module in first partition.")
 
 
-@parametric
 def test_mutual_information():
     """ Test the function which returns the mutual information in two
     partitions
@@ -410,7 +402,7 @@ def test_mutual_information():
                 #test the perfect case for now: two of the same partition
                 #returns 1
                 mi_orig  = mod.mutual_information(ppart,ppart)
-                yield npt.assert_equal(mi_orig,1)
+                npt.assert_equal(mi_orig,1)
 
                 #move one node and test that mutual_information comes out
                 #correctly
@@ -418,7 +410,7 @@ def test_mutual_information():
                 graph_partition.node_update(0,0,1)
 
                 mi = mod.mutual_information(ppart,graph_partition.index)
-                yield npt.assert_array_less(mi, mi_orig)
+                npt.assert_array_less(mi, mi_orig)
                 ## NOTE: CORRECTNESS NOT TESTED YET
 
                 #merge modules and check that mutual information comes out
@@ -427,7 +419,7 @@ def test_mutual_information():
                 merged_module, e_new, a_new, d,t,m1,m2,x = graph_partition2.compute_module_merge(0,1)
                 graph_partition2.apply_module_merge(m1,m2,merged_module,e_new,a_new)
                 mi2 = mod.mutual_information(ppart,graph_partition2.index)
-                yield npt.assert_array_less(mi2,mi_orig)
+                npt.assert_array_less(mi2,mi_orig)
                 ## NOTE: CORRECTNESS NOT TESTED YET
 
                 #split modules and check that mutual information comes out
@@ -438,12 +430,10 @@ def test_mutual_information():
                 split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
                 graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
                 mi3 = mod.mutual_information(ppart,graph_partition3.index)
-                yield npt.assert_array_less(mi3,mi_orig)
+                npt.assert_array_less(mi3,mi_orig)
                 ## NOTE: CORRECTNESS NOT TESTED YET
 
 
-
-@parametric
 def test_random_mod():
     """ Test the GraphPartition operation that selects random modules to merge
     and split
@@ -471,11 +461,11 @@ def test_random_mod():
 
                     #check that the partition has > 1 modules
                     true = len(graph_partition)>1
-                    yield npt.assert_equal(true,1)
+                    npt.assert_equal(true,1)
 
                     #check that the partition has < nnod modules
                     true = len(graph_partition)<nnod
-                    yield npt.assert_equal(true,1)
+                    npt.assert_equal(true,1)
 
 
 
@@ -484,7 +474,6 @@ def test_random_nod():
     between modules """
 
 
-@parametric
 def test_decide_if_keeping():
     """ Test the function which decides whether or not to keep the new
     partition"""
@@ -502,11 +491,11 @@ def test_decide_if_keeping():
 
             if dE <= 0:
                 keep_correct = np.ones(iter)
-                yield npt.assert_equal(keep_list,keep_correct)
+                npt.assert_equal(keep_list,keep_correct)
             else:
                 mean_keep = np.mean(keep_list)
                 mean_correct = math.exp(-dE/temp)
-                yield npt.assert_almost_equal(mean_keep,mean_correct, tolerance)
+                npt.assert_almost_equal(mean_keep,mean_correct, tolerance)
 
 def test_sim_anneal_simple():
     """Very simple simulated_annealing test with a small network"""
@@ -516,9 +505,9 @@ def test_sim_anneal_simple():
     g = mod.random_modular_graph(nnod, nmod, av_degree, btwn_frac)
 
     #Compute the # of nodes per module
-    nnod_mod = nnod/nmod
+    ## nnod_mod = nnod/nmod
     #Make a "correct" partition for the graph
-    ppart = mod.perfect_partition(nmod,nnod_mod)
+    ## ppart = mod.perfect_partition(nmod,nnod_mod)
 
     temperature = 10
     temp_scaling = 0.95
@@ -531,10 +520,9 @@ def test_sim_anneal_simple():
     # Ensure that there are no empty modules
     util.assert_no_empty_modules(graph_out.index)
 
-    mi = mod.mutual_information(ppart, graph_out.index)
+    ## mi = mod.mutual_information(ppart, graph_out.index)
     #nt.assert_equal(mi, 1)
 
-@parametric
 def test_apply_module_split():
     """Test the GraphPartition operation that splits modules so that it returns
     a change in modularity that reflects the difference between the modularity
@@ -555,10 +543,10 @@ def test_apply_module_split():
 
                 g = mod.random_modular_graph(nnod, nmod, av_degree)
 
-                #Make a "correct" partition for the graph
-                part = mod.perfect_partition(nmod,nnod/nmod)
+                # Make a "correct" partition for the graph
+                ## part = mod.perfect_partition(nmod,nnod/nmod)
 
-                #Make a random partition for the graph
+                # Make a random partition for the graph
                 part_rand = mod.rand_partition(g, nnod/2)
 
                 #List of modules in the partition that have two or more nodes
@@ -587,17 +575,17 @@ def test_apply_module_split():
                     n1_orig,n2_orig = graph_partition.determine_node_split(m)
 
                     # make sure neither of these is empty
-                    yield nt.assert_true(len(n1_orig)>= 1)
-                    yield nt.assert_true(len(n2_orig)>= 1)
+                    nt.assert_true(len(n1_orig)>= 1)
+                    nt.assert_true(len(n2_orig)>= 1)
 
                     #make sure that there are no common nodes between the two
                     node_intersection = set.intersection(n1_orig,n2_orig)
-                    yield nt.assert_equal(node_intersection,set([]))
+                    nt.assert_equal(node_intersection,set([]))
 
                     #make sure that sum of the two node sets equals the
                     #original set
                     node_union = set.union(n1_orig,n2_orig)
-                    yield npt.assert_equal(np.sort(list(node_union)),np.sort(n_init))
+                    npt.assert_equal(np.sort(list(node_union)),np.sort(n_init))
 
                     # split modules
                     split_modules,e1,a1,delta_energy_meas,type,m,n1,n2 = \
@@ -609,14 +597,14 @@ def test_apply_module_split():
                     #the node split needs to be passed along.
 
                     #as a simple confirmation, can make sure they match
-                    yield npt.assert_equal(n1_orig,n1)
-                    yield npt.assert_equal(n2_orig,n2)
+                    npt.assert_equal(n1_orig,n1)
+                    npt.assert_equal(n2_orig,n2)
 
                     #split_moduels should be a dictionary with two modules
                     #(0,1) that contain the node sets n1 and n2 respectively.
                     #test this.
-                    yield npt.assert_equal(split_modules[0],n1)
-                    yield npt.assert_equal(split_modules[1],n2)
+                    npt.assert_equal(split_modules[0],n1)
+                    npt.assert_equal(split_modules[1],n2)
 
                     #make a new graph partition equal to the old one and apply
                     #the module split to it (graph_part2)
@@ -641,35 +629,32 @@ def test_apply_module_split():
 
                     # Test that the measured change in energy by splitting a
                     # module is equal to the function output from module_split
-                    yield npt.assert_almost_equal(delta_energy_meas,
+                    npt.assert_almost_equal(delta_energy_meas,
                                                   delta_energy_true)
 
                     # Test that the nodes in the split modules are equal to the
                     # original nodes of the module
-                    yield npt.assert_equal(np.sort(list(n1)), n1_new)
-                    yield npt.assert_equal(np.sort(list(n2)), n2_new)
+                    nt.assert_equal(sorted(list(n1)), sorted(n1_new))
+                    nt.assert_equal(sorted(list(n2)), sorted(n2_new))
 
                     n_init.sort()
                     n_all.sort()
                     # Test that the initial list of nodes in the module are
                     # equal to the nodes in m1 and m2 (split modules)
-                    yield npt.assert_equal(n_init,n_all)
+                    npt.assert_equal(n_init,n_all)
 
                     # Test that the computed modularity found when
                     # apply_module_split is used is equal to the modularity you
                     # would find if using that partition and that graph
-                    yield npt.assert_almost_equal(mod_new,mod_new_3)
+                    npt.assert_almost_equal(mod_new,mod_new_3)
 
                     # Check that there are no empty modules in the final
                     # partition
                     for m in graph_part2.index:
-                        yield nt.assert_true(len(graph_part2.index[m]) > 0)
+                        nt.assert_true(len(graph_part2.index[m]) > 0)
 
 
-@parametric
 def test_apply_node_move():
-#if 1:
-
     """Test the GraphPartition operation that moves a single node so that it
     returns a change in modularity that reflects the difference between the
     modularity of the new and old parititions"""
@@ -717,10 +702,10 @@ def test_apply_node_move():
                 n = nod_per[0]
 
                 #list of nodes within the original modules (before node move)
-                n1_init = list(nod_per) #list(graph_partition.index[m1])
-                n2_init = list(graph_partition.index[m2])
-                n1_new = copy.deepcopy(n1_init)
-                n2_new = copy.deepcopy(n2_init)
+                ## n1_init = list(nod_per) #list(graph_partition.index[m1])
+                ## n2_init = list(graph_partition.index[m2])
+                ## n1_new = copy.deepcopy(n1_init)
+                ## n2_new = copy.deepcopy(n2_init)
 
                 # calculate modularity before node move
                 mod_init = graph_partition.modularity()
@@ -735,7 +720,7 @@ def test_apply_node_move():
                 #if the keys get renamed, the m1,m2 numbers are no longer the same
 
                 #test that m2 now contains n
-                yield nt.assert_true(n in graph_part2.index[m2_new])
+                nt.assert_true(n in graph_part2.index[m2_new])
                 #if n not in graph_part2.index[m2_new]:
                 #    1/0
 
@@ -748,7 +733,7 @@ def test_apply_node_move():
 
                 # Test that the measured change in energy is equal to the true
                 # change in energy calculated in the node_update function
-                yield npt.assert_almost_equal(delta_energy_meas,delta_energy_true)
+                npt.assert_almost_equal(delta_energy_meas,delta_energy_true)
 
 
 def test_adjust_partition():
