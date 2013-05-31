@@ -154,42 +154,9 @@ class GraphPartition(object):
             1/0
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
+    ##TODO can we remove this?? CM
     modularity = modularity_newman
 
-    #modularity = modularity_guimera
-
-
-    ## def modularity_guimera(self, g, part):
-    ##     """This function takes in a graph and a partition and returns Newman's
-    ##     modularity for that graph"""
-
-    ##     """ Parameters
-    ##     # g = graph part = partition; a dictionary that contains a list of
-    ##     # nodes that make up that module"""
-
-    ##     #graph values
-    ##     num_mod = len(part)
-    ##     L = nx.number_of_edges(g)
-    ##     # construct an adjacency matrix from the input graph (g)
-    ##     mat = nx.adj_matrix(g)
-
-    ##     M = 0
-    ##     # loop over the modules in the graph, create an adjacency matrix
-    ##     for m, val in part.iteritems():
-    ##         #create a 'sub mat'
-    ##         submat = mat[val,:][:,val]
-
-    ##         #make a graph
-    ##         subg = nx.from_numpy_matrix(submat)
-
-    ##         #calculate module-specific metrics
-    ##         link_s = float(subg.number_of_edges())
-    ##         deg_s = np.sum(nx.degree(g,val), dtype=float)
-
-    ##         #compute modularity!
-    ##         M += ((link_s/L) - (deg_s/(2*L))**2)
-
-    ##     return M
 
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.
