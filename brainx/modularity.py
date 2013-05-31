@@ -143,24 +143,18 @@ class GraphPartition(object):
         if mod_a is None: mod_a = [0] * num_mod
         if index is None: index = self.index
 
-        norm_factor = 1.0/(2.0*self.num_edges)
+        norm_factor = 1.0 / (2.0 * self.num_edges)
         mat = self.graph_adj_matrix
-        set_nodes = self._node_set
-        for m,modnodes in index.iteritems():
-            #set_modnodes=set(modnodes)
-            #btwnnodes   = list(set_nodes - modnodes)
-            btwnnodes = list(set_nodes - set(index[m]))
+        node_set = self._node_set
+        for m, modnodes in index.iteritems():
+            btwnnodes = list(node_set - modnodes)
             modnodes  = list(modnodes)
-            #why isnt' self.index a set already?  graph_partition.index[m]
-            #looks like a set when we read it in ipython
             mat_within  = mat[modnodes,:][:,modnodes]
             mat_between = mat[modnodes,:][:,btwnnodes]
             perc_within = mat_within.sum() * norm_factor
             perc_btwn   = mat_between.sum() * norm_factor
             mod_e[m] = perc_within #all of the E's
             mod_a[m] = perc_btwn+perc_within #all of the A's
-            #mod_e.append(perc_within)
-            #mod_a.append(perc_btwn+perc_within)
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
                 1/0
 

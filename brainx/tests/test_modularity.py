@@ -425,8 +425,9 @@ def test_mutual_information():
                 #split modules and check that mutual information comes out
                 #correclty/lower
                 graph_partition3 = mod.GraphPartition(g,ppart)
-                n1 = list(graph_partition3.index[0])[::2]
-                n2 = list(graph_partition3.index[0])[1::2]
+                n1 = set(list(graph_partition3.index[0])[::2])
+                n2 = set(list(graph_partition3.index[0])[1::2])
+
                 split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
                 graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
                 mi3 = mod.mutual_information(ppart,graph_partition3.index)
