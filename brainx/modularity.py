@@ -156,7 +156,7 @@ class GraphPartition(object):
             mod_e[m] = perc_within #all of the E's
             mod_a[m] = perc_btwn+perc_within #all of the A's
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
-                1/0
+                raise ArithmaticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
 
         return mod_e, mod_a
 
