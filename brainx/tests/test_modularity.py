@@ -752,7 +752,7 @@ def test_adjust_partition():
 def test_empty_graphpartition():
     g = nx.Graph()
     g.add_node(1)
-    npt.assert_raises(ValueError, mod.GraphPartition, g, {1: g.nodes()})
+    npt.assert_raises(ValueError, mod.GraphPartition, g, {1: set(g.nodes())})
 
 
 if __name__ == "__main__":

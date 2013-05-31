@@ -72,8 +72,12 @@ class GraphPartition(object):
         """
         # Store references to the original graph and label dict
         self.index = copy.deepcopy(index)
-        #self.graph = graph
 
+        ## add quick check to make sure the passed index is
+        ## a dict of sets
+        self._check_index_contains_sets()
+
+        
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
 
@@ -101,6 +105,15 @@ class GraphPartition(object):
 
     def __len__(self):
         return len(self.index)
+
+
+    def _check_index_contains_sets(self):
+        """ the index in a GraphPartition is a dict of node sets
+        validate that the values of this dict are all of type(set)"""
+        index_types = [ type(x) for x in self.index.values() ]
+        if not all([ x== type(set()) for x in index_types]):
+            raise TypeError('index values should be of type set():: %s'%(index_types))
+
 
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
         """Create the vectors of edge information.
