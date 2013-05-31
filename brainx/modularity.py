@@ -71,6 +71,9 @@ class GraphPartition(object):
         objects.
         """
         # Store references to the original graph and label dict
+        if not type(index) == type({}):
+            raise TypeError('index should be of type dict(), not %s'%type(index))
+
         self.index = copy.deepcopy(index)
 
         ## add quick check to make sure the passed index is

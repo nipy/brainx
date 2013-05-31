@@ -755,5 +755,20 @@ def test_empty_graphpartition():
     npt.assert_raises(ValueError, mod.GraphPartition, g, {1: set(g.nodes())})
 
 
+def test_badindex_graphpartition():
+    """ when making a GraphPArtition, check index is valid"""
+    ## index should be dict of sets
+    e = np.loadtxt(os.path.join(os.path.dirname(__file__), 'jazz.net'),
+                                skiprows=3, dtype=int)[:, :2] - 1
+    g = nx.Graph()
+    g.add_edges_from(e)
+    index = {0: set(g.nodes()[:100]), 1: set(g.nodes()[100:])}
+    gp = mod.GraphPartition(g, index)
+    nt.assert_true(gp.index == index)
+    npt.assert_raises(TypeError, mod.GraphPartition, g, {0: g.nodes()})
+    npt.assert_raises(ValueError, mod.GraphPartition, g, {0:set(g.nodes()[:-1])})
+    npt.assert_raises(TypeError, mod.GraphPartition, g, g.nodes())
+
+
 if __name__ == "__main__":
     npt.run_module_suite()
