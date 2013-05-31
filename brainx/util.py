@@ -60,10 +60,31 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
 
 
 def cost_size(nnodes):
-    tot_edges = .5*nnodes*(nnodes-1)
-    costs =  np.array(range(int(tot_edges)+1),dtype=float)/tot_edges
-    edges_short = tot_edges/2
-    return costs,tot_edges,edges_short
+    """Make N-length array of costs, with N the number of possible edges.
+
+    Parameters
+    ----------
+    nnodes: integer
+        Number of nodes in the graph.
+
+    Returns
+    -------
+    costs: numpy array
+        N-length array of costs, with N the number of possible
+        undirected edges in the graph.  The costs range from 0 to 1 and
+        are equally-spaced.
+
+    tot_edges: float
+        Number of possible undirected edges in the graph.
+
+    half_tot_edges: float
+        tot_edges / 2
+
+    """
+    tot_edges = 0.5 * nnodes * (nnodes - 1)
+    costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
+    half_tot_edges = tot_edges / 2
+    return costs, tot_edges, half_tot_edges
     
 
 def store_metrics(b, s, co, metd, arr):
