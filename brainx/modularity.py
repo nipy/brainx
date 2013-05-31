@@ -76,7 +76,8 @@ class GraphPartition(object):
         ## add quick check to make sure the passed index is
         ## a dict of sets
         self._check_index_contains_sets()
-
+        ## raise useful error if index is missing nodes in graph
+        self._check_allnodes_in_index(graph)
         
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
@@ -113,6 +114,16 @@ class GraphPartition(object):
         index_types = [ type(x) for x in self.index.values() ]
         if not all([ x== type(set()) for x in index_types]):
             raise TypeError('index values should be of type set():: %s'%(index_types))
+
+    def _check_allnodes_in_index(self, graph):
+        """Check that index contains all nodes in graph"""
+        sets = self.index.values()
+        all = []
+        for item in sets:
+            all += list(item)
+        if not sorted(all) == sorted(graph.nodes()):
+            missing = [x for x in all if not x in graph.nodes()]
+            raise ValueError('index does not contain all nodes: missing %s'%missing)
 
 
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
