@@ -420,21 +420,40 @@ def replace_diag(arr,val=0):
     return arr
 
 
-def cost2thresh(cost,sub,bl,lk,last,idc = [],costlist=[]):
-    """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
-    
-    inputs:
-    cost: cost value for which we need the associated threshold
-    sub: subject number
-    bl: block number
-    lk: lookup table (block x subject x cost
-    last: last threshold value
+def cost2thresh(cost, sub, bl, lk, last, idc=[], costlist=[]):
+    """Return the threshold associated with a particular cost.
 
-    output:
-    th: threshold value for this cost"""
-
-    #print cost,sub,bl
+    The cost is assessed with regard to block 'bl' and subject 'sub'.
     
+    Parameters
+    ----------
+    cost: float
+        Cost value for which the associated threshold will be returned.
+
+    sub: integer
+        Subject number.
+
+    bl: integer
+        Block number.
+
+    lk: numpy array
+        Lookup table with blocks X subjects X 2 (threshold or cost) X #
+        costs/thresholds.  
+
+    last: 
+        last threshold value
+
+    idc: 
+
+    costlist: 
+    
+
+    Returns
+    -------
+    th:
+        threshold value for this cost
+
+    """
     ind=np.where(lk[bl][sub][1]==cost)
     th=lk[bl][sub][0][ind]
     
