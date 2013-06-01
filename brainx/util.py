@@ -138,78 +138,104 @@ def arr_stat(x,ddof=1):
     return m,std
 
 
-def threshold_arr(cmat,threshold=0.0,threshold2=None):
+def threshold_arr(cmat, threshold=0.0, threshold2=None):
     """Threshold values from the input matrix.
 
     Parameters
     ----------
-    cmat : array
+    cmat : array_like
+        An array of numbers.
     
-    threshold : float, optional.
-      First threshold.
+    threshold : float, optional
+        If threshold2 is None, indices and values for elements of cmat
+        greater than this value (0 by default) will be returned.  If
+        threshold2 is not None, indices and values for elements of cmat
+        less than this value (or greater than threshold2) will be
+        returned.
       
-    threshold2 : float, optional.
-      Second threshold.
+    threshold2 : float, optional
+        Indices and values for elements of cmat greater than this value
+        (or less than threshold) will be returned.  By default,
+        threshold2 is set to None and not used.
 
     Returns
     -------
-    indices, values: a tuple with ndim+1
+    A tuple of length N + 1, where N is the number of dimensions in
+    cmat.  The first N elements of this tuple are arrays with indices in
+    cmat, for each dimension, corresponding to elements greater than
+    threshold (if threshold2 is None) or more extreme than the two
+    thresholds.  The last element of the tuple is an array with the
+    values in cmat corresponding to these indices.
     
     Examples
     --------
-    >>> a = np.linspace(0,0.8,7)
+    >>> a = np.linspace(0, 0.8, 7)
     >>> a
-    array([ 0.    ,  0.1333,  0.2667,  0.4   ,  0.5333,  0.6667,  0.8   ])
-    >>> threshold_arr(a,0.3)
-    (array([3, 4, 5, 6]), array([ 0.4   ,  0.5333,  0.6667,  0.8   ]))
+    array([ 0.    ,  0.1333,  0.2667,  0.4   ,  0.5333,
+            0.6667,  0.8   ])
+    >>> threshold_arr(a, 0.3)
+    (array([3, 4, 5, 6]),
+     array([ 0.4   ,  0.5333,  0.6667,  0.8       ]))
 
     With two thresholds:
-    >>> threshold_arr(a,0.3,0.6)
-    (array([0, 1, 2, 5, 6]), array([ 0.    ,  0.1333,  0.2667,  0.6667,  0.8   ]))
+    >>> threshold_arr(a, 0.3, 0.6)
+    (array([0, 1, 2, 5, 6]),
+     array([ 0.        ,  0.1333,  0.2667,  0.6667, 0.8       ]))
 
     """
-    # Select thresholds
+    # Select thresholds.
     if threshold2 is None:
         th_low = -np.inf
         th_hi  = threshold
     else:
         th_low = threshold
         th_hi  = threshold2
-
-    # Mask out the values we are actually going to use
-    idx = np.where( (cmat < th_low) | (cmat > th_hi) )
+    # Mask out the values we are actually going to use.
+    idx = np.where((cmat < th_low) | (cmat > th_hi))
     vals = cmat[idx]
-    
     return idx + (vals,)
 
 
-def thresholded_arr(arr,threshold=0.0,threshold2=None,fill_val=np.nan):
+def thresholded_arr(arr, threshold=0.0, threshold2=None, fill_val=np.nan):
     """Threshold values from the input matrix and return a new matrix.
 
     Parameters
     ----------
-    arr : array
+    arr : array_like
+        An array of numbers.
     
-    threshold : float
-      First threshold.
+    threshold : float, optional
+        If threshold2 is None, elements of arr less than this value (0
+        by default) will be filled with fill_val.  If threshold2 is not
+        None, elements of arr greater than this value but less than
+        threshold2 will be filled with fill_val.
       
-    threshold2 : float, optional.
-      Second threshold.
+    threshold2 : float, optional
+        Elements of arr less than this value but greater than threshold
+        will be filled with fill_val.  By default, high_thresh is set to
+        None and not used.
+
+    fill_val : float or numpy.nan, optional
+        Value (np.nan by default) with which to fill elements below
+        threshold or between threshold and threshold2.
 
     Returns
     -------
-    An array shaped like the input, with the values outside the threshold
-    replaced with fill_val.
-    
-    Examples
-    --------
+    a2 : array_like
+        An array with the same shape as arr, but with values below
+        threshold or between threshold and threshold2 replaced with
+        fill_val.
+
+    Notes
+    -----
+    arr itself is not altered.
+
     """
     a2 = np.empty_like(arr)
     a2.fill(fill_val)
-    mth = threshold_arr(arr,threshold,threshold2)
+    mth = threshold_arr(arr, threshold, threshold2)
     idx,vals = mth[:-1], mth[-1]
     a2[idx] = vals
-    
     return a2
 
 
