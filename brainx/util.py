@@ -4,6 +4,7 @@
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
+from __future__ import print_function
 
 import numpy as np
 
@@ -446,7 +447,7 @@ def replace_diag(arr,val=0):
     return arr
 
 
-def cost2thresh(cost, sub, bl, lk, last, idc=[], costlist=[]):
+def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
     """Return the threshold associated with a particular cost.
 
     The cost is assessed with regard to block 'bl' and subject 'sub'.
@@ -463,49 +464,62 @@ def cost2thresh(cost, sub, bl, lk, last, idc=[], costlist=[]):
         Block number.
 
     lk: numpy array
-        Lookup table with blocks X subjects X 2 (threshold or cost) X #
-        costs/thresholds.  
+        Lookup table with blocks X subjects X 2 (threshold or cost, in
+        that order) X thresholds/costs.  Each threshold is a value
+        representing the lowest correlation value accepted.  They are
+        ordered from least to greatest.  Each cost is the fraction of
+        all possible edges that exists in an undirected graph made from
+        this block's correlations (thresholded with the corresponding
+        threshold).
 
-    last: 
-        last threshold value
+    idc: integer or empty list, optional
+        Index in costlist corresponding to cost currently being
+        processed.  By default, idc is an empty list.
 
-    idc: 
-
-    costlist: 
-    
+    costlist: array_like
+        List of costs that are being queried with the current function
+        in order.
 
     Returns
     -------
-    th:
-        threshold value for this cost
+    th: float
+        Threshold value in lk corresponding to the supplied cost.  If
+        multiple entries matching cost exist, the smallest threshold
+        corresponding to these is returned.  If no entries matching cost
+        are found, return the threshold corresponding to the previous
+        cost in costlist.
+
+    Notes
+    -----
+    The supplied cost must exactly match an entry in lk for a match to
+    be registered.
 
     """
-    ind=np.where(lk[bl][sub][1]==cost)
-    th=lk[bl][sub][0][ind]
-    
-    if len(th)>1:
-        th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
-        print 'multiple thresh'
-    elif len(th)<1:
-        done = 1
-        while done:
-            idc = idc-1
-            newcost = costlist[idc]
-            print idc,newcost
-            ind=np.where(lk[bl][sub][1]==newcost)
-            th=lk[bl][sub][0][ind]
-            if len(th) > 1:
-                th = th[0]
-                done = 0
-                
-        #th=last #if there is no associated thresh value because of repeats, just use the previous one
-        print 'use previous thresh'
-        
+    # For this subject and block, find the indices corresponding to this cost.
+    # Note there may be more than one such index.  There will be no such
+    # indices if cost is not a value in the array.
+    ind = np.where(lk[bl][sub][1] == cost)
+    # The possibility of multiple (or no) indices implies multiple (or no)
+    # thresholds may be acquired here.
+    th = lk[bl][sub][0][ind]
+    n_thresholds = len(th)
+    if n_thresholds > 1:
+        th=th[0]
+        print(''.join(['Subject %s has multiple thresholds in block %d ',
+                       'corresponding to a cost of %f.  The smallest is being',
+                       ' used.']) % (sub, bl, cost))
+    elif n_thresholds < 1:
+        idc = idc - 1
+        newcost = costlist[idc]
+        th = cost2thresh(newcost, sub, bl, lk, idc, costlist)
+        print(''.join(['Subject %s does not have a threshold in block %d ',
+                       'corresponding to a cost of %f.  The threshold ',
+                       'matching the nearest previous cost in costlist is ',
+                       'being used.']) % (sub, block, cost))
     else:
         th=th[0]
-      
-    #print th    
     return th
+
 
 def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
     """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
