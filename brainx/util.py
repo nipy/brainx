@@ -60,7 +60,7 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
 
 
 def cost_size(nnodes):
-    """Make N-length array of costs, with N the number of possible edges.
+    """Make N+1-length cost array, with N the number of possible edges.
 
     Parameters
     ----------
@@ -70,7 +70,7 @@ def cost_size(nnodes):
     Returns
     -------
     costs: numpy array
-        N-length array of costs, with N the number of possible
+        N+1-length array of costs, with N the number of possible
         undirected edges in the graph.  The costs range from 0 to 1 and
         are equally-spaced.
 
