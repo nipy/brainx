@@ -271,28 +271,36 @@ def graph_summary(G):
     return dict( lp=lp.mean(), clust=clust.mean(), glob_eff=glob_eff.mean(),
                  loc_eff=loc_eff.mean() )
 
+
 def nodal_summaryOut(G, n_nodes):
-    """ Compute statistics for individual nodes
+    """Compute statistics for individual nodes.
 
     Parameters
     ----------
-    G: graph data output from mkgraph
-    out: array output from nodal_summaryOut, so can keep appending
-    cost: cost value for these calculations
-    n_nodes: number of nodes in graph.
+    G: networkx graph
+        An undirected graph.
+        
+    n_nodes: integer
+        Number of nodes in G.
 
     Returns
     -------
+    dictionary
+        The keys of this dictionary are lp (which refers to path
+        length), clust (clustering coefficient), b_cen (betweenness
+        centrality), c_cen (closeness centrality), nod_eff (nodal
+        efficiency), loc_eff (local efficiency), and deg (degree).  The
+        values are lists of metrics, in ascending order of node labels.
 
-    A dict with: lp, clust, b_cen, c_cen, nod_eff, loc_eff, degree."""
-    
-    lp = nodal_pathlengths(G,n_nodes) #can't use the regular one, because it substitutes [] for disconnected nodes
+    """
+    # nodal_pathlengths is needed because NetworkX's shortest_path_length
+    # returns an empty list for disconnected nodes.
+    lp = nodal_pathlengths(G,n_nodes)
     clust = np.array(nx.clustering(G).values())
     b_cen = np.array(nx.betweenness_centrality(G).values())
     c_cen = np.array(nx.closeness_centrality(G).values())
-    nod_eff=nodal_efficiency(G)
-    loc_eff=local_efficiency(G)
+    nod_eff = nodal_efficiency(G)
+    loc_eff = local_efficiency(G)
     deg = G.degree().values()
-
     return dict(lp=lp, clust=clust, b_cen=b_cen, c_cen=c_cen, nod_eff=nod_eff,
-                loc_eff=loc_eff,deg=deg)
+                loc_eff=loc_eff, deg=deg)
