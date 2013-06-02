@@ -5,7 +5,6 @@
 # Imports
 #-----------------------------------------------------------------------------
 
-
 import networkx as nx
 import numpy as np
 from scipy import sparse
@@ -24,26 +23,38 @@ def compute_sigma(arr,clustarr,lparr):
         
     return out
 
-def nodal_pathlengths(G,n_nodes):
-    """ Compute mean path length for each node.
-    Note: it is unclear how to treat infinite path lengths.  For now, I replace them with np.inf, but this may make taking the mean later on difficult
-    Inputs: G graph data output from mkgraph; n_nodes number of nodes in graph"""
-    nodal_means=np.zeros((n_nodes),dtype=float)
-    lengths= nx.all_pairs_shortest_path_length(G)
-    for src,pair in lengths.iteritems():
-        source_paths=[]
-        source_arr=np.array([])
-        for targ,val in pair.items():
-            if src==targ:
-                continue # we want to include src,target repeats, right?
-            source_paths.append(float(val))
-            source_arr=np.array(source_paths)
-           
-        if source_arr.size==0: #make the mean path length 0 if node is disconnected
+
+def nodal_pathlengths(G, n_nodes):
+    """Compute mean path length for each node.
+
+    Parameters
+    ----------
+    G: networkx Graph
+        An undirected graph.
+
+    n_nodes: integer
+        Number of nodes in G.
+
+    Returns
+    -------
+    nodal_means: numpy array
+        Array of length n_nodes with each node's mean shortest path
+        length to other nodes.  For disconnected nodes, the value in
+        this array is np.nan.
+
+    """
+    # float is the default dtype for np.zeros, but we'll choose it explicitly
+    # in case numpy ever changes the default to something else.
+    nodal_means = np.zeros(n_nodes, dtype=float)
+    lengths = nx.all_pairs_shortest_path_length(G)
+    for src, pair in lengths.iteritems():
+        source_arr = np.array([val for targ, val in pair.iteritems() if src !=
+                               targ], dtype=float)
+        if source_arr.size == 0:
             source_arr=np.array([np.nan])
         nodal_means[src]=source_arr.mean()
-    #nodal_array=np.array(nodal_means)
     return nodal_means
+
 
 def assert_no_selfloops(G):
     """Raise an error if the graph G has any selfloops.
@@ -51,7 +62,7 @@ def assert_no_selfloops(G):
     if G.nodes_with_selfloops():
         raise ValueError("input graph can not have selfloops")
 
-#@profile
+
 def path_lengths(G):
     """Compute array of all shortest path lengths for the given graph.
 
