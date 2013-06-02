@@ -60,17 +60,21 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
     return cmat
 
 
-def cost_size(nnodes):
-    """Make N+1-length cost array, with N the number of possible edges.
+def make_cost_array(n_nodes, cost=0.5):
+    """Make cost array of length cost * (the number of possible edges).
 
     Parameters
     ----------
-    nnodes: integer
+    n_nodes: integer
         Number of nodes in the graph.
+
+    cost: float, optional
+        Value between 0 and 1 (0.5 by default).  The length of
+        cost_array will be set to cost * tot_edges.
 
     Returns
     -------
-    costs: numpy array
+    cost_array: numpy array
         N+1-length array of costs, with N the number of possible
         undirected edges in the graph.  The costs range from 0 to 1 and
         are equally-spaced.
@@ -78,14 +82,14 @@ def cost_size(nnodes):
     tot_edges: float
         Number of possible undirected edges in the graph.
 
-    half_tot_edges: float
-        tot_edges / 2
+    Notes
+    -----
+    This is an edited version of the former function cost_size.
 
     """
-    tot_edges = 0.5 * nnodes * (nnodes - 1)
-    costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
-    half_tot_edges = tot_edges / 2
-    return costs, tot_edges, half_tot_edges
+    tot_edges = 0.5 * n_nodes * (n_nodes - 1)
+    costs = np.array(range(int(tot_edges * cost)), dtype=float) / tot_edges
+    return costs, tot_edges
     
 
 def store_metrics(b, s, co, metd, arr):
