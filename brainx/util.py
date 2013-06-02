@@ -565,6 +565,57 @@ def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
     #print th    
     return th
 
+
+def apply_cost(corr_mat, cost, tot_edges):
+    """Threshold corr_mat to achieve cost.
+
+    Return the thresholded matrix and the threshold value.  In the
+    thresholded matrix, the main diagonal and upper triangle are set to
+    0, so information is held only in the lower triangle.
+
+    Parameters
+    ----------
+    corr_mat: array_like
+        Square matrix with ROI-to-ROI correlations.
+
+    cost: float
+        Fraction of all possible undirected edges desired in the
+        thresholded matrix.
+
+    tot_edges: integer
+        The number of possible undirected edges in a graph with the
+        number of nodes in corr_mat.
+
+    Returns
+    -------
+    thresholded_mat: array_like
+        Square matrix with correlations below threshold set to 0,
+        making the fraction of matrix elements that are non-zero equal
+        to cost.  In addition, the main diagonal and upper triangle are
+        set to 0.
+
+    threshold: float
+        Correlations below this value have been set to 0 in
+        thresholded_corr_mat.
+
+    Notes
+    -----
+    If not all correlations are unique, it is possible that there will
+    be no way to achieve the cost without, e.g., arbitrarily removing
+    one of two identical correlations while keeping the other.  Instead
+    of making such an arbitrary choice, this function retains all
+    identical correlations equal to or greater than threshold, even if
+    this means cost is not exactly achieved.
+
+    """
+    thresholded_mat = np.tril(corr_mat, -1)
+    n_nonzero = cost * tot_edges
+    elements = thresholded_mat.ravel()
+    threshold = elements[elements.argsort()[-n_nonzero]]
+    thresholded_mat[thresholded_mat < threshold] = 0
+    return thresholded_mat, threshold
+
+
 def network_ind(ntwk_type,n_nodes):
     """Reads in a network type, number of nodes total and returns the indices of that network"""
 
