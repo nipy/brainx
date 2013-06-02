@@ -545,20 +545,20 @@ def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
     
     if len(th)>1:
         th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
-        print 'multiple thresh'
+        print('multiple thresh')
     elif len(th)<1:
         done = 1
         while done:
             idc = idc-1
             newcost = costlist[idc]
-            print idc,newcost
+            print(idc,newcost)
             ind=np.where(lk[bl][sub][1]==newcost)
             th=lk[bl][sub][0][ind]
             if len(th) > 1:
                 th = th[0]
                 done = 0
         #th=last #if there is no associated thresh value because of repeats, just use the previous one
-        print 'use previous thresh'
+        print('use previous thresh')
     else:
         th=th[0]
       
@@ -600,7 +600,7 @@ def network_ind(ntwk_type,n_nodes):
         subnets = {'k': net_aal}
         ALL_LABELS = net_aal
     else:
-        print 'do not recognize network type'
+        print('do not recognize network type')
     return roi_ind,subnets,ALL_LABELS
 
 
