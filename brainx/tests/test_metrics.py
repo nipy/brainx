@@ -22,6 +22,11 @@ from brainx import metrics
 class NodalMetricsTestCase(TestCase):
 
     def setUp(self):
+        # Distances for all node pairs:
+        # 0-1: 1    1-2: 1    2-3: 1    3-4: 1
+        # 0-2: 1    1-3: 2    2-4: 2
+        # 0-3: 2    1-4: 3
+        # 0-4: 3
         self.corr_mat = np.array([[0.0, 0.0, 0.0, 0.0, 0.0],
                                   [0.5, 0.0, 0.0, 0.0, 0.0],
                                   [0.3, 0.4, 0.0, 0.0, 0.0],
@@ -30,19 +35,40 @@ class NodalMetricsTestCase(TestCase):
         self.n_nodes = self.corr_mat.shape[0]
         self.g = nx.from_numpy_matrix(self.corr_mat)
 
-    def test_nodal_pathlengths_conn(self):
-        path_lengths = metrics.nodal_pathlengths(self.g, self.n_nodes)
+    def test_inter_node_distances_conn(self):
+        distances = metrics.inter_node_distances(self.g, self.n_nodes)
+        desired = {0: {1: 1, 2: 1, 3: 2, 4: 3},
+                   1: {0: 1, 2: 1, 3: 2, 4: 3},
+                   2: {0: 1, 1: 1, 3: 1, 4: 2},
+                   3: {0: 2, 1: 2, 2: 1, 4: 1},
+                   4: {0: 3, 1: 3, 2: 2, 3: 1}}
+        self.assertEqual(distances, desired)
+
+    def test_inter_node_distances_disconn(self):
+        self.g.remove_edge(2, 3)
+        # Now all nodes still have at least one edge, but not all nodes are
+        # reachable from all others.
+        distances = metrics.inter_node_distances(self.g, self.n_nodes)
         # Distances for all node pairs:
-        # 0-1: 1    1-2: 1    2-3: 1    3-4: 1
-        # 0-2: 1    1-3: 2    2-4: 2
-        # 0-3: 2    1-4: 3
-        # 0-4: 3
+        # 0-1: 1    1-2: 1    2-3: Inf  3-4: 1
+        # 0-2: 1    1-3: Inf  2-4: Inf
+        # 0-3: Inf  1-4: Inf
+        # 0-4: Inf
+        desired = {0: {1: 1, 2: 1, 3: np.inf, 4: np.inf},
+                   1: {0: 1, 2: 1, 3: np.inf, 4: np.inf},
+                   2: {0: 1, 1: 1, 3: np.inf, 4: np.inf},
+                   3: {0: np.inf, 1: np.inf, 2: np.inf, 4: 1},
+                   4: {0: np.inf, 1: np.inf, 2: np.inf, 3: 1}}
+        self.assertEqual(distances, desired)
+
+    def test_nodal_pathlengths_conn(self):
+        mean_path_lengths = metrics.nodal_pathlengths(self.g, self.n_nodes)
         desired = 1.0 / (self.n_nodes - 1) * np.array([1 + 1 + 2 + 3,
                                                        1 + 1 + 2 + 3,
                                                        1 + 1 + 1 + 2,
                                                        2 + 2 + 1 + 1,
                                                        3 + 3 + 2 + 1])
-        npt.assert_array_almost_equal(path_lengths, desired)
+        npt.assert_array_almost_equal(mean_path_lengths, desired)
 
     def test_nodal_pathlengths_disconn(self):
         self.g.remove_edge(2, 3)
@@ -64,11 +90,6 @@ class NodalMetricsTestCase(TestCase):
 
     def test_nodal_efficiency_conn(self):
         n_eff_array = metrics.nodal_efficiency(self.g, self.n_nodes)
-        # Distances for all node pairs:
-        # 0-1: 1    1-2: 1    2-3: 1    3-4: 1
-        # 0-2: 1    1-3: 2    2-4: 2
-        # 0-3: 2    1-4: 3
-        # 0-4: 3
         desired = (1.0 / (self.n_nodes - 1) *
                    np.array([1 + 1 + 1 / 2.0 + 1 / 3.0,
                              1 + 1 + 1 / 2.0 + 1 / 3.0,

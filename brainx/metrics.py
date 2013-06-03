@@ -12,6 +12,48 @@ from scipy import sparse
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
+
+def inter_node_distances(G, n_nodes):
+    """Compute the shortest path lengths between all nodes in G.
+
+    This performs the same operation as NetworkX's
+    all_pairs_shortest_path_lengths with two exceptions: Here, self
+    paths are excluded from the dictionary returned, and the distance
+    between disconnected nodes is set to infinity.  The latter
+    difference is consistent with the Brain Connectivity Toolbox for
+    Matlab.
+
+    Parameters
+    ----------
+    G: networkx Graph
+        An undirected graph.
+
+    n_nodes: integer
+        Number of nodes in G.
+
+    Returns
+    -------
+    lengths: dictionary
+        Dictionary of shortest path lengths keyed by source and target.
+
+    Notes
+    -----
+    This function assumes the nodes are labeled 0 to n_nodes - 1.
+
+    """
+    lengths = nx.all_pairs_shortest_path_length(G)
+    node_labels = range(n_nodes)
+    for src in node_labels:
+        lengths[src].pop(src)
+        for targ in node_labels:
+            if src != targ:
+                try:
+                    lengths[src][targ]
+                except KeyError:
+                    lengths[src][targ] = np.inf
+    return lengths
+
+
 def compute_sigma(arr,clustarr,lparr):
     """ Function for computing sigma given a graph array arr and clust and lp
     arrays from a pseudorandom graph for a particular block b."""
@@ -50,27 +92,11 @@ def nodal_pathlengths(G, n_nodes):
     infinity.
 
     """
-    # float is the default dtype for np.zeros, but we'll choose it explicitly
-    # in case numpy ever changes the default to something else.
-    nodal_means = np.zeros(n_nodes, dtype=float)
-    lengths = nx.all_pairs_shortest_path_length(G)
-    # As stated in the Python documentation, "Keys and values are listed in an
-    # arbitrary order which is non-random, varies across Python
-    # implementations, and depends on the dictionary's history of insertions
-    # and deletions."  Thus, we cannot assume we'd traverse the nodes in
-    # ascending order if we were to iterate through 'lengths'.
-    node_labels = range(n_nodes)
-    for src in node_labels:
-        source_lengths = []
-        for targ in node_labels:
-            if src != targ:
-                try:
-                    val = lengths[src][targ]
-                except KeyError:
-                    val = np.inf
-                source_lengths.append(val)
-        nodal_means[src] = np.mean(source_lengths)
-    return nodal_means
+    lengths = inter_node_distances(G, n_nodes)
+    # It's important we iterate through range(n_nodes) rather than the keys
+    # of lengths, as the keys are not guaranteed to be in ascending order.
+    nodal_means = [np.mean(lengths[src].values()) for src in range(n_nodes)]
+    return np.array(nodal_means)
 
 
 def assert_no_selfloops(G):
@@ -185,17 +211,11 @@ def nodal_efficiency(G, n_nodes):
 
     """
     nodal_efficiencies = np.zeros(n_nodes, dtype=float)
-    lengths = nx.all_pairs_shortest_path_length(G)
-    node_labels = range(n_nodes)
-    for src in node_labels:
-        inverse_paths = []
-        for targ in node_labels:
-            if src != targ:
-                try:
-                    val = lengths[src][targ]
-                except KeyError:
-                    val = np.inf
-                inverse_paths.append(1.0 / val)
+    lengths = inter_node_distances(G, n_nodes)
+    # It's important we iterate through range(n_nodes) rather than the keys
+    # of lengths, as the keys are not guaranteed to be in ascending order.
+    for src in range(n_nodes):
+        inverse_paths = [1.0 / val for val in lengths[src].itervalues()]
         nodal_efficiencies[src] = np.mean(inverse_paths)
     return nodal_efficiencies
 
@@ -231,7 +251,6 @@ def local_efficiency(G):
     return np.array(nodepaths)
 
 
-#@profile
 def local_efficiency(G):
     """Compute array of local efficiency for the given graph.
 
