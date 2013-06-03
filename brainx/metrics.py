@@ -38,21 +38,38 @@ def nodal_pathlengths(G, n_nodes):
     Returns
     -------
     nodal_means: numpy array
-        Array of length n_nodes with each node's mean shortest path
-        length to other nodes.  For disconnected nodes, the value in
-        this array is np.nan.
+        An array with each node's mean shortest path length to all other
+        nodes.  The array is in ascending order of node labels.
+
+    Notes
+    -----
+    This function assumes the nodes are labeled 0 to n_nodes - 1.
+
+    Per the Brain Connectivity Toolbox for Matlab, the distance between
+    one node and another that cannot be reached from it is set to
+    infinity.
 
     """
     # float is the default dtype for np.zeros, but we'll choose it explicitly
     # in case numpy ever changes the default to something else.
     nodal_means = np.zeros(n_nodes, dtype=float)
     lengths = nx.all_pairs_shortest_path_length(G)
-    for src, pair in lengths.iteritems():
-        source_arr = np.array([val for targ, val in pair.iteritems() if src !=
-                               targ], dtype=float)
-        if source_arr.size == 0:
-            source_arr=np.array([np.nan])
-        nodal_means[src]=source_arr.mean()
+    # As stated in the Python documentation, "Keys and values are listed in an
+    # arbitrary order which is non-random, varies across Python
+    # implementations, and depends on the dictionary's history of insertions
+    # and deletions."  Thus, we cannot assume we'd traverse the nodes in
+    # ascending order if we were to iterate through 'lengths'.
+    node_labels = range(n_nodes)
+    for src in node_labels:
+        source_lengths = []
+        for targ in node_labels:
+            if src != targ:
+                try:
+                    val = lengths[src][targ]
+                except KeyError:
+                    val = np.inf
+                source_lengths.append(val)
+        nodal_means[src] = np.mean(source_lengths)
     return nodal_means
 
 
@@ -135,27 +152,54 @@ def glob_efficiency(G):
     of the network."""
     
     return 1.0/path_lengths(G)
-        
-def nodal_efficiency(G):
-    """Compute array of global efficiency for the given graph.
 
-    Nodal efficiency: XXX - define."""
-        
-    nodepaths=[]
-    length = nx.all_pairs_shortest_path_length(G)
-    for src,targets in length.iteritems():
-        paths=[]
-        for targ,val in targets.items():
-            if src==targ:
-                continue
-            
-            paths.append(1.0/val)
-        
-        nodepaths.append(np.mean(paths))
-        
-    return np.array(nodepaths) 
 
-#@profile
+def nodal_efficiency(G, n_nodes):
+    """Return array with nodal efficiency for each node in G.
+
+    See Achard and Bullmore (2007, PLoS Comput Biol) for the definition
+    of nodal efficiency.
+
+    Parameters
+    ----------
+    G: networkx Graph
+        An undirected graph.
+
+    n_nodes: integer
+        Number of nodes in G.
+
+    Returns
+    -------
+    nodal_efficiencies: numpy array
+        An array with the nodal efficiency for each node in G, in
+        the order specified by node_labels.  The array is in ascending
+        order of node labels.
+
+    Notes
+    -----
+    This function assumes the nodes are labeled 0 to n_nodes - 1.
+
+    Per the Brain Connectivity Toolbox for Matlab, the distance between
+    one node and another that cannot be reached from it is set to
+    infinity.
+
+    """
+    nodal_efficiencies = np.zeros(n_nodes, dtype=float)
+    lengths = nx.all_pairs_shortest_path_length(G)
+    node_labels = range(n_nodes)
+    for src in node_labels:
+        inverse_paths = []
+        for targ in node_labels:
+            if src != targ:
+                try:
+                    val = lengths[src][targ]
+                except KeyError:
+                    val = np.inf
+                inverse_paths.append(1.0 / val)
+        nodal_efficiencies[src] = np.mean(inverse_paths)
+    return nodal_efficiencies
+
+
 def local_efficiency(G):
     """Compute array of global efficiency for the given grap.h
 
@@ -290,17 +334,26 @@ def nodal_summaryOut(G, n_nodes):
         length), clust (clustering coefficient), b_cen (betweenness
         centrality), c_cen (closeness centrality), nod_eff (nodal
         efficiency), loc_eff (local efficiency), and deg (degree).  The
-        values are lists of metrics, in ascending order of node labels.
+        values are arrays (or lists, in some cases) of metrics, in
+        ascending order of node labels.
 
     """
-    # nodal_pathlengths is needed because NetworkX's shortest_path_length
-    # returns an empty list for disconnected nodes.
-    lp = nodal_pathlengths(G,n_nodes)
-    clust = np.array(nx.clustering(G).values())
-    b_cen = np.array(nx.betweenness_centrality(G).values())
-    c_cen = np.array(nx.closeness_centrality(G).values())
-    nod_eff = nodal_efficiency(G)
+    lp = nodal_pathlengths(G, n_nodes)
+    # As stated in the Python documentation, "Keys and values are listed in an
+    # arbitrary order which is non-random, varies across Python
+    # implementations, and depends on the dictionary's history of insertions
+    # and deletions."  Thus, we cannot expect, e.g., nx.clustering(G)
+    # to have the nodes listed in ascending order, as we desire.
+    node_labels = range(n_nodes)
+    clust_dict = nx.clustering(G)
+    clust = np.array([clust_dict[n] for n in node_labels])
+    b_cen_dict = nx.betweenness_centrality(G)
+    b_cen = np.array([b_cen_dict[n] for n in node_labels])
+    c_cen_dict = nx.closeness_centrality(G)
+    c_cen = np.array([c_cen_dict[n] for n in node_labels])
+    nod_eff = nodal_efficiency(G, n_nodes)
     loc_eff = local_efficiency(G)
-    deg = G.degree().values()
+    deg_dict = G.degree()
+    deg = [deg_dict[n] for n in node_labels]
     return dict(lp=lp, clust=clust, b_cen=b_cen, c_cen=c_cen, nod_eff=nod_eff,
                 loc_eff=loc_eff, deg=deg)
