@@ -156,7 +156,7 @@ class GraphPartition(object):
             mod_e[m] = perc_within #all of the E's
             mod_a[m] = perc_btwn+perc_within #all of the A's
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
-                raise ArithmaticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
+                raise ArithmeticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
 
         return mod_e, mod_a
 
@@ -172,7 +172,7 @@ class GraphPartition(object):
         mod = modularity
         """
         if np.isnan((np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()):
-            1/0
+            raise ArithmeticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
     ##TODO can we remove this?? CM
