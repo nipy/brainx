@@ -6,8 +6,9 @@
 #-----------------------------------------------------------------------------
 from __future__ import print_function
 
-import numpy as np
+import warnings
 
+import numpy as np
 import networkx as nx
 
 #-----------------------------------------------------------------------------
@@ -58,6 +59,14 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
         cmat = np.triu(cmat,1)
         
     return cmat
+
+
+def cost_size(nnodes):
+    warnings.warn('deprecated: use make_cost_array', DeprecationWarning)
+    tot_edges = 0.5 * nnodes * (nnodes - 1)
+    costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
+    edges_short = tot_edges / 2
+    return costs, tot_edges, edges_short
 
 
 def make_cost_array(n_nodes, cost=0.5):

@@ -16,6 +16,12 @@ from brainx import util
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
+
+def test_cost_size():
+    n_nodes = 5
+    npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
+    
+
 def test_apply_cost():
     corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],
                          [0.5, 0.0, 0.4, 0.1, 0.2],
