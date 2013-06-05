@@ -662,7 +662,12 @@ class GraphPartition(object):
         #Store references to the original graph and label dict
         self.bestindex = copy.deepcopy(self.index)
 
-
+    def check_integrity(self, partition):
+        """ Raises error if partition structure is invalid """
+        
+        # Raise error if any partition is empty
+        if [partition[key] == set([]) for key in partition.keys()]:
+            raise ValueError("Partition index %s is empty" % (key))
 
 #-----------------------------------------------------------------------------
 # Functions
@@ -1298,6 +1303,8 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
             raise ValueError('mismatch in energy and modularity')
+        
+        check_integrity(graph_part_final)
 
         return graph_part_final,graph_part_final.modularity()
 
