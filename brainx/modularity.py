@@ -71,9 +71,17 @@ class GraphPartition(object):
         objects.
         """
         # Store references to the original graph and label dict
-        self.index = copy.deepcopy(index)
-        #self.graph = graph
+        if not type(index) == type({}):
+            raise TypeError('index should be of type dict(), not %s'%type(index))
 
+        self.index = copy.deepcopy(index)
+
+        ## add quick check to make sure the passed index is
+        ## a dict of sets
+        self._check_index_contains_sets()
+        ## raise useful error if index is missing nodes in graph
+        self._check_allnodes_in_index(graph)
+        
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
 
@@ -102,6 +110,25 @@ class GraphPartition(object):
     def __len__(self):
         return len(self.index)
 
+
+    def _check_index_contains_sets(self):
+        """ the index in a GraphPartition is a dict of node sets
+        validate that the values of this dict are all of type(set)"""
+        index_types = [ type(x) for x in self.index.values() ]
+        if not all([ x== type(set()) for x in index_types]):
+            raise TypeError('index values should be of type set():: %s'%(index_types))
+
+    def _check_allnodes_in_index(self, graph):
+        """Check that index contains all nodes in graph"""
+        sets = self.index.values()
+        all = []
+        for item in sets:
+            all += list(item)
+        if not sorted(all) == sorted(graph.nodes()):
+            missing = [x for x in all if not x in graph.nodes()]
+            raise ValueError('index does not contain all nodes: missing %s'%missing)
+
+
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
         """Create the vectors of edge information.
 
@@ -116,26 +143,20 @@ class GraphPartition(object):
         if mod_a is None: mod_a = [0] * num_mod
         if index is None: index = self.index
 
-        norm_factor = 1.0/(2.0*self.num_edges)
+        norm_factor = 1.0 / (2.0 * self.num_edges)
         mat = self.graph_adj_matrix
-        set_nodes = self._node_set
-        for m,modnodes in index.iteritems():
-            #set_modnodes=set(modnodes)
-            #btwnnodes   = list(set_nodes - modnodes)
-            btwnnodes = list(set_nodes - set(index[m]))
+        node_set = self._node_set
+        for m, modnodes in index.iteritems():
+            btwnnodes = list(node_set - modnodes)
             modnodes  = list(modnodes)
-            #why isnt' self.index a set already?  graph_partition.index[m]
-            #looks like a set when we read it in ipython
             mat_within  = mat[modnodes,:][:,modnodes]
             mat_between = mat[modnodes,:][:,btwnnodes]
             perc_within = mat_within.sum() * norm_factor
             perc_btwn   = mat_between.sum() * norm_factor
             mod_e[m] = perc_within #all of the E's
             mod_a[m] = perc_btwn+perc_within #all of the A's
-            #mod_e.append(perc_within)
-            #mod_a.append(perc_btwn+perc_within)
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
-                1/0
+                raise ArithmaticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
 
         return mod_e, mod_a
 
@@ -154,42 +175,9 @@ class GraphPartition(object):
             1/0
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
+    ##TODO can we remove this?? CM
     modularity = modularity_newman
 
-    #modularity = modularity_guimera
-
-
-    ## def modularity_guimera(self, g, part):
-    ##     """This function takes in a graph and a partition and returns Newman's
-    ##     modularity for that graph"""
-
-    ##     """ Parameters
-    ##     # g = graph part = partition; a dictionary that contains a list of
-    ##     # nodes that make up that module"""
-
-    ##     #graph values
-    ##     num_mod = len(part)
-    ##     L = nx.number_of_edges(g)
-    ##     # construct an adjacency matrix from the input graph (g)
-    ##     mat = nx.adj_matrix(g)
-
-    ##     M = 0
-    ##     # loop over the modules in the graph, create an adjacency matrix
-    ##     for m, val in part.iteritems():
-    ##         #create a 'sub mat'
-    ##         submat = mat[val,:][:,val]
-
-    ##         #make a graph
-    ##         subg = nx.from_numpy_matrix(submat)
-
-    ##         #calculate module-specific metrics
-    ##         link_s = float(subg.number_of_edges())
-    ##         deg_s = np.sum(nx.degree(g,val), dtype=float)
-
-    ##         #compute modularity!
-    ##         M += ((link_s/L) - (deg_s/(2*L))**2)
-
-    ##     return M
 
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.

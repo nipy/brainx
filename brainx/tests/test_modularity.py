@@ -425,8 +425,9 @@ def test_mutual_information():
                 #split modules and check that mutual information comes out
                 #correclty/lower
                 graph_partition3 = mod.GraphPartition(g,ppart)
-                n1 = list(graph_partition3.index[0])[::2]
-                n2 = list(graph_partition3.index[0])[1::2]
+                n1 = set(list(graph_partition3.index[0])[::2])
+                n2 = set(list(graph_partition3.index[0])[1::2])
+
                 split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
                 graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
                 mi3 = mod.mutual_information(ppart,graph_partition3.index)
@@ -752,7 +753,22 @@ def test_adjust_partition():
 def test_empty_graphpartition():
     g = nx.Graph()
     g.add_node(1)
-    npt.assert_raises(ValueError, mod.GraphPartition, g, {1: g.nodes()})
+    npt.assert_raises(ValueError, mod.GraphPartition, g, {1: set(g.nodes())})
+
+
+def test_badindex_graphpartition():
+    """ when making a GraphPArtition, check index is valid"""
+    ## index should be dict of sets
+    e = np.loadtxt(os.path.join(os.path.dirname(__file__), 'jazz.net'),
+                                skiprows=3, dtype=int)[:, :2] - 1
+    g = nx.Graph()
+    g.add_edges_from(e)
+    index = {0: set(g.nodes()[:100]), 1: set(g.nodes()[100:])}
+    gp = mod.GraphPartition(g, index)
+    nt.assert_true(gp.index == index)
+    npt.assert_raises(TypeError, mod.GraphPartition, g, {0: g.nodes()})
+    npt.assert_raises(ValueError, mod.GraphPartition, g, {0:set(g.nodes()[:-1])})
+    npt.assert_raises(TypeError, mod.GraphPartition, g, g.nodes())
 
 
 if __name__ == "__main__":
