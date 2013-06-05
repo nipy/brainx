@@ -668,6 +668,9 @@ class GraphPartition(object):
         # Raise error if any partition is empty
         if [partition[key] == set([]) for key in partition.keys()]:
             raise ValueError("Partition index %s is empty" % (key))
+        
+        if [np.isnan(value) for sets in partition.values() for value in sets]:
+            raise ValueError("Partition contains NaN(s)")
 
 #-----------------------------------------------------------------------------
 # Functions
