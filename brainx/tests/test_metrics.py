@@ -36,7 +36,7 @@ class NodalMetricsTestCase(TestCase):
         self.g = nx.from_numpy_matrix(self.corr_mat)
 
     def test_inter_node_distances_conn(self):
-        distances = metrics.inter_node_distances(self.g, self.n_nodes)
+        distances = metrics.inter_node_distances(self.g)
         desired = {0: {1: 1, 2: 1, 3: 2, 4: 3},
                    1: {0: 1, 2: 1, 3: 2, 4: 3},
                    2: {0: 1, 1: 1, 3: 1, 4: 2},
@@ -48,7 +48,7 @@ class NodalMetricsTestCase(TestCase):
         self.g.remove_edge(2, 3)
         # Now all nodes still have at least one edge, but not all nodes are
         # reachable from all others.
-        distances = metrics.inter_node_distances(self.g, self.n_nodes)
+        distances = metrics.inter_node_distances(self.g)
         # Distances for all node pairs:
         # 0-1: 1    1-2: 1    2-3: Inf  3-4: 1
         # 0-2: 1    1-3: Inf  2-4: Inf
@@ -62,7 +62,7 @@ class NodalMetricsTestCase(TestCase):
         self.assertEqual(distances, desired)
 
     def test_nodal_pathlengths_conn(self):
-        mean_path_lengths = metrics.nodal_pathlengths(self.g, self.n_nodes)
+        mean_path_lengths = metrics.nodal_pathlengths(self.g)
         desired = 1.0 / (self.n_nodes - 1) * np.array([1 + 1 + 2 + 3,
                                                        1 + 1 + 2 + 3,
                                                        1 + 1 + 1 + 2,
@@ -74,7 +74,7 @@ class NodalMetricsTestCase(TestCase):
         self.g.remove_edge(2, 3)
         # Now all nodes still have at least one edge, but not all nodes are
         # reachable from all others.
-        path_lengths = metrics.nodal_pathlengths(self.g, self.n_nodes)
+        path_lengths = metrics.nodal_pathlengths(self.g)
         # Distances for all node pairs:
         # 0-1: 1    1-2: 1    2-3: Inf  3-4: 1
         # 0-2: 1    1-3: Inf  2-4: Inf
@@ -89,7 +89,7 @@ class NodalMetricsTestCase(TestCase):
         npt.assert_array_almost_equal(path_lengths, desired)
 
     def test_nodal_efficiency_conn(self):
-        n_eff_array = metrics.nodal_efficiency(self.g, self.n_nodes)
+        n_eff_array = metrics.nodal_efficiency(self.g)
         desired = (1.0 / (self.n_nodes - 1) *
                    np.array([1 + 1 + 1 / 2.0 + 1 / 3.0,
                              1 + 1 + 1 / 2.0 + 1 / 3.0,
@@ -102,7 +102,7 @@ class NodalMetricsTestCase(TestCase):
         self.g.remove_edge(2, 3)
         # Now all nodes still have at least one edge, but not all nodes are
         # reachable from all others.
-        n_eff_array = metrics.nodal_efficiency(self.g, self.n_nodes)
+        n_eff_array = metrics.nodal_efficiency(self.g)
         # Distances for all node pairs:
         # 0-1: 1    1-2: 1    2-3: Inf  3-4: 1
         # 0-2: 1    1-3: Inf  2-4: Inf
