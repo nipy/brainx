@@ -17,6 +17,48 @@ from brainx import util
 # Functions
 #-----------------------------------------------------------------------------
 
+def test_cost_size():
+    n_nodes = 5
+    npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
+    
+
+def test_apply_cost():
+    corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],
+                         [0.5, 0.0, 0.4, 0.1, 0.2],
+                         [0.3, 0.4, 0.0, 0.7, 0.2],
+                         [0.2, 0.1, 0.7, 0.0, 0.4],
+                         [0.1, 0.2, 0.2, 0.4, 0.0]])
+    # A five-node undirected graph has ten possible edges.  Thus, the result
+    # here should be a graph with five edges.
+    possible_edges = 10
+    cost = 0.5
+    thresholded_corr_mat, threshold = util.apply_cost(corr_mat, cost,
+                                                      possible_edges)
+    nt.assert_true(np.allclose(thresholded_corr_mat,
+                               np.array([[0.0, 0.0, 0.0, 0.0, 0.0],
+                                         [0.5, 0.0, 0.0, 0.0, 0.0],
+                                         [0.3, 0.4, 0.0, 0.0, 0.0],
+                                         [0.0, 0.0, 0.7, 0.0, 0.0],
+                                         [0.0, 0.0, 0.0, 0.4, 0.0]])))
+    nt.assert_almost_equal(threshold, 0.3)
+    # Check the case in which cost requires that one of several identical edges
+    # be kept and the others removed.  apply_cost should keep all of these
+    # identical edges.
+    #
+    # To test this, I need to update only a value in the lower triangle.  The
+    # function zeroes out the upper triangle immediately.
+    corr_mat[2, 0] = 0.2
+    thresholded_corr_mat, threshold = util.apply_cost(corr_mat, cost,
+                                                      possible_edges)
+    nt.assert_true(np.allclose(thresholded_corr_mat,
+                               np.array([[0.0, 0.0, 0.0, 0.0, 0.0],
+                                         [0.5, 0.0, 0.0, 0.0, 0.0],
+                                         [0.2, 0.4, 0.0, 0.0, 0.0],
+                                         [0.2, 0.0, 0.7, 0.0, 0.0],
+                                         [0.0, 0.2, 0.2, 0.4, 0.0]])))
+    nt.assert_almost_equal(threshold, 0.2)
+
+
 def assert_graphs_equal(g,h):
     """Trivial 'equality' check for graphs"""
     if not(g.nodes()==h.nodes() and g.edges()==h.edges()):

@@ -4,9 +4,11 @@
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
+from __future__ import print_function
+
+import warnings
 
 import numpy as np
-
 import networkx as nx
 
 #-----------------------------------------------------------------------------
@@ -60,10 +62,43 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
 
 
 def cost_size(nnodes):
-    tot_edges = .5*nnodes*(nnodes-1)
-    costs =  np.array(range(int(tot_edges)+1),dtype=float)/tot_edges
-    edges_short = tot_edges/2
-    return costs,tot_edges,edges_short
+    warnings.warn('deprecated: use make_cost_array', DeprecationWarning)
+    tot_edges = 0.5 * nnodes * (nnodes - 1)
+    costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
+    edges_short = tot_edges / 2
+    return costs, tot_edges, edges_short
+
+
+def make_cost_array(n_nodes, cost=0.5):
+    """Make cost array of length cost * (the number of possible edges).
+
+    Parameters
+    ----------
+    n_nodes: integer
+        Number of nodes in the graph.
+
+    cost: float, optional
+        Value between 0 and 1 (0.5 by default).  The length of
+        cost_array will be set to cost * tot_edges.
+
+    Returns
+    -------
+    cost_array: numpy array
+        N+1-length array of costs, with N the number of possible
+        undirected edges in the graph.  The costs range from 0 to 1 and
+        are equally-spaced.
+
+    tot_edges: float
+        Number of possible undirected edges in the graph.
+
+    Notes
+    -----
+    This is an edited version of the former function cost_size.
+
+    """
+    tot_edges = 0.5 * n_nodes * (n_nodes - 1)
+    costs = np.array(range(int(tot_edges * cost)), dtype=float) / tot_edges
+    return costs, tot_edges
     
 
 def store_metrics(b, s, co, metd, arr):
@@ -117,78 +152,104 @@ def arr_stat(x,ddof=1):
     return m,std
 
 
-def threshold_arr(cmat,threshold=0.0,threshold2=None):
+def threshold_arr(cmat, threshold=0.0, threshold2=None):
     """Threshold values from the input matrix.
 
     Parameters
     ----------
-    cmat : array
+    cmat : array_like
+        An array of numbers.
     
-    threshold : float, optional.
-      First threshold.
+    threshold : float, optional
+        If threshold2 is None, indices and values for elements of cmat
+        greater than this value (0 by default) will be returned.  If
+        threshold2 is not None, indices and values for elements of cmat
+        less than this value (or greater than threshold2) will be
+        returned.
       
-    threshold2 : float, optional.
-      Second threshold.
+    threshold2 : float, optional
+        Indices and values for elements of cmat greater than this value
+        (or less than threshold) will be returned.  By default,
+        threshold2 is set to None and not used.
 
     Returns
     -------
-    indices, values: a tuple with ndim+1
+    A tuple of length N + 1, where N is the number of dimensions in
+    cmat.  The first N elements of this tuple are arrays with indices in
+    cmat, for each dimension, corresponding to elements greater than
+    threshold (if threshold2 is None) or more extreme than the two
+    thresholds.  The last element of the tuple is an array with the
+    values in cmat corresponding to these indices.
     
     Examples
     --------
-    >>> a = np.linspace(0,0.8,7)
+    >>> a = np.linspace(0, 0.8, 7)
     >>> a
-    array([ 0.    ,  0.1333,  0.2667,  0.4   ,  0.5333,  0.6667,  0.8   ])
-    >>> threshold_arr(a,0.3)
-    (array([3, 4, 5, 6]), array([ 0.4   ,  0.5333,  0.6667,  0.8   ]))
+    array([ 0.    ,  0.1333,  0.2667,  0.4   ,  0.5333,
+            0.6667,  0.8   ])
+    >>> threshold_arr(a, 0.3)
+    (array([3, 4, 5, 6]),
+     array([ 0.4   ,  0.5333,  0.6667,  0.8       ]))
 
     With two thresholds:
-    >>> threshold_arr(a,0.3,0.6)
-    (array([0, 1, 2, 5, 6]), array([ 0.    ,  0.1333,  0.2667,  0.6667,  0.8   ]))
+    >>> threshold_arr(a, 0.3, 0.6)
+    (array([0, 1, 2, 5, 6]),
+     array([ 0.        ,  0.1333,  0.2667,  0.6667, 0.8       ]))
 
     """
-    # Select thresholds
+    # Select thresholds.
     if threshold2 is None:
         th_low = -np.inf
         th_hi  = threshold
     else:
         th_low = threshold
         th_hi  = threshold2
-
-    # Mask out the values we are actually going to use
-    idx = np.where( (cmat < th_low) | (cmat > th_hi) )
+    # Mask out the values we are actually going to use.
+    idx = np.where((cmat < th_low) | (cmat > th_hi))
     vals = cmat[idx]
-    
     return idx + (vals,)
 
 
-def thresholded_arr(arr,threshold=0.0,threshold2=None,fill_val=np.nan):
+def thresholded_arr(arr, threshold=0.0, threshold2=None, fill_val=np.nan):
     """Threshold values from the input matrix and return a new matrix.
 
     Parameters
     ----------
-    arr : array
+    arr : array_like
+        An array of numbers.
     
-    threshold : float
-      First threshold.
+    threshold : float, optional
+        If threshold2 is None, elements of arr less than this value (0
+        by default) will be filled with fill_val.  If threshold2 is not
+        None, elements of arr greater than this value but less than
+        threshold2 will be filled with fill_val.
       
-    threshold2 : float, optional.
-      Second threshold.
+    threshold2 : float, optional
+        Elements of arr less than this value but greater than threshold
+        will be filled with fill_val.  By default, high_thresh is set to
+        None and not used.
+
+    fill_val : float or numpy.nan, optional
+        Value (np.nan by default) with which to fill elements below
+        threshold or between threshold and threshold2.
 
     Returns
     -------
-    An array shaped like the input, with the values outside the threshold
-    replaced with fill_val.
-    
-    Examples
-    --------
+    a2 : array_like
+        An array with the same shape as arr, but with values below
+        threshold or between threshold and threshold2 replaced with
+        fill_val.
+
+    Notes
+    -----
+    arr itself is not altered.
+
     """
     a2 = np.empty_like(arr)
     a2.fill(fill_val)
-    mth = threshold_arr(arr,threshold,threshold2)
+    mth = threshold_arr(arr, threshold, threshold2)
     idx,vals = mth[:-1], mth[-1]
     a2[idx] = vals
-    
     return a2
 
 
@@ -399,47 +460,79 @@ def replace_diag(arr,val=0):
     return arr
 
 
-def cost2thresh(cost,sub,bl,lk,last,idc = [],costlist=[]):
-    """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
-    
-    inputs:
-    cost: cost value for which we need the associated threshold
-    sub: subject number
-    bl: block number
-    lk: lookup table (block x subject x cost
-    last: last threshold value
+def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
+    """Return the threshold associated with a particular cost.
 
-    output:
-    th: threshold value for this cost"""
+    The cost is assessed with regard to block 'bl' and subject 'sub'.
+    
+    Parameters
+    ----------
+    cost: float
+        Cost value for which the associated threshold will be returned.
 
-    #print cost,sub,bl
-    
-    ind=np.where(lk[bl][sub][1]==cost)
-    th=lk[bl][sub][0][ind]
-    
-    if len(th)>1:
-        th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
-        print 'multiple thresh'
-    elif len(th)<1:
-        done = 1
-        while done:
-            idc = idc-1
-            newcost = costlist[idc]
-            print idc,newcost
-            ind=np.where(lk[bl][sub][1]==newcost)
-            th=lk[bl][sub][0][ind]
-            if len(th) > 1:
-                th = th[0]
-                done = 0
-                
-        #th=last #if there is no associated thresh value because of repeats, just use the previous one
-        print 'use previous thresh'
-        
+    sub: integer
+        Subject number.
+
+    bl: integer
+        Block number.
+
+    lk: numpy array
+        Lookup table with blocks X subjects X 2 (threshold or cost, in
+        that order) X thresholds/costs.  Each threshold is a value
+        representing the lowest correlation value accepted.  They are
+        ordered from least to greatest.  Each cost is the fraction of
+        all possible edges that exists in an undirected graph made from
+        this block's correlations (thresholded with the corresponding
+        threshold).
+
+    idc: integer or empty list, optional
+        Index in costlist corresponding to cost currently being
+        processed.  By default, idc is an empty list.
+
+    costlist: array_like
+        List of costs that are being queried with the current function
+        in order.
+
+    Returns
+    -------
+    th: float
+        Threshold value in lk corresponding to the supplied cost.  If
+        multiple entries matching cost exist, the smallest threshold
+        corresponding to these is returned.  If no entries matching cost
+        are found, return the threshold corresponding to the previous
+        cost in costlist.
+
+    Notes
+    -----
+    The supplied cost must exactly match an entry in lk for a match to
+    be registered.
+
+    """
+    # For this subject and block, find the indices corresponding to this cost.
+    # Note there may be more than one such index.  There will be no such
+    # indices if cost is not a value in the array.
+    ind = np.where(lk[bl][sub][1] == cost)
+    # The possibility of multiple (or no) indices implies multiple (or no)
+    # thresholds may be acquired here.
+    th = lk[bl][sub][0][ind]
+    n_thresholds = len(th)
+    if n_thresholds > 1:
+        th=th[0]
+        print(''.join(['Subject %s has multiple thresholds in block %d ',
+                       'corresponding to a cost of %f.  The smallest is being',
+                       ' used.']) % (sub, bl, cost))
+    elif n_thresholds < 1:
+        idc = idc - 1
+        newcost = costlist[idc]
+        th = cost2thresh(newcost, sub, bl, lk, idc, costlist)
+        print(''.join(['Subject %s does not have a threshold in block %d ',
+                       'corresponding to a cost of %f.  The threshold ',
+                       'matching the nearest previous cost in costlist is ',
+                       'being used.']) % (sub, block, cost))
     else:
         th=th[0]
-      
-    #print th    
     return th
+
 
 def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
     """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
@@ -461,25 +554,76 @@ def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
     
     if len(th)>1:
         th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
-        print 'multiple thresh'
+        print('multiple thresh')
     elif len(th)<1:
         done = 1
         while done:
             idc = idc-1
             newcost = costlist[idc]
-            print idc,newcost
+            print(idc,newcost)
             ind=np.where(lk[bl][sub][1]==newcost)
             th=lk[bl][sub][0][ind]
             if len(th) > 1:
                 th = th[0]
                 done = 0
         #th=last #if there is no associated thresh value because of repeats, just use the previous one
-        print 'use previous thresh'
+        print('use previous thresh')
     else:
         th=th[0]
       
     #print th    
     return th
+
+
+def apply_cost(corr_mat, cost, tot_edges):
+    """Threshold corr_mat to achieve cost.
+
+    Return the thresholded matrix and the threshold value.  In the
+    thresholded matrix, the main diagonal and upper triangle are set to
+    0, so information is held only in the lower triangle.
+
+    Parameters
+    ----------
+    corr_mat: array_like
+        Square matrix with ROI-to-ROI correlations.
+
+    cost: float
+        Fraction of all possible undirected edges desired in the
+        thresholded matrix.
+
+    tot_edges: integer
+        The number of possible undirected edges in a graph with the
+        number of nodes in corr_mat.
+
+    Returns
+    -------
+    thresholded_mat: array_like
+        Square matrix with correlations below threshold set to 0,
+        making the fraction of matrix elements that are non-zero equal
+        to cost.  In addition, the main diagonal and upper triangle are
+        set to 0.
+
+    threshold: float
+        Correlations below this value have been set to 0 in
+        thresholded_corr_mat.
+
+    Notes
+    -----
+    If not all correlations are unique, it is possible that there will
+    be no way to achieve the cost without, e.g., arbitrarily removing
+    one of two identical correlations while keeping the other.  Instead
+    of making such an arbitrary choice, this function retains all
+    identical correlations equal to or greater than threshold, even if
+    this means cost is not exactly achieved.
+
+    """
+    thresholded_mat = np.tril(corr_mat, -1)
+    n_nonzero = cost * tot_edges
+    elements = thresholded_mat.ravel()
+    threshold = elements[elements.argsort()[-n_nonzero]]
+    thresholded_mat[thresholded_mat < threshold] = 0
+    return thresholded_mat, threshold
+
 
 def network_ind(ntwk_type,n_nodes):
     """Reads in a network type, number of nodes total and returns the indices of that network"""
@@ -516,7 +660,7 @@ def network_ind(ntwk_type,n_nodes):
         subnets = {'k': net_aal}
         ALL_LABELS = net_aal
     else:
-        print 'do not recognize network type'
+        print('do not recognize network type')
     return roi_ind,subnets,ALL_LABELS
 
 
