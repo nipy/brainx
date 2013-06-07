@@ -602,14 +602,13 @@ class GraphPartition(object):
     def check_integrity(self, partition):
         """ Raises error if partition structure contains
         empty partitions or Nan values"""
-        
-        # Raise error if any partition is empty
-        if [partition[key] == set([]) for key in partition.keys()]:
-            raise ValueError("Partition index %s is empty" % (key))
-        
-        # Raise error if any partition contains NaN value(s)
-        if [np.isnan(value) for sets in partition.values() for value in sets]:
-            raise ValueError("Partition contains NaN value(s)")
+
+        for tmpset in partition.values():
+            if tmpset == set([]):
+                raise ValueError("Partition has empty key : %s"%partition)
+            if any([np.isnan(x) for x in tmpset]):
+                raise ValueError("Partition contains NaN value(s)")
+            
 
 #-----------------------------------------------------------------------------
 # Functions
