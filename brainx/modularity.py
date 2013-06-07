@@ -1222,13 +1222,12 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
         npt.assert_almost_equal(debug_partition.modularity(),
                                 graph_part_final.modularity(), 11)
 
-        for mod in graph_part_final.index:
-            if len(graph_part_final.index[mod]) < 1:
-                empty_module('LAST CHECK: Empty module after module %s,SA' % (movetype))
+        debug_partition.check_integrity(graph_part_final.index)
 
     if extra_info:
         extra_dict = dict(energy = energy_array, temp = temp_array)
-        #return graph_partition, extra_dict
+        graph_part_final.check_integrity(graph_part_final.index)
+	#return graph_partition, extra_dict
         return graph_part_final, extra_dict
     else:
         #return graph_partition
@@ -1245,9 +1244,8 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
             raise ValueError('mismatch in energy and modularity')
         
-        check_integrity(graph_part_final)
 
-        return graph_part_final,graph_part_final.modularity()
+        return graph_part_final, graph_part_final.modularity()
 
 
 def modularity_matrix(g):
