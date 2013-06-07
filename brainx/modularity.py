@@ -156,7 +156,7 @@ class GraphPartition(object):
             mod_e[m] = perc_within #all of the E's
             mod_a[m] = perc_btwn+perc_within #all of the A's
             if np.isnan(mod_e[m]) or np.isnan(mod_a[m]):
-                raise ArithmaticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
+                raise ArithmeticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
 
         return mod_e, mod_a
 
@@ -172,7 +172,7 @@ class GraphPartition(object):
         mod = modularity
         """
         if np.isnan((np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()):
-            1/0
+            raise ArithmeticError('NAN found: mod_e=%s, mod_a=%s'%(mod_e[m], mod_a[m]))
         return (np.array(self.mod_e) - (np.array(self.mod_a)**2)).sum()
 
     ##TODO can we remove this?? CM
@@ -516,7 +516,6 @@ class GraphPartition(object):
 
         if coin_flip > 0.5:
             #merge
-            #return self.module_merge(m1,m2)
             return self.compute_module_merge(m1,m2)
         else:
             #split
@@ -537,7 +536,7 @@ class GraphPartition(object):
             return self.compute_module_split(m1,n1,n2)
 
     def determine_node_split(self,m1):
-        """ Determine hwo to split notes within a module
+        """ Determine how to split nodes within a module
         """
 
         # list of nodes within that module
@@ -552,68 +551,6 @@ class GraphPartition(object):
         n2 = set(list_nods[nod_split_ind:]) #at least 1 large
 
         return n1,n2
-
-
-    def random_mod_old(self):
-        """Makes a choice whether to merge or split modules in a partition
-
-        Returns:
-        -------
-        if splitting: m1, n1, n2
-          m1: the module to split
-          n1: the set of nodes to put in the first output module
-          n2: the set of nodes to put in the second output module
-
-        if merging: m1, m2
-          m1: module 1 to merge
-          m2: module 2 to merge
-        """
-
-        # number of modules in the partition
-        num_mods=len(self)
-
-
-        # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
-        # greater than 0.5 means we will merge the modules.
-
-        if num_mods >= self.num_nodes-1:
-            coin_flip = 1 #always merge if each node is in a separate module
-        elif num_mods <= 2:
-            coin_flip = 0 #always split if there's only one module
-        else:
-            coin_flip = random.random()
-
-        #randomly select two modules to operate on
-        rand_mods = np.random.permutation(range(num_mods))
-        m1 = rand_mods[0]
-        m2 = rand_mods[1]
-
-        if coin_flip > 0.5:
-            #merge
-            #return self.module_merge(m1,m2)
-            return self.module_merge(m1,m2)
-        else:
-            #split
-            # cannot have a module with less than 1 node
-            while len(self.index[m1]) <= 1:
-
-                #reselect the first  module
-                rand_mods = np.random.permutation(range(num_mods))
-                m1 = rand_mods[0]
-                #m1 = random.randint(0,num_mods)
-
-            # list of nodes within that module
-            list_nods = list(self.index[m1])
-
-            # randomly partition the list of nodes into 2
-            nod_split_ind = random.randint(1,len(list_nods)) #can't pick the first node as the division
-            n1 = set(list_nods[:nod_split_ind])
-            n2 = set(list_nods[nod_split_ind:])
-
-            #We may want to return output of merging/splitting directly, but
-            #for now we're returning inputs for those modules.
-
-            return self.module_split(m1,n1,n2)
 
     def random_node(self):
         """ Randomly reassign one node from one module to another
@@ -662,7 +599,16 @@ class GraphPartition(object):
         #Store references to the original graph and label dict
         self.bestindex = copy.deepcopy(self.index)
 
+    def check_integrity(self, partition):
+        """ Raises error if partition structure contains
+        empty partitions or Nan values"""
 
+        for tmpset in partition.values():
+            if tmpset == set([]):
+                raise ValueError("Partition has empty key : %s"%partition)
+            if any([np.isnan(x) for x in tmpset]):
+                raise ValueError("Partition contains NaN value(s)")
+            
 
 #-----------------------------------------------------------------------------
 # Functions
@@ -1276,13 +1222,12 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
         npt.assert_almost_equal(debug_partition.modularity(),
                                 graph_part_final.modularity(), 11)
 
-        for mod in graph_part_final.index:
-            if len(graph_part_final.index[mod]) < 1:
-                empty_module('LAST CHECK: Empty module after module %s,SA' % (movetype))
+        debug_partition.check_integrity(graph_part_final.index)
 
     if extra_info:
         extra_dict = dict(energy = energy_array, temp = temp_array)
-        #return graph_partition, extra_dict
+        graph_part_final.check_integrity(graph_part_final.index)
+	#return graph_partition, extra_dict
         return graph_part_final, extra_dict
     else:
         #return graph_partition
@@ -1298,8 +1243,9 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
             raise ValueError('mismatch in energy and modularity')
+        
 
-        return graph_part_final,graph_part_final.modularity()
+        return graph_part_final, graph_part_final.modularity()
 
 
 def modularity_matrix(g):
