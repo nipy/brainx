@@ -192,8 +192,16 @@ class GraphPartition(object):
 
         Returns
         -------
-
+            merged_module : set of merged nodes 
+            e1[0] : element of e vector for merged module
+            a1[0] : element of a vector for merged module
+            -delta_q : change in modularity induced by this change
+            'merge' : string indicating the type of change that was applied
+            m1 : index of the first merged module
+            m2 : index of the second merged module
+            m2 : index of the second merged module
           """
+          
         # Below, we want to know that m1<m2, so we enforce that:
         if m1>m2:
             m1, m2 = m2, m1
