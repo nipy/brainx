@@ -29,18 +29,14 @@ from matplotlib import pyplot as plt
 # Our own modules
 import util
 
-#-----------------------------------------------------------------------------
-# Functions
-#-----------------------------------------------------------------------------
-def empty_module(msg='Empty module'):
-    """Raise an exception if an empty module is found"""
-
-    raise ValueError(msg)
-
 
 #-----------------------------------------------------------------------------
 # Class declarations
 #-----------------------------------------------------------------------------
+
+class EmptyModuleError(ValueError):
+    pass
+
 
 class GraphPartition(object):
     """Represent a graph partition.
@@ -283,9 +279,13 @@ class GraphPartition(object):
 
         Returns
         -------
+        
           The change in modularity resulting from the change
           (Q_final-Q_initial)"""
 
+        # FIXME : docstring is wrong (the partition is modified in-place), and
+        # we shouldn't be returning split_modules at all from this.
+          
         # create a dict that contains the new modules 0 and 1 that have the
         # sets n1 and n2 of nodes from module m.
         split_modules = {0: n1, 1: n2}
@@ -318,19 +318,25 @@ class GraphPartition(object):
           The two sets of nodes in which the nodes originally in module m will
           be split.  Note: It is the responsibility of the caller to ensure
           that the set n1+n2 is the full set of nodes originally in module m.
+        split_modules : dict   DEPRECATED - will be removed soon.
+          The dict ``{0: n1, 1: n2}``.
+        e_new : array
+           The e vector for the resulting partition after the split has been applied.
+        a_new : array
+           The a vector for the resulting partition after the split has been applied.
 
         Returns
         -------
-          The change in modularity resulting from the change
-          (Q_final-Q_initial)"""
+            None : the partition is modified in-place.
+        """
 
         # To reuse slicing code, use m1/m2 lables like in merge code
         m1 = m
         m2 = len(self)
 
-        #Add a new module to the end of the index dictionary
-        self.index[m1] = split_modules[0] #replace m1 with n1
-        self.index[m2] = split_modules[1] #add in new module, fill with n2
+        # Add a new module to the end of the index dictionary
+        self.index[m1] = n1
+        self.index[m2] = n2
 
         self.mod_e[m1] = e_new[0]
         self.mod_a[m1] = a_new[0]
@@ -351,13 +357,9 @@ class GraphPartition(object):
         # If there are empty modules after the operation, remove them from the
         # index and rename the partition labels
         if len(self.index[m1])<1:
-            self.index.pop(m1)
-            rename_keys(self.index, m1)
-            return
+            EmptyModuleError('Empty module after module split, old mod')
         if len(self.index[m2])<1:
-            self.index.pop(m2)
-            rename_keys(self.index, m2)
-            return
+            EmptyModuleError('Empty module after module split, old mod')
 
     def node_update(self, n, m1, m2):
         """Moves a single node within or between modules
@@ -468,7 +470,7 @@ class GraphPartition(object):
 
         # This checks whether there is an empty module. If so, renames the keys.
         if len(self.index[m1]) < 1:
-            #empty_module('Empty module after node move')
+            #EmptyModuleError('Empty module after node move')
             self.index.pop(m1)
             rename_keys(self.index, m1)
             # Once the index structure changes, the labeling of E and A arrays
@@ -973,9 +975,9 @@ def mutual_information(d1, d2):
     # the entire partitions, we look for this problem at this stage, and bail
     # if there was an empty module.
 ##     if (nsum_row==0).any():
-##         empty_module("Empty module in second partition.")
+##         EmptyModuleError("Empty module in second partition.")
 ##     if (nsum_col==0).any():
-##         empty_module("Empty module in first partition.")
+##         EmptyModuleError("Empty module in first partition.")
 
     # nn is the total number of nodes
     nn = nsum_row.sum()
@@ -1104,7 +1106,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
                                             graph_partition.modularity(), 11)
                     for mod in graph_partition.index:
                         if len(graph_partition.index[mod]) < 1:
-                            empty_module('Empty module after module %s,SA' % (movetype))
+                            EmptyModuleError('Empty module after module %s,SA' % (movetype))
 
 
                 #maybe store the best one here too?
@@ -1174,7 +1176,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
                         for mod in graph_partition.index:
                             if len(graph_partition.index[mod]) < 1:
-                                empty_module('Empty module after ndoe move,SA')
+                                EmptyModuleError('Empty module after node move,SA')
 
 
                 #else:
