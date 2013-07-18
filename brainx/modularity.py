@@ -95,6 +95,7 @@ class GraphPartition(object):
         # Store the nodes as a set of contiguous integers (indices into
         #the adjacency_matrix), needed for many operations
         self._node_set = set(range(self.num_nodes))
+        self._node_names = graph.nodes()
         ## raise useful error if index is missing nodes in graph
         self._check_allnodes_in_index(graph)
  
@@ -510,8 +511,9 @@ class GraphPartition(object):
         num_mods=len(self)
 
 
-        # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
-        # greater than 0.5 means we will merge the modules.
+        # Make a random choice bounded between 0 and 1, 
+        #   less than 0.5 means we will split the modules
+        #   greater than 0.5 means we will merge the modules.
 
         if num_mods >= self.num_nodes-1: ### CG: why are we subtracting 1 here?
             coin_flip = 1 #always merge if each node is in a separate module
@@ -611,6 +613,15 @@ class GraphPartition(object):
         #Store references to the original graph and label dict
         self.bestindex = copy.deepcopy(self.index)
 
+    def index_as_node_names(self):
+        """ index by default contains references to integers represented the
+        nodes as indexed in the adjacency matrix defined in the original graph. 
+        This will return the index (partition) using the graph node names"""
+        named_part = []
+        for nmod, part in self.index.iteritems():
+            named_part.append([self._node_names[x] for x in part])
+        return named_part
+            
     def check_integrity(self, partition):
         """ Raises error if partition structure contains
         empty partitions or Nan values"""

@@ -55,7 +55,18 @@ def test_graphpartition():
     graph.add_edge('c','d')
     index = {0:set([0,1]), 1:set([2,3])}
     gpart = mod.GraphPartition(graph, index)
+    assert gpart._node_set == set([0,1,2,3])
 
+def test_index_as_node_names():
+    graph = nx.Graph()
+    graph.add_edge('a','b')
+    graph.add_edge('c','d')
+    ## NOTE network x does not store names as added
+    ## for this graph ['a', 'c', 'b', 'd']
+    index = {0:set([0,2]), 1:set([1,3])}
+    gpart = mod.GraphPartition(graph, index)
+    named_index = gpart.index_as_node_names()
+    assert ['a','b'] in named_index
 
 def test_random_modular_graph_between_fraction():
     """Test for graphs with non-zero between_fraction"""
