@@ -47,6 +47,15 @@ def betweenness_to_modularity(g,ppart):
 #-----------------------------------------------------------------------------
 # Tests
 #-----------------------------------------------------------------------------
+def test_graphpartition():
+    """ test GraphPartition correctly handles graph whose
+    nodes are strings"""
+    graph = nx.Graph()
+    graph.add_edge('a','b')
+    graph.add_edge('c','d')
+    index = {0:set([0,1]), 1:set([2,3])}
+    gpart = mod.GraphPartition(graph, index)
+
 
 def test_random_modular_graph_between_fraction():
     """Test for graphs with non-zero between_fraction"""
@@ -428,16 +437,20 @@ def test_mutual_information():
                 n1 = set(list(graph_partition3.index[0])[::2])
                 n2 = set(list(graph_partition3.index[0])[1::2])
 
-                split_modules,e_new,a_new,d,t,m,n1,n2 = graph_partition3.compute_module_split(0,n1,n2)
-                graph_partition3.apply_module_split(m,n1,n2,split_modules,e_new,a_new)
-                mi3 = mod.mutual_information(ppart,graph_partition3.index)
+                (split_modules, e_new,
+                 a_new, d, t, m,
+                 n1,n2) = graph_partition3.compute_module_split(0,n1,n2)
+                graph_partition3.apply_module_split(m, n1, n2, 
+                                                    split_modules,
+                                                    e_new, a_new)
+                mi3 = mod.mutual_information(ppart, graph_partition3.index)
                 npt.assert_array_less(mi3,mi_orig)
                 ## NOTE: CORRECTNESS NOT TESTED YET
 
 
 def test_random_mod():
-    """ Test the GraphPartition operation that selects random modules to merge
-    and split
+    """ Test the GraphPartition operation that selects random modules 
+    to merge and split
     XXX not working yet"""
 
     #nnod_mod, av_degrees, nmods
@@ -767,7 +780,8 @@ def test_badindex_graphpartition():
     gp = mod.GraphPartition(g, index)
     nt.assert_true(gp.index == index)
     npt.assert_raises(TypeError, mod.GraphPartition, g, {0: g.nodes()})
-    npt.assert_raises(ValueError, mod.GraphPartition, g, {0:set(g.nodes()[:-1])})
+    npt.assert_raises(ValueError, mod.GraphPartition, g, 
+                      {0:set(g.nodes()[:-1])})
     npt.assert_raises(TypeError, mod.GraphPartition, g, g.nodes())
 
 
