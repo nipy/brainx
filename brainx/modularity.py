@@ -89,15 +89,15 @@ class GraphPartition(object):
         self.num_edges = graph.number_of_edges()
 
         if self.num_edges == 0:
-            raise ValueError("Cannot create a graph partition of only"\
-                    "if graph has no edges/connections")
+            raise ValueError("Cannot create a graph partition "\
+                    "if graph has no edges")
 
         # Store the nodes as a set of contiguous integers (indices into
         #the adjacency_matrix), needed for many operations
         self._node_set = set(range(self.num_nodes))
         self._node_names = graph.nodes()
         ## raise useful error if index is missing nodes in graph
-        self._check_allnodes_in_index(graph)
+        self._check_allnodes_in_index()
  
         # Now, build the edge information used in modularity computations
         self.mod_e, self.mod_a = self._edge_info()
@@ -117,16 +117,13 @@ class GraphPartition(object):
         if not all([ x== type(set()) for x in index_types]):
             raise TypeError('index values should be of type set():: %s'%(index_types))
 
-    def _check_allnodes_in_index(self, graph):
+    def _check_allnodes_in_index(self):
         """Check that index contains all nodes in graph"""
         sets = self.index.values()
-        all = []
-        for item in sets:
-            all += list(item)
-        if not sorted(all) == sorted(self._node_set):
-            missing = [x for x in all if not x in self._node_set]
-            raise ValueError('index does not contain all nodes: missing %s'%missing)
-
+        indexnodes = set.union(*sets)
+        missing = self._node_set.difference(indexnodes)
+        if missing:
+            raise ValueError('index does not contain all graph nodes: missing %s'%missing)
 
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
         """Create the vectors of edge information.
@@ -619,7 +616,7 @@ class GraphPartition(object):
         This will return the index (partition) using the graph node names"""
         named_part = []
         for nmod, part in self.index.iteritems():
-            named_part.append([self._node_names[x] for x in part])
+            named_part.append( [self._node_names[x] for x in part] )
         return named_part
             
     def check_integrity(self, partition):
