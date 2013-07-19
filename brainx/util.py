@@ -27,7 +27,7 @@ def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
 """
 
     cmat = data[b,s]
-    th = cost2thresh(co,s,b,lk,[],idc,costlist) #get the right threshold
+    th = cost2thresh(co,s,b,lk,idc,costlist) #get the right threshold
     
     #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)

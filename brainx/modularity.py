@@ -75,9 +75,7 @@ class GraphPartition(object):
         ## add quick check to make sure the passed index is
         ## a dict of sets
         self._check_index_contains_sets()
-        ## raise useful error if index is missing nodes in graph
-        self._check_allnodes_in_index(graph)
-        
+       
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
 
@@ -91,11 +89,16 @@ class GraphPartition(object):
         self.num_edges = graph.number_of_edges()
 
         if self.num_edges == 0:
-            raise ValueError("TODO: Cannot create a graph partition of only one node.")
+            raise ValueError("Cannot create a graph partition "\
+                    "if graph has no edges")
 
-        # Store the nodes as a set, needed for many operations
-        self._node_set = set(graph.nodes())
-
+        # Store the nodes as a set of contiguous integers (indices into
+        #the adjacency_matrix), needed for many operations
+        self._node_set = set(range(self.num_nodes))
+        self._node_names = graph.nodes()
+        ## raise useful error if index is missing nodes in graph
+        self._check_allnodes_in_index()
+ 
         # Now, build the edge information used in modularity computations
         self.mod_e, self.mod_a = self._edge_info()
 
@@ -114,16 +117,13 @@ class GraphPartition(object):
         if not all([ x== type(set()) for x in index_types]):
             raise TypeError('index values should be of type set():: %s'%(index_types))
 
-    def _check_allnodes_in_index(self, graph):
+    def _check_allnodes_in_index(self):
         """Check that index contains all nodes in graph"""
         sets = self.index.values()
-        all = []
-        for item in sets:
-            all += list(item)
-        if not sorted(all) == sorted(graph.nodes()):
-            missing = [x for x in all if not x in graph.nodes()]
-            raise ValueError('index does not contain all nodes: missing %s'%missing)
-
+        indexnodes = set.union(*sets)
+        missing = self._node_set.difference(indexnodes)
+        if missing:
+            raise ValueError('index does not contain all graph nodes: missing %s'%missing)
 
     def _edge_info(self, mod_e=None, mod_a=None, index=None):
         """Create the vectors of edge information.
@@ -508,8 +508,9 @@ class GraphPartition(object):
         num_mods=len(self)
 
 
-        # Make a random choice bounded between 0 and 1, less than 0.5 means we will split the modules
-        # greater than 0.5 means we will merge the modules.
+        # Make a random choice bounded between 0 and 1, 
+        #   less than 0.5 means we will split the modules
+        #   greater than 0.5 means we will merge the modules.
 
         if num_mods >= self.num_nodes-1: ### CG: why are we subtracting 1 here?
             coin_flip = 1 #always merge if each node is in a separate module
@@ -609,6 +610,15 @@ class GraphPartition(object):
         #Store references to the original graph and label dict
         self.bestindex = copy.deepcopy(self.index)
 
+    def index_as_node_names(self):
+        """ index by default contains references to integers represented the
+        nodes as indexed in the adjacency matrix defined in the original graph. 
+        This will return the index (partition) using the graph node names"""
+        named_part = []
+        for nmod, part in self.index.iteritems():
+            named_part.append( [self._node_names[x] for x in part] )
+        return named_part
+            
     def check_integrity(self, partition):
         """ Raises error if partition structure contains
         empty partitions or Nan values"""
