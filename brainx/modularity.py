@@ -1270,13 +1270,20 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
 def modularity_matrix(g):
     """Modularity matrix of the graph.
+    
+    Parameters
+    ----------
+    g : NetworkX graph
+        input graph
 
-    The eigenvector corresponding to the largest eigenvalue of the modularity
-    matrix is analyzed to assign clusters.
-
+    Returns
+    -------
+    B : numpy array
+        modularity matrix (graph laplacian)
+    
     """
     A = np.asarray(nx.adjacency_matrix(g))
-    k = np.sum(A, axis=0)
+    k = np.sum(A, axis=0) #vertex degree
     M = np.sum(k) # 2x number of edges
 
     return A - ((k * k[:, None]) / float(M))
@@ -1312,15 +1319,13 @@ def newman_partition(g, max_div=np.inf):
         ----------
         p : array of ints
             Node labels.
-        B : ndarray
-            Modularity matrix.
+        max_div : int
+            maximum number of divisions (default np.inf)
 
         Returns
         -------
-        pp, qq : list of ints
-            Partitioning of node labels.  If the partition is indivisible, then
-            only `pp` is returned.
-
+        out : list of ints
+            Partitioning of node labels. 
         """
         p = np.asarray(p)
 
@@ -1329,13 +1334,8 @@ def newman_partition(g, max_div=np.inf):
 
         # Construct the subgraph modularity matrix
         A_ = A[p, p[:, None]]
-        k_ = np.sum(A_, axis=0)
-        M_ = np.sum(k_)
-
-        B_ = B[p, p[:, None]]
-        B_ = B_ - np.diag(k_ - k[p] * M_ / float(M))
-
-#        w, v = nl.eigh(B_)
+        graph_A_ = nx.from_numpy_matrix(A_, nx.Graph())
+        B_ = modularity_matrix(graph_A_)
         w, v = sl.eigh(B_, eigvals=(len(B_) - 2, len(B_) - 1))
 
         # Find the maximum eigenvalue of the modularity matrix
@@ -1349,6 +1349,9 @@ def newman_partition(g, max_div=np.inf):
         # to nodes in the first partition and 1 for nodes in the second
         v_max = v[:, n]
         mask = (v_max < 0)
+        # if the mask is all true or all false, this will not split the partition
+        if not np.any(mask) or not np.any(~mask): 
+            return [p]
         s = np.ones_like(v_max)
         s[mask] = -1
 
