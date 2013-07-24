@@ -1307,6 +1307,10 @@ def newman_partition(g, max_div=np.inf):
 
     """
     A = np.asarray(nx.adjacency_matrix(g))
+    if not A.sum() == A.astype(bool).sum():
+        raise ValueError('Adjacency matrix is weighted, need binary matrix')
+    ## add line to binarize adj_matrix if not binary
+    ## warning?
     k = np.sum(A, axis=0)
     M = np.sum(A) # 2x number of edges
     B = modularity_matrix(g)
