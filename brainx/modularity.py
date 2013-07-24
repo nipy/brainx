@@ -1335,6 +1335,9 @@ def newman_partition(g, max_div=np.inf):
         # Construct the subgraph modularity matrix
         A_ = A[p, p[:, None]]
         graph_A_ = nx.from_numpy_matrix(A_, nx.Graph())
+        # make sure partition has edges
+        if graph_A_.number_of_edges() <= 1:
+            return [p]
         B_ = modularity_matrix(graph_A_)
         w, v = sl.eigh(B_, eigvals=(len(B_) - 2, len(B_) - 1))
 
