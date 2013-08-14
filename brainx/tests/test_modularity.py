@@ -795,6 +795,24 @@ def test_badindex_graphpartition():
                       {0:set(g.nodes()[:-1])})
     npt.assert_raises(TypeError, mod.GraphPartition, g, g.nodes())
 
+def test_newman_partition():
+    """ Test Newman Partition function """
+    tmpmat = np.random.random((10,10))
+    tmpmat[tmpmat < .5] = 0
+    graph = nx.from_numpy_matrix(tmpmat, nx.Graph(weighted = False))
+    npt.assert_raises(ValueError, mod.newman_partition, graph)
+    tmpmat[:] = 0
+    # test that no edges raises error (from GraphPartition)
+    graph = nx.from_numpy_matrix(tmpmat, nx.Graph(weighted = False))
+    npt.assert_raises(ValueError, mod.newman_partition, graph)
+    tmpmat[:] = 1
+    util.fill_diagonal(tmpmat, 0)
+    graph = nx.from_numpy_matrix(tmpmat, nx.Graph(weighted=False))
+    part = mod.newman_partition(graph)
+    ## if all edges are connected expect only one partition
+    expected_part = {0: set([0,1,2,3,4,5,6,7,8,9])}
+    nt.assert_equal(part.index, expected_part)
+
 
 if __name__ == "__main__":
     npt.run_module_suite()
