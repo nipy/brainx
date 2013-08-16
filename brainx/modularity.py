@@ -1359,7 +1359,9 @@ def newman_partition(g, max_div=np.inf):
         # if the mask is all True or all False, this will not split the partition
         # and would create an empty partition
         # catch by checking max vector contains pos and neg values
-        if np.abs(v_max.sum()) == np.abs(v_max).sum(): 
+        is_positive = np.sign(v_max) >= 0
+        is_negative = np.sign(v_max) <= 0
+        if np.all(is_positive) or np.all(is_negative):
             return [p]
         s = np.ones_like(v_max)
         s[mask] = -1
