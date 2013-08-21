@@ -28,6 +28,17 @@ def test_slice_data():
     npt.assert_raises(IndexError, util.slice_data, data_5d, subjects, blocks)
 
 
+def test_all_positive():
+    jnk = np.random.random(40)
+    npt.assert_equal(util.all_positive(jnk), True)
+    # zeros counted as positive
+    jnk[0] = 0
+    npt.assert_equal(util.all_positive(jnk), True)
+    # find real negative
+    jnk = jnk - 0.5
+    npt.assert_equal(util.all_positive(jnk), False) 
+
+    
 def test_cost_size():
     n_nodes = 5
     npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
@@ -116,4 +127,20 @@ def test_no_empty_modules():
     b[2] = []
     util.assert_no_empty_modules(a)
     nt.assert_raises(ValueError, util.assert_no_empty_modules, b)
-    
+
+def test_rescale_arr():
+    array = np.arange(5)
+    scaled = util.rescale_arr(array, 3, 6)
+    npt.assert_equal(scaled.min(), 3)
+    scaled = util.rescale_arr(array, -10, 10)
+    npt.assert_equal(scaled.min(), -10)
+    npt.assert_equal(scaled.max(), 10)
+
+def test_normalize():
+    array = np.arange(5)
+    result = util.normalize(array)
+    npt.assert_equal(result.min(), 0)
+    npt.assert_equal(result.max(), 1)
+    npt.assert_raises(ValueError, util.normalize, array, 'blueberry', (0,2)) 
+
+
