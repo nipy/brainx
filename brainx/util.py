@@ -130,8 +130,8 @@ def make_cost_thresh_lookup(adjacency_matrix):
     -------
     lookup : numpy array
         3 X number_of_edges, numpy array
-        row 0 is sorted thresholds
-        row 1 is cost at each threshold
+        row 0 is sorted thresholds (largest -> smallest)
+        row 1 is cost at each threshold (smallest -> largest)
         row 2 is costs rounded to one decimal point
     """
 
@@ -139,9 +139,9 @@ def make_cost_thresh_lookup(adjacency_matrix):
     edges = adjacency_matrix[ind]
     nedges = edges.shape[0]
     lookup = np.zeros((3, nedges))
-    lookup[0,:] = sorted(edges)
+    lookup[0,:] = sorted(edges, reverse = True)
     lookup[1,:] = np.arange(nedges) / float(nedges)
-    lookup[2,:] = np.round(lookup[1,:], decimals = 1)
+    lookup[2,:] = np.round(lookup[1,:], decimals = 2)
     return lookup
 
 def cost_size(nnodes):

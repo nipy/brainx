@@ -38,7 +38,19 @@ def test_all_positive():
     jnk = jnk - 0.5
     npt.assert_equal(util.all_positive(jnk), False) 
 
-    
+def test_make_cost_thresh_lookup():
+    adj_mat = np.zeros((10,10))
+    ind = np.triu_indices(10,1)
+    thresholds = np.linspace(.1, .8, 45)
+    adj_mat[ind] = thresholds
+    lookup = util.make_cost_thresh_lookup(adj_mat)
+
+    npt.assert_equal(sorted(thresholds, reverse=True), lookup[0,:])
+    npt.assert_equal(lookup[1,0] < lookup[1,-1], True) 
+    # costs in ascending order
+    ## last vecore is same as second vector rounded to 2 decimals
+    npt.assert_almost_equal(lookup[1], lookup[2], decimal=2)
+
 def test_cost_size():
     n_nodes = 5
     npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
