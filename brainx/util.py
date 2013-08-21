@@ -14,6 +14,31 @@ import networkx as nx
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
+def slice_data(data, sub, block, subcond=None):
+    """ pull symmetric matrix from data block (4D or 5D)
+    
+    Parameters
+    ----------
+    data : numpy array
+        4D array (block, sub, nnode, nnode)
+        5D array (subcond, block, sub, nnode, nnode)
+    sub : int
+        int representing subject to index in data
+    block : int
+        int representing block to index in data
+    subcond : int
+        int representing optional subcondition from 5D array
+
+    Returns
+    -------
+    adjacency_matrix : numpy array
+        symmetric numpy array (innode, nnode)
+    """
+    if subcond:
+        return data[subcond, block, sub]
+    return data[block, sub]
+
+
 def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
     """ Function which formats matrix for a particular subject and particular block (thresholds, upper-tris it) so that we can make a graph object out of it
 

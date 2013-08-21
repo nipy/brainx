@@ -17,6 +17,17 @@ from brainx import util
 # Functions
 #-----------------------------------------------------------------------------
 
+def test_slice_data():
+    subcond, blocks, subjects, nodes = 5, 10, 20, 4 
+    data_4d = np.ones((blocks, subjects, nodes, nodes))
+    data_5d = np.ones((subcond, blocks, subjects, nodes, nodes))
+    sym_4d = util.slice_data(data_4d, subjects - 1 , blocks - 1 )
+    sym_5d = util.slice_data(data_5d, subjects -1 , blocks-1, subcond-1)
+    npt.assert_equal(sym_4d.shape, (nodes, nodes))
+    npt.assert_equal(sym_5d.shape, (nodes, nodes))
+    npt.assert_raises(IndexError, util.slice_data, data_5d, subjects, blocks)
+
+
 def test_cost_size():
     n_nodes = 5
     npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
