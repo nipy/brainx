@@ -45,11 +45,11 @@ def test_make_cost_thresh_lookup():
     adj_mat[ind] = thresholds
     lookup = util.make_cost_thresh_lookup(adj_mat)
 
-    npt.assert_equal(sorted(thresholds, reverse=True), lookup[0,:])
-    npt.assert_equal(lookup[1,0] < lookup[1,-1], True) 
+    npt.assert_equal(sorted(thresholds, reverse=True), lookup.weight)
+    npt.assert_equal(lookup[0].cost < lookup[-1].cost, True) 
     # costs in ascending order
-    ## last vecore is same as second vector rounded to 2 decimals
-    npt.assert_almost_equal(lookup[1], lookup[2], decimal=2)
+    ## last vector is same as second vector rounded to 2 decimals
+    npt.assert_almost_equal(lookup.actual_cost, lookup.cost, decimal=2)
 
 def test_cost_size():
     n_nodes = 5

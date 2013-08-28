@@ -128,20 +128,34 @@ def make_cost_thresh_lookup(adjacency_matrix):
     adjacency matrix, sorts (lowest -> highest)
     Returns
     -------
-    lookup : numpy array
-        3 X number_of_edges, numpy array
-        row 0 is sorted thresholds (largest -> smallest)
-        row 1 is cost at each threshold (smallest -> largest)
-        row 2 is costs rounded to one decimal point
+    lookup : numpy record array
+        shape = number of edges
+        'weight' is sorted weight values (largest -> smallest)
+        'actual_cost' is cost at each weight (smallest -> largest)
+        'cost' is 'actual_costs' rounded to two decimal points
+    Example
+    -------
+    lookup = make_cost_thresh_lookup(adj_mat)
+    lookup[100] 
+      (0.3010111736597483, 0.704225352112676, 0.7)
+    lookup[100].weight
+       0.3010111736597483
+    lookup[100].actual_cost
+       0.704225352112676
+    lookup[100].cost
+       0.70
+
     """
 
     ind = np.triu_indices_from(adjacency_matrix, k = 1)
     edges = adjacency_matrix[ind]
     nedges = edges.shape[0]
-    lookup = np.zeros((3, nedges))
-    lookup[0,:] = sorted(edges, reverse = True)
-    lookup[1,:] = np.arange(nedges) / float(nedges)
-    lookup[2,:] = np.round(lookup[1,:], decimals = 2)
+    lookup = np.recarray((nedges), dtype = [('weight', float), 
+                                            ('actual_cost', float), 
+                                            ('cost', float)])
+    lookup['weight'] = sorted(edges, reverse = True)
+    lookup['actual_cost'] = np.arange(nedges) / float(nedges)
+    lookup['cost'] = np.round(lookup['actual_cost'], decimals = 2)
     return lookup
 
 def cost_size(nnodes):
