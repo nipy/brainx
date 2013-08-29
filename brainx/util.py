@@ -37,7 +37,8 @@ def slice_data(data, sub, block, subcond=None):
     return data[subcond, block, sub]
 
 
-def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
+def format_matrix(data, s, b, lk, co, idc=[], costlist=[],
+        nouptri=False, asbool=True):
     """ Function which thresholds the adjacency matrix for a particular 
     subject and particular block, using lookuptable to find thresholds, 
     cost value to find threshold, costlist
@@ -46,24 +47,37 @@ def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
     Parameters
     -----------
     data : full data array 4D (block, sub, node, node)
-    s = subject
-    b = block
-    lk = lookup table for study
-    co = cost value to threshold at
-    idc = index of ideal cost
-    costlist = list (size num_edges) with ordered values used to find 
+    s : int
+        subject
+    b : int
+        block
+    lk : numpy array
+        lookup table for study
+    co : int
+        cost value to threshold at
+    idc : int
+        index of ideal cost
+    costlist : list
+        list (size num_edges) with ordered values used to find 
         threshold to control number of edges
-    nouptri = if False only keeps upper tri, True yields symmetric matrix
+    nouptri : bool
+        if False only keeps upper tri, True yields symmetric matrix
+    asbool : bool
+        if True return boolean mask, otherwise returns thesholded
+        weight matrix
     """
-    cmat = data[b,s]
+    cmat = slice_data(data, b,s)
     th = cost2thresh(co,s,b,lk,idc,costlist) #get the right threshold
     cmat = thresholded_arr(cmat,th,fill_val=0)
     if not nouptri:
         cmat = np.triu(cmat,1)
+    if asbool:
+        return ~(cmat == 0)
     return cmat
 
 
-def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
+def format_matrix2(data, s, sc, c, lk, co, idc=[],
+        costlist=[], nouptri=False, asbool=True):
     """ Function which formats matrix for a particular subject and 
     particular block (thresholds, upper-tris it) so that we can 
     make a graph object out of it
@@ -88,14 +102,19 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
         list of possible costs
     nouptri : bool
         False zeros out diag and below, True returns symmetric matrix
+    asbool : bool
+        If true returns boolean mask, otherwise returns thresholded w
+        weighted matrix
     """
     cmat = slice_data(data, s, c, sc) 
     th = cost2thresh2(co,s,sc,c,lk,[],idc,costlist) #get the right threshold
     cmat = thresholded_arr(cmat,th,fill_val=0)
     if not nouptri:
         cmat = np.triu(cmat,1)
-    # return boolean mask
-    return ~(cmat == 0)
+    if asbool:
+        # return boolean mask
+        return ~(cmat == 0)
+    return cmat
 
 def threshold_adjacency_matrix(adj_matrix, cost):
     """docstring for threshold_adjacency_matrix(adj_matrix, cost"""

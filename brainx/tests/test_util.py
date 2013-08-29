@@ -92,10 +92,19 @@ class TestCost2Thresh(unittest.TestCase):
         npt.assert_almost_equal(thr, real_thr, decimal=7)
 
     def test_format_matrix(self):
-        thresh_matrix = util.format_matrix2(self.data_5d, 0,0,0,
+        bool_matrix = util.format_matrix2(self.data_5d, 0,0,0,
                 self.lookup, self.costs[100])
-        print thresh_matrix.sum()
-        npt.assert_equal(thresh_matrix.sum(), 100 -1)
+        npt.assert_equal(bool_matrix.sum(), 100 -1)
+        thresh_matrix = util.format_matrix2(self.data_5d, 0,0,0,
+                self.lookup, self.costs[100],asbool = False)
+        npt.assert_equal(bool_matrix.sum()== thresh_matrix.sum(), False)
+        npt.assert_almost_equal(thresh_matrix.sum(), 
+                94.183321784530804, decimal=7)
+        ## test format_matrix call on format_matrix2
+        bool_matrix_sm = util.format_matrix(self.data_5d[0].squeeze(),
+                0,0, self.lookup[0].squeeze(), self.costs[100])
+        npt.assert_equal(bool_matrix.sum(), bool_matrix_sm.sum())
+
 
     def test_threshold_adjacency_matrix(self):
         adj_matrix = self.data_5d[0,0,0].squeeze()
