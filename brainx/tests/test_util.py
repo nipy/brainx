@@ -72,17 +72,24 @@ class TestCost2Thresh(unittest.TestCase):
         for sblock in range(nsubblocks):
             for block in range(nblocks):
                 for sid in range(nsub):
-                    tmp = data_5d[sblock, block, sid]
-                    self.lookup[sblock,block,sid,0,:] = tmp[ind]
+                    tmp = self.data_5d[sblock, block, sid]
+                    self.lookup[sblock,block,sid,0,:] = sorted(tmp[ind], 
+                            reverse=True)
         
-        def test_cost2thresh2(self):
-            thr = util.cost2thresh2(self.costs[100], 0,0,0,self.lookup)
-            npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+    def test_cost2thresh2(self):
+        thr = util.cost2thresh2(self.costs[100], 0,0,0,self.lookup)
+        npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
 
-        def test_cost2thresh(self):
-            lookup = self.lookup[0].squeeze()
-            thr = util.cost2thresh(self.costs[100],0,0,0,lookup)
-            npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+    def test_cost2thresh(self):
+        lookup = self.lookup[0].squeeze()
+        thr = util.cost2thresh(self.costs[100],0,0,0,lookup)
+        npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+
+    def test_format_matrix(self):
+        thresh_matrix = util.format_matrix2(self.data_5d, 0,0,0,
+                self.lookup, self.costs[100])
+        print thresh_matrix.sum()
+        npt.assert_equal(thresh_matrix.sum(), 22)
 
 def test_apply_cost():
     corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],

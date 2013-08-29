@@ -32,7 +32,7 @@ def slice_data(data, sub, block, subcond=None):
     adjacency_matrix : numpy array
         symmetric numpy array (innode, nnode)
     """
-    if subcond:
+    if not subcond is None:
         return data[subcond, block, sub]
     return data[block, sub]
 
@@ -91,8 +91,8 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
     nouptri : bool
         False zeros out diag and below, True returns symmetric matrix
 """
-    
-    cmat = data[sc,c,s]
+    cmat = slice_data(data, s, c, sc) 
+    #cmat = data[sc,c,s]
     th = cost2thresh2(co,s,sc,c,lk,[],idc,costlist) #get the right threshold
     
     #cmat = replace_diag(cmat) #replace diagonals with zero
@@ -100,7 +100,8 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
 
     if not nouptri:
         cmat = np.triu(cmat,1)
-        
+    
+    # return boolean mask
     return cmat
 
 def threshold_adjacency_matrix(adj_matrix, cost):
@@ -606,32 +607,8 @@ def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
     be registered.
 
     """
-    return cost2thresh2(cost, sub, bl, axis0=None, lk=lk, last = None, idc=idc,costlist = costlist)
-    # For this subject and block, find the indices corresponding to this cost.
-    # Note there may be more than one such index.  There will be no such
-    # indices if cost is not a value in the array.
-    ind = np.where(lk[bl][sub][1] == cost)
-    # The possibility of multiple (or no) indices implies multiple (or no)
-    # thresholds may be acquired here.
-    th = lk[bl][sub][0][ind]
-    n_thresholds = len(th)
-    if n_thresholds > 1:
-        th=th[0]
-        print(''.join(['Subject %s has multiple thresholds in block %d ',
-                       'corresponding to a cost of %f.  The smallest is being',
-                       ' used.']) % (sub, bl, cost))
-    elif n_thresholds < 1:
-        idc = idc - 1
-        newcost = costlist[idc]
-        th = cost2thresh(newcost, sub, bl, lk, idc, costlist)
-        print(''.join(['Subject %s does not have a threshold in block %d ',
-                       'corresponding to a cost of %f.  The threshold ',
-                       'matching the nearest previous cost in costlist is ',
-                       'being used.']) % (sub, block, cost))
-    else:
-        th=th[0]
-    return th
-
+    return cost2thresh2(cost, sub, bl, axis0=None, 
+            lk=lk, last = None, idc=idc,costlist = costlist)
 
 def cost2thresh2(cost, sub, axis1, axis0, lk, 
         last = None, idc = [], costlist=[]):
@@ -667,7 +644,7 @@ def cost2thresh2(cost, sub, axis1, axis0, lk,
 
     subject_lookup = slice_data(lk, sub, axis0, subcond=axis1) 
     index = np.where(subject_lookup[1] == cost)
-    threshold = subject_lookup[0][ind]
+    threshold = subject_lookup[0][index]
     
     if len(threshold) > 1:
         threshold = threshold[0] 
