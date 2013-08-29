@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
-
+import unittest
 
 # Third party
 import nose.tools as nt
@@ -55,6 +55,34 @@ def test_cost_size():
     n_nodes = 5
     npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
     
+class TestCost2Thresh(unittest.TestCase):
+    def setUp(self):
+        nnodes, nsub, nblocks, nsubblocks = 45, 20, 6, 2
+        prng = np.random.RandomState(42)
+        self.data_5d = prng.random_sample((nsubblocks, nblocks, 
+                nsub, nnodes, nnodes))
+        ind = np.triu_indices(nnodes, k=1)
+        nedges = (np.empty((nnodes, nnodes))[ind]).shape[0]
+        costs, _, _ = util.cost_size(nnodes)
+        self.costs = costs
+        self.lookup = np.zeros((nsubblocks, nblocks, nsub,2, nedges))
+        bigcost =np.tile(costs[1:], nblocks*nsubblocks*nsub)
+        bigcost.shape = (nsubblocks, nblocks, nsub, nedges)
+        self.lookup[:,:,:,1,:] = bigcost
+        for sblock in range(nsubblocks):
+            for block in range(nblocks):
+                for sid in range(nsub):
+                    tmp = data_5d[sblock, block, sid]
+                    self.lookup[sblock,block,sid,0,:] = tmp[ind]
+        
+        def test_cost2thresh2(self):
+            thr = util.cost2thresh2(self.costs[100], 0,0,0,self.lookup)
+            npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+
+        def test_cost2thresh(self):
+            lookup = self.lookup[0].squeeze()
+            thr = util.cost2thresh(self.costs[100],0,0,0,lookup)
+            npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
 
 def test_apply_cost():
     corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],

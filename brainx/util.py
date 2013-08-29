@@ -606,6 +606,7 @@ def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
     be registered.
 
     """
+    return cost2thresh2(cost, sub, bl, axis0=None, lk=lk, last = None, idc=idc,costlist = costlist)
     # For this subject and block, find the indices corresponding to this cost.
     # Note there may be more than one such index.  There will be no such
     # indices if cost is not a value in the array.
@@ -632,7 +633,8 @@ def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
     return th
 
 
-def cost2thresh2(cost, sub, sc, c, lk, last = None, idc = [], costlist=[]):
+def cost2thresh2(cost, sub, axis1, axis0, lk, 
+        last = None, idc = [], costlist=[]):
     """A definition for loading the lookup table and finding the threshold 
     associated with a particular cost for a particular subject in a 
     particular block of data
@@ -663,7 +665,7 @@ def cost2thresh2(cost, sub, sc, c, lk, last = None, idc = [], costlist=[]):
     threshold : float
         threshold value for this cost"""
 
-    subject_lookup = slice_data(lk, sub, c, subcond=sc) 
+    subject_lookup = slice_data(lk, sub, axis0, subcond=axis1) 
     index = np.where(subject_lookup[1] == cost)
     threshold = subject_lookup[0][ind]
     
@@ -676,7 +678,7 @@ def cost2thresh2(cost, sub, sc, c, lk, last = None, idc = [], costlist=[]):
     elif len(threshold) < 1:
         idc = idc-1
         newcost = costlist[idc]
-        threshold = cost2thresh2(newcost, sub, sc, c, lk, 
+        threshold = cost2thresh2(newcost, sub, axis1, axis0, lk, 
                                  idc=idc, costlist = costlist) 
         print(' '.join(['Subject %s does not have cost at %s'%(sub, cost),
                         'index 1: %s, index 2: %s'%(c, sc),
