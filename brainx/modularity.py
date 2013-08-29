@@ -78,6 +78,11 @@ class GraphPartition(object):
        
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
+        #make sure adj_matrix is binary otherwise raise exception
+        if not self.graph_adj_matrix.sum() == \
+                self.graph_adj_matrix.astype(bool).sum():
+            raise ValueError('Adjacency matrix is weighted, need binary matrix')
+
 
         # Just to be sure, we don't want to count self-links, so we zero out the
         # diagonal.
@@ -174,6 +179,12 @@ class GraphPartition(object):
     ##TODO can we remove this?? CM
     modularity = modularity_newman
 
+
+    def find_solitary(self):
+        """ checks for nodes in graph with no edges """
+        graph = nx.from_numpy_matrix(self.graph_adj_matrix)
+        solitary=[ n for n,d in graph.degree_iter() if d==0 ]
+        return solitary
 
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.

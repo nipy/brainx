@@ -56,6 +56,21 @@ def test_graphpartition():
     index = {0:set([0,1]), 1:set([2,3])}
     gpart = mod.GraphPartition(graph, index)
     assert gpart._node_set == set([0,1,2,3])
+    # test raise error if matrix unweighted
+    jnk = np.random.random((10,10))
+    jnk = np.triu(jnk,1)
+    graph = nx.from_numpy_matrix(jnk, nx.Graph(weighted=False))
+    npt.assert_raises(ValueError, mod.GraphPartition, graph, index)
+    
+def test_find_solitary():
+    jnk = np.zeros((10,10))
+    jnk[:6,:6] = 1
+    jnk = np.triu(jnk,1)
+    graph = nx.from_numpy_matrix(jnk>0, nx.Graph(weighted=False))
+    index = {0:set([0,1,2,3,4,5,6,7,8,9])}
+    graph_partition = mod.GraphPartition(graph, index)
+    solitary_nodes = graph_partition.find_solitary()
+    npt.assert_equal(solitary_nodes, [6,7,8,9])
 
 def test_index_as_node_names():
     graph = nx.Graph()
