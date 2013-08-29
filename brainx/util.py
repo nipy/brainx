@@ -32,9 +32,9 @@ def slice_data(data, sub, block, subcond=None):
     adjacency_matrix : numpy array
         symmetric numpy array (innode, nnode)
     """
-    if not subcond is None:
-        return data[subcond, block, sub]
-    return data[block, sub]
+    if subcond is None:
+        return data[block, sub]
+    return data[subcond, block, sub]
 
 
 def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
@@ -102,7 +102,7 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
         cmat = np.triu(cmat,1)
     
     # return boolean mask
-    return cmat
+    return ~(cmat == 0)
 
 def threshold_adjacency_matrix(adj_matrix, cost):
     """docstring for threshold_adjacency_matrix(adj_matrix, cost"""
@@ -160,12 +160,18 @@ def make_cost_thresh_lookup(adjacency_matrix):
     return lookup
 
 def cost_size(nnodes):
-    warnings.warn('deprecated: use make_cost_array', DeprecationWarning)
+    """create a list of actual costs, tot_edges, edges_short
+    given a fixed number of nodes"""
+    warnings.warn('this is no longer used: use make_cost_array')
+     
     tot_edges = 0.5 * nnodes * (nnodes - 1)
     costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
     edges_short = tot_edges / 2
     return costs, tot_edges, edges_short
 
+def test_warning():
+    """simple code to raise a warning"""
+    warnings.warn('This is your warning')
 
 def make_cost_array(n_nodes, cost=0.5):
     """Make cost array of length cost * (the number of possible edges).
@@ -642,7 +648,7 @@ def cost2thresh2(cost, sub, axis1, axis0, lk,
     threshold : float
         threshold value for this cost"""
 
-    subject_lookup = slice_data(lk, sub, axis0, subcond=axis1) 
+    subject_lookup = slice_data(lk, sub, axis1, subcond=axis0) 
     index = np.where(subject_lookup[1] == cost)
     threshold = subject_lookup[0][index]
     
@@ -651,14 +657,14 @@ def cost2thresh2(cost, sub, axis1, axis0, lk,
         #if there are multiple thresholds, go down to the lower cost 
         ####Is this right?!!!####
         print('Subject %s has multiple thresholds at cost %s'%(sub, cost))
-        print('index 1: %s, index 2: %s'%(c, sc))
+        print('index 1: %s, index 2: %s'%(axis1, axis0))
     elif len(threshold) < 1:
         idc = idc-1
         newcost = costlist[idc]
         threshold = cost2thresh2(newcost, sub, axis1, axis0, lk, 
                                  idc=idc, costlist = costlist) 
         print(' '.join(['Subject %s does not have cost at %s'%(sub, cost),
-                        'index 1: %s, index 2: %s'%(c, sc),
+                        'index 1: %s, index 2: %s'%(axis1, axis0),
                         'nearest cost %s being used'%(newcost)]))
     else:
         threshold = threshold[0]
@@ -811,24 +817,10 @@ def fill_diagonal(a,val):
 
     See also
     --------
-    - diag_indices: indices to access diagonals given shape information.
-    - diag_indices_from: indices to access diagonals given an array.
+    - numpy.diag_indices: indices to access diagonals given shape information.
+    - numpy.diag_indices_from: indices to access diagonals given an array.
     """
-    if a.ndim < 2:
-        raise ValueError("array must be at least 2-d")
-    if a.ndim == 2:
-        # Explicit, fast formula for the common case.  For 2-d arrays, we
-        # accept rectangular ones.
-        step = a.shape[1] + 1
-    else:
-        # For more than d=2, the strided formula is only valid for arrays with
-        # all dimensions equal, so we check first.
-        if not np.alltrue(np.diff(a.shape)==0):
-            raise ValueError("All dimensions of input must be of equal length")
-        step = np.cumprod((1,)+a.shape[:-1]).sum()
-
-    # Write the value out into the diagonal.
-    a.flat[::step] = val
+    return np.fill_diagonal(a,val)
 
 
 def diag_indices(n,ndim=2):
@@ -881,11 +873,10 @@ def diag_indices(n,ndim=2):
 
     See also
     --------
-    - diag_indices_from: create the indices based on the shape of an existing
+    - numpy.diag_indices_from: create the indices based on the shape of an existing
     array. 
     """
-    idx = np.arange(n)
-    return (idx,)*ndim
+    return np.diag_indices(n, ndim=ndim)
 
 
 def diag_indices_from(arr):
@@ -897,16 +888,9 @@ def diag_indices_from(arr):
     ----------
     arr : array, at least 2-d
     """
-    if not arr.ndim >= 2:
-        raise ValueError("input array must be at least 2-d")
-    # For more than d=2, the strided formula is only valid for arrays with
-    # all dimensions equal, so we check first.
-    if not np.alltrue(np.diff(a.shape)==0):
-        raise ValueError("All dimensions of input must be of equal length")
+    return np.diag_indices_from(arr)
 
-    return diag_indices(a.shape[0],a.ndim)
 
-    
 def mask_indices(n,mask_func,k=0):
     """Return the indices to access (n,n) arrays, given a masking function.
 

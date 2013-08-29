@@ -53,8 +53,12 @@ def test_make_cost_thresh_lookup():
 
 def test_cost_size():
     n_nodes = 5
-    npt.assert_warns(DeprecationWarning, util.cost_size, n_nodes)
-    
+    ## NOTE DeprecationWarnings are ignored by default in 2.7
+    npt.assert_warns(UserWarning, util.cost_size, n_nodes)
+def test_test_warning():
+    npt.assert_warns(UserWarning, util.test_warning)
+
+
 class TestCost2Thresh(unittest.TestCase):
     def setUp(self):
         nnodes, nsub, nblocks, nsubblocks = 45, 20, 6, 2
@@ -78,18 +82,20 @@ class TestCost2Thresh(unittest.TestCase):
         
     def test_cost2thresh2(self):
         thr = util.cost2thresh2(self.costs[100], 0,0,0,self.lookup)
-        npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+        real_thr = self.lookup[0,0,0,0,100-1]
+        npt.assert_almost_equal(thr, real_thr, decimal=7)
 
     def test_cost2thresh(self):
         lookup = self.lookup[0].squeeze()
-        thr = util.cost2thresh(self.costs[100],0,0,0,lookup)
-        npt.assert_almost_equal(thr, 0.24929222914887494, decimal=7)
+        thr = util.cost2thresh(self.costs[100],0,0,lookup)
+        real_thr = lookup[0,0,0,100-1]# costs padded by zero
+        npt.assert_almost_equal(thr, real_thr, decimal=7)
 
     def test_format_matrix(self):
         thresh_matrix = util.format_matrix2(self.data_5d, 0,0,0,
                 self.lookup, self.costs[100])
         print thresh_matrix.sum()
-        npt.assert_equal(thresh_matrix.sum(), 22)
+        npt.assert_equal(thresh_matrix.sum(), 100 -1)
 
 def test_apply_cost():
     corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],
