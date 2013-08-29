@@ -54,18 +54,14 @@ def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
     costlist = list (size num_edges) with ordered values used to find 
         threshold to control number of edges
     nouptri = if False only keeps upper tri, True yields symmetric matrix
-"""
-
+    """
     cmat = data[b,s]
     th = cost2thresh(co,s,b,lk,idc,costlist) #get the right threshold
-    
-    #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)
-
     if not nouptri:
         cmat = np.triu(cmat,1)
-        
     return cmat
+
 
 def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
     """ Function which formats matrix for a particular subject and 
@@ -92,28 +88,28 @@ def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
         list of possible costs
     nouptri : bool
         False zeros out diag and below, True returns symmetric matrix
-"""
+    """
     cmat = slice_data(data, s, c, sc) 
-    #cmat = data[sc,c,s]
     th = cost2thresh2(co,s,sc,c,lk,[],idc,costlist) #get the right threshold
-    
-    #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)
-
     if not nouptri:
         cmat = np.triu(cmat,1)
-    
     # return boolean mask
     return ~(cmat == 0)
 
 def threshold_adjacency_matrix(adj_matrix, cost):
     """docstring for threshold_adjacency_matrix(adj_matrix, cost"""
-    
-    pass
+    nnodes, _ = adj_matrix.shape
+    ind = np.triu_indices(nnodes, 1)
+    nedges = adj_matrix[ind].shape[0]
+    lookup = make_cost_thresh_lookup(adj_matrix)
+    cost_index = np.round(cost * float(nedges))
+    thresh, actual_cost, round_cost = lookup[cost_index]
+    return adj_matrix > thresh, actual_cost 
 
 
 def all_positive(adjacency_matrix):
-    """ checks if edge value sin adjacency matrix are all positive
+    """ checks if edge values in adjacency matrix are all positive
     or positive and negative 
     Returns
     -------

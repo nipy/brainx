@@ -67,6 +67,7 @@ class TestCost2Thresh(unittest.TestCase):
         ind = np.triu_indices(nnodes, k=1)
         nedges = (np.empty((nnodes, nnodes))[ind]).shape[0]
         costs, _, _ = util.cost_size(nnodes)
+        self.nedges = nedges
         self.costs = costs
         self.lookup = np.zeros((nsubblocks, nblocks, nsub,2, nedges))
         bigcost =np.tile(costs[1:], nblocks*nsubblocks*nsub)
@@ -95,6 +96,17 @@ class TestCost2Thresh(unittest.TestCase):
                 self.lookup, self.costs[100])
         print thresh_matrix.sum()
         npt.assert_equal(thresh_matrix.sum(), 100 -1)
+
+    def test_threshold_adjacency_matrix(self):
+        adj_matrix = self.data_5d[0,0,0].squeeze()
+        mask, real_cost = util.threshold_adjacency_matrix(adj_matrix, 0)
+        npt.assert_equal(mask.sum(), 0)
+        npt.assert_equal(real_cost, 0)
+        mask, real_cost = util.threshold_adjacency_matrix(adj_matrix, .9)
+        npt.assert_equal(mask.sum(), 1840)
+        npt.assert_equal(real_cost, 0.9)
+
+
 
 def test_apply_cost():
     corr_mat = np.array([[0.0, 0.5, 0.3, 0.2, 0.1],
