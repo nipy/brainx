@@ -68,7 +68,9 @@ def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
     return cmat
 
 def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
-    """ Function which formats matrix for a particular subject and particular block (thresholds, upper-tris it) so that we can make a graph object out of it
+    """ Function which formats matrix for a particular subject and 
+    particular block (thresholds, upper-tris it) so that we can 
+    make a graph object out of it
 
     Parameters
     ----------
@@ -169,9 +171,6 @@ def cost_size(nnodes):
     edges_short = tot_edges / 2
     return costs, tot_edges, edges_short
 
-def test_warning():
-    """simple code to raise a warning"""
-    warnings.warn('This is your warning')
 
 def make_cost_array(n_nodes, cost=0.5):
     """Make cost array of length cost * (the number of possible edges).
@@ -1003,7 +1002,7 @@ def tril_indices(n,k=0):
     - triu_indices : similar function, for upper-triangular.
     - mask_indices : generic function accepting an arbitrary mask function.
     """
-    return mask_indices(n,np.tril,k)
+    return np.tril_indices(n,k)   #mask_indices(n,np.tril,k)
 
 
 def tril_indices_from(arr,k=0):
@@ -1020,10 +1019,7 @@ def tril_indices_from(arr,k=0):
       Diagonal offset (see tril() for details).
 
     """
-    if not arr.ndim==2 and arr.shape[0] == arr.shape[1]:
-        raise ValueError("input array must be 2-d and square")
-    return tril_indices(arr.shape[0],k)
-
+    return np.tril_indices_from(arr, k)
     
 def triu_indices(n,k=0):
     """Return the indices for the upper-triangle of an (n,n) array.
@@ -1078,7 +1074,7 @@ def triu_indices(n,k=0):
     - tril_indices : similar function, for lower-triangular.
     - mask_indices : generic function accepting an arbitrary mask function.
     """
-    return mask_indices(n,np.triu,k)
+    return np.triu_indices(n,k) #mask_indices(n,np.triu,k)
 
 
 def triu_indices_from(arr,k=0):
@@ -1095,10 +1091,7 @@ def triu_indices_from(arr,k=0):
       Diagonal offset (see triu() for details).
 
     """
-    if not arr.ndim==2 and arr.shape[0] == arr.shape[1]:
-        raise ValueError("input array must be 2-d and square")
-    return triu_indices(arr.shape[0],k)
-
+    return np.tri_indices_from(arr, k)
 
 def structured_rand_arr(size, sample_func=np.random.random,
                         ltfac=None, utfac=None, fill_diag=None):
