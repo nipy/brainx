@@ -74,7 +74,7 @@ class GraphPartition(object):
         self._check_index_contains_sets()
        
         # We'll need the graph's adjacency matrix often, so store it once
-        self.graph_adj_matrix = np.triu(nx.adj_matrix(graph))
+        self.graph_adj_matrix = nx.adj_matrix(graph)
         #make sure adj_matrix is binary otherwise raise exception
         if not self.graph_adj_matrix.sum() == \
                 self.graph_adj_matrix.astype(bool).sum():
@@ -1376,7 +1376,14 @@ def newman_partition(g, max_div=np.inf):
 
         # Compute the increase in modularity due to this partitioning.
         # If it is less than zero, we should rather not have partitioned.
-        q = s[None, :].dot(B_).dot(s)
+        Bc_mask = np.ones_like(B_)
+        Bc_mask[s==1, :] = 0
+        Bc_mask[:, s==1] = 0
+        Bc = (B_ * Bc_mask).sum(axis=0)
+        Bc = B_ - np.diag(Bc)
+        q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
+        q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
+        print p, q, q2
         if q <= 0:
             return [p]
 
