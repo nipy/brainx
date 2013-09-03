@@ -56,20 +56,17 @@ class GraphPartition(object):
           Graph to which the partition index refers to.
 
         index : dict
-          A dict that maps module labels to sets of nodes, this describes the
-          partition in full.
+          A dict of sets that maps module/partition labels to sets of 
+          nodes, this describes the partition in full.
 
         Note
         ----
-        The values in the index dict MUST be real sets, not lists.  No checks
-        are made of this fact, but later the code relies on them being sets and
-        may break in strange manners if the values were stored in non-set
-        objects.
+        The values in the index dict MUST be real sets, not lists. 
         """
         # Store references to the original graph and label dict
         if not type(index) == type({}):
-            raise TypeError('index should be of type dict(), not %s'%type(index))
-
+            raise TypeError('index should be of type dict(),'\
+                    'not %s'%type(index))
         self.index = copy.deepcopy(index)
 
         ## add quick check to make sure the passed index is
@@ -77,7 +74,7 @@ class GraphPartition(object):
         self._check_index_contains_sets()
        
         # We'll need the graph's adjacency matrix often, so store it once
-        self.graph_adj_matrix = nx.adj_matrix(graph)
+        self.graph_adj_matrix = np.triu(nx.adj_matrix(graph))
         #make sure adj_matrix is binary otherwise raise exception
         if not self.graph_adj_matrix.sum() == \
                 self.graph_adj_matrix.astype(bool).sum():
