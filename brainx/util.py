@@ -4,65 +4,205 @@
 #-----------------------------------------------------------------------------
 # Imports
 #-----------------------------------------------------------------------------
-from __future__ import print_function
 
 import warnings
-
 import numpy as np
 import networkx as nx
 
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
-def format_matrix(data,s,b,lk,co,idc = [],costlist=[],nouptri = False):
-    """ Function which formats matrix for a particular subject and particular block (thresholds, upper-tris it) so that we can make a graph object out of it
+def slice_data(data, sub, block, subcond=None):
+    """ pull symmetric matrix from data block (4D or 5D)
+    
+    Parameters
+    ----------
+    data : numpy array
+        4D array (block, sub, nnode, nnode)
+        5D array (subcond, block, sub, nnode, nnode)
+    sub : int
+        int representing subject to index in data
+    block : int
+        int representing block to index in data
+    subcond : int
+        int representing optional subcondition from 5D array
 
-    Parameters:
+    Returns
+    -------
+    adjacency_matrix : numpy array
+        symmetric numpy array (innode, nnode)
+    """
+    if subcond is None:
+        return data[block, sub]
+    return data[subcond, block, sub]
+
+
+def format_matrix(data, s, b, lk, co, idc=[], costlist=[],
+        nouptri=False, asbool=True):
+    """ Function which thresholds the adjacency matrix for a particular 
+    subject and particular block, using lookuptable to find thresholds, 
+    cost value to find threshold, costlist
+    (thresholds, upper-tris it) so that we can use it with simulated annealing
+
+    Parameters
     -----------
-    data = full data array
-    s = subject
-    b = block
-    lk = lookup table for study
-    co = cost value to threshold at
-"""
-
-    cmat = data[b,s]
+    data : full data array 4D (block, sub, node, node)
+    s : int
+        subject
+    b : int
+        block
+    lk : numpy array
+        lookup table for study
+    co : int
+        cost value to threshold at
+    idc : int
+        index of ideal cost
+    costlist : list
+        list (size num_edges) with ordered values used to find 
+        threshold to control number of edges
+    nouptri : bool
+        if False only keeps upper tri, True yields symmetric matrix
+    asbool : bool
+        if True return boolean mask, otherwise returns thesholded
+        weight matrix
+    """
+    cmat = slice_data(data, b,s)
     th = cost2thresh(co,s,b,lk,idc,costlist) #get the right threshold
-    
-    #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)
-
     if not nouptri:
         cmat = np.triu(cmat,1)
-        
+    if asbool:
+        return ~(cmat == 0)
     return cmat
 
-def format_matrix2(data,s,sc,c,lk,co,idc = [],costlist=[],nouptri = False):
-    """ Function which formats matrix for a particular subject and particular block (thresholds, upper-tris it) so that we can make a graph object out of it
 
-    Parameters:
-    -----------
-    data = full data array
-    s = subject
-    b = block
-    lk = lookup table for study
-    co = cost value to threshold at
-"""
+def format_matrix2(data, s, sc, c, lk, co, idc=[],
+        costlist=[], nouptri=False, asbool=True):
+    """ Function which formats matrix for a particular subject and 
+    particular block (thresholds, upper-tris it) so that we can 
+    make a graph object out of it
 
-    cmat = data[sc,c,s]
+    Parameters
+    ----------
+    data : numpy array
+        full data array 5D (subcondition, condition, subject, node, node) 
+    s : int
+        index of subject
+    sc : int
+        index of sub condition
+    c : int
+        index of condition
+    lk : numpy array
+        lookup table for thresholds at each possible cost
+    co : float
+        cost value to threshold at
+    idc : float
+        ideal cost 
+    costlist : list
+        list of possible costs
+    nouptri : bool
+        False zeros out diag and below, True returns symmetric matrix
+    asbool : bool
+        If true returns boolean mask, otherwise returns thresholded w
+        weighted matrix
+    """
+    cmat = slice_data(data, s, c, sc) 
     th = cost2thresh2(co,s,sc,c,lk,[],idc,costlist) #get the right threshold
-    
-    #cmat = replace_diag(cmat) #replace diagonals with zero
     cmat = thresholded_arr(cmat,th,fill_val=0)
-
     if not nouptri:
         cmat = np.triu(cmat,1)
-        
+    if asbool:
+        # return boolean mask
+        return ~(cmat == 0)
     return cmat
 
+def threshold_adjacency_matrix(adj_matrix, cost):
+    """threshold adj_matrix at cost
+    
+    Parameters
+    ----------
+    adj_matrix : numpy array
+        graph adjacency matrix
+    cost : float
+        user specified cost
+    Returns
+    -------
+    thresholded : array of bools
+        binary matrix thresholded to result in cost
+    expected_cost : float
+        the real cost value (closest to cost)
+    """
+    nnodes, _ = adj_matrix.shape
+    ind = np.triu_indices(nnodes, 1)
+    nedges = adj_matrix[ind].shape[0]
+    lookup = make_cost_thresh_lookup(adj_matrix)
+    cost_index = np.round(cost * float(nedges))
+    thresh, expected_cost, round_cost = lookup[cost_index]
+    return adj_matrix > thresh, expected_cost 
+
+def find_true_cost(boolean_matrix):
+    """ when passed a boolean matrix, presumably from thresholding to 
+    achieve a specific cost, this calculates the actual cost for 
+    this thresholded array"""
+    ind = np.triu_indices_from( boolean_matrix, 1)
+    alledges = np.array(boolean_matrix)[ind].shape[0]
+    found_edges = boolean_matrix[ind].sum()
+    return float(found_edges) / alledges
+
+def all_positive(adjacency_matrix):
+    """ checks if edge values in adjacency matrix are all positive
+    or positive and negative 
+    Returns
+    -------
+    all_positive : bool
+        True if all values are >=0
+        False if values < 0
+    """
+    # add 1 so 0-> 1(True) , -1 -> 0 False
+    signs = set( np.sign(adjacency_matrix) + 1 )
+    return bool(sorted(signs)[0])
+
+
+def make_cost_thresh_lookup(adjacency_matrix):
+    """takes upper triangular (offset 1, no diagonal) of summetric 
+    adjacency matrix, sorts (lowest -> highest)
+    Returns
+    -------
+    lookup : numpy record array
+        shape = number of edges
+        'weight' is sorted weight values (largest -> smallest)
+        'actual_cost' is cost at each weight (smallest -> largest)
+        'cost' is 'actual_costs' rounded to two decimal points
+    Example
+    -------
+    lookup = make_cost_thresh_lookup(adj_mat)
+    lookup[100] 
+      (0.3010111736597483, 0.704225352112676, 0.7)
+    lookup[100].weight
+       0.3010111736597483
+    lookup[100].actual_cost
+       0.704225352112676
+    lookup[100].cost
+       0.70
+
+    """
+
+    ind = np.triu_indices_from(adjacency_matrix, k = 1)
+    edges = adjacency_matrix[ind]
+    nedges = edges.shape[0]
+    lookup = np.recarray((nedges), dtype = [('weight', float), 
+                                            ('actual_cost', float), 
+                                            ('cost', float)])
+    lookup['weight'] = sorted(edges, reverse = True)
+    lookup['actual_cost'] = np.arange(nedges) / float(nedges)
+    lookup['cost'] = np.round(lookup['actual_cost'], decimals = 2)
+    return lookup
 
 def cost_size(nnodes):
-    warnings.warn('deprecated: use make_cost_array', DeprecationWarning)
+    """create a list of actual costs, tot_edges, edges_short
+    given a fixed number of nodes"""
+    warnings.warn('this is no longer used: use make_cost_array')
+     
     tot_edges = 0.5 * nnodes * (nnodes - 1)
     costs = np.array(range(int(tot_edges) + 1), dtype=float) / tot_edges
     edges_short = tot_edges / 2
@@ -100,9 +240,17 @@ def make_cost_array(n_nodes, cost=0.5):
     costs = np.array(range(int(tot_edges * cost)), dtype=float) / tot_edges
     return costs, tot_edges
     
+def metrics_to_pandas():
+    """docstring for metrics_to_pandas"""
+    pass
 
 def store_metrics(b, s, co, metd, arr):
-    """Store a set of metrics into a structured array"""
+    """Store a set of metrics into a structured array
+    b = block
+    s = subject
+    co = cost? float
+    metd = dict of metrics
+    arr : array?"""
 
     if arr.ndim == 3:
         idx = b,s,co
@@ -123,6 +271,8 @@ def regular_lattice(n,k):
 
     This type of graph is the starting point for the Watts-Strogatz small-world
     model, where connections are then rewired in a second phase.
+
+    XXX TODO Use as comparison, check networkx to see if its update worth redundancy
     """
     # Code simplified from the networkx.watts_strogatz_graph one
     G = nx.Graph()
@@ -257,18 +407,23 @@ def normalize(arr,mode='direct',folding_edges=None):
     """Normalize an array to [0,1] range.
 
     By default, this simply rescales the input array to [0,1].  But it has a
-    special 'folding' mode that allows for the normalization of an array with
-    negative and positive values by mapping the negative values to their
-    flipped sign
+    special 'folding' mode that allong absolute value of all values, in addition
+    values between the folding_edges (low_cutoff, high_cutoff)  will be zeroed.
 
     Parameters
     ----------
     arr : 1d array
-    
+        assumes dtype == float, if int32, will raise ValueError
+
     mode : string, one of ['direct','folding']
+        if direct rescale all values (pos and neg) between 0,1
+        if folding, zeros out values between folding_values (inclusive)
+        and normalizes absolute value of remaining values
 
     folding_edges : (float,float)
-      Only needed for folding mode, ignored in 'direct' mode.
+        (low_cutoff, high_cutoff) lower and upper values to zero out
+        (values are inclusive)
+        Only needed for folding mode, ignored in 'direct' mode.
 
     Examples
     --------
@@ -290,37 +445,23 @@ def normalize(arr,mode='direct',folding_edges=None):
     >>> c
     array([-0.8   , -0.6333, -0.4667, -0.3   ,  0.3   ,  0.4333,  0.5667,  0.7   ])
     >>> normalize(c,'folding',[-0.3,0.3])
-    array([ 1.    ,  0.6667,  0.3333,  0.    ,  0.    ,  0.2667,  0.5333,  0.8   ])
+    array([ 1.    ,  0.7917,  0.5833,  0.    ,  0.    ,  0.5417,  0.7083,  0.875   ])
     """
     if mode == 'direct':
         return rescale_arr(arr,0,1)
-    else:
-        fa, fb = folding_edges
+    elif mode == 'folding':
+        # cast folding_edges to floats in case inputs are ints
+        low_cutoff, high_cutoff = [float(x) for x in folding_edges]
         amin, amax = arr.min(), arr.max()
-        ra,rb = float(fa-amin),float(amax-fb) # in case inputs are ints
-        if ra<0 or rb<0:
+        low_diff, high_diff = low_cutoff-amin, amax-high_cutoff 
+        if low_diff < 0 or high_diff < 0:
             raise ValueError("folding edges must be within array range")
-        greater = arr>= fb
-        upper_idx = greater.nonzero()
-        lower_idx = (~greater).nonzero()
-        # Two folding scenarios, we map the thresholds to zero but the upper
-        # ranges must retain comparability.
-        if ra > rb:
-            lower = 1.0 - rescale_arr(arr[lower_idx],0,1.0)
-            upper = rescale_arr(arr[upper_idx],0,float(rb)/ra)
-        else:
-            upper = rescale_arr(arr[upper_idx],0,1)
-            # The lower range is trickier: we need to rescale it and then flip
-            # it, so the edge goes to 0.
-            resc_a = float(ra)/rb
-            lower = rescale_arr(arr[lower_idx],0,resc_a)
-            lower = resc_a - lower
-        # Now, make output array
-        out = np.empty_like(arr)
-        out[lower_idx] = lower
-        out[upper_idx] = upper
-        return out
-
+        mask = np.logical_and( arr >= low_cutoff, arr <= high_cutoff)
+        out = arr.copy()
+        out[mask] = 0
+        return rescale_arr(np.abs(out), 0, 1)
+    else:
+        raise ValueError('Unknown mode %s: valid options("direct", "folding")')
 
 def mat2graph(cmat,threshold=0.0,threshold2=None):
     """Make a weighted graph object out of an adjacency matrix.
@@ -508,71 +649,63 @@ def cost2thresh(cost, sub, bl, lk, idc=[], costlist=[]):
     be registered.
 
     """
-    # For this subject and block, find the indices corresponding to this cost.
-    # Note there may be more than one such index.  There will be no such
-    # indices if cost is not a value in the array.
-    ind = np.where(lk[bl][sub][1] == cost)
-    # The possibility of multiple (or no) indices implies multiple (or no)
-    # thresholds may be acquired here.
-    th = lk[bl][sub][0][ind]
-    n_thresholds = len(th)
-    if n_thresholds > 1:
-        th=th[0]
-        print(''.join(['Subject %s has multiple thresholds in block %d ',
-                       'corresponding to a cost of %f.  The smallest is being',
-                       ' used.']) % (sub, bl, cost))
-    elif n_thresholds < 1:
-        idc = idc - 1
+    return cost2thresh2(cost, sub, bl, axis0=None, 
+            lk=lk, last = None, idc=idc,costlist = costlist)
+
+def cost2thresh2(cost, sub, axis1, axis0, lk, 
+        last = None, idc = [], costlist=[]):
+    """A definition for loading the lookup table and finding the threshold 
+    associated with a particular cost for a particular subject in a 
+    particular block of data
+    
+    Inputs
+    ------
+    cost : float
+        cost value for which we need the associated threshold
+    sub : int 
+        (axis -2) subject number
+    axis1 : int
+        axis 1 into lookup (eg block number or condition)
+    axis0 : int
+        axis 0 into lookup (eg subcondition)
+    lk : numpy array 
+        lookup table (axis0 x axis1  x subject x 2 )
+    last : None
+        NOT USED last threshold value
+    idc : int or empty list
+        Index in costlist corresponding to cost currently being
+        processed.  By default, idc is an empty list.
+    costlist : array-like
+        List of costs that are being queried with the current function
+        in order.
+    
+    Returns
+    -------
+    threshold : float
+        threshold value for this cost"""
+
+    subject_lookup = slice_data(lk, sub, axis1, subcond=axis0) 
+    index = np.where(subject_lookup[1] == cost)
+    threshold = subject_lookup[0][index]
+    
+    if len(threshold) > 1:
+        threshold = threshold[0] 
+        #if there are multiple thresholds, go down to the lower cost 
+        ####Is this right?!!!####
+        print('Subject %s has multiple thresholds at cost %s'%(sub, cost))
+        print('index 1: %s, index 2: %s'%(axis1, axis0))
+    elif len(threshold) < 1:
+        idc = idc-1
         newcost = costlist[idc]
-        th = cost2thresh(newcost, sub, bl, lk, idc, costlist)
-        print(''.join(['Subject %s does not have a threshold in block %d ',
-                       'corresponding to a cost of %f.  The threshold ',
-                       'matching the nearest previous cost in costlist is ',
-                       'being used.']) % (sub, block, cost))
+        threshold = cost2thresh2(newcost, sub, axis1, axis0, lk, 
+                                 idc=idc, costlist = costlist) 
+        print(' '.join(['Subject %s does not have cost at %s'%(sub, cost),
+                        'index 1: %s, index 2: %s'%(axis1, axis0),
+                        'nearest cost %s being used'%(newcost)]))
     else:
-        th=th[0]
-    return th
-
-
-def cost2thresh2(cost,sub,sc,c,lk,last,idc = [],costlist=[]):
-    """A definition for loading the lookup table and finding the threshold associated with a particular cost for a particular subject in a particular block
-    
-    inputs:
-    cost: cost value for which we need the associated threshold
-    sub: subject number
-    bl: block number
-    lk: lookup table (block x subject x cost
-    last: last threshold value
-
-    output:
-    th: threshold value for this cost"""
-
-    #print cost,sub,bl
-    
-    ind=np.where(lk[sc,c,sub][1]==cost)
-    th=lk[sc,c,sub][0][ind]
-    
-    if len(th)>1:
-        th=th[0] #if there are multiple thresholds, go down to the lower cost ####Is this right?!!!####
-        print('multiple thresh')
-    elif len(th)<1:
-        done = 1
-        while done:
-            idc = idc-1
-            newcost = costlist[idc]
-            print(idc,newcost)
-            ind=np.where(lk[bl][sub][1]==newcost)
-            th=lk[bl][sub][0][ind]
-            if len(th) > 1:
-                th = th[0]
-                done = 0
-        #th=last #if there is no associated thresh value because of repeats, just use the previous one
-        print('use previous thresh')
-    else:
-        th=th[0]
+        threshold = threshold[0]
       
-    #print th    
-    return th
+    return threshold
 
 
 def apply_cost(corr_mat, cost, tot_edges):
@@ -720,24 +853,10 @@ def fill_diagonal(a,val):
 
     See also
     --------
-    - diag_indices: indices to access diagonals given shape information.
-    - diag_indices_from: indices to access diagonals given an array.
+    - numpy.diag_indices: indices to access diagonals given shape information.
+    - numpy.diag_indices_from: indices to access diagonals given an array.
     """
-    if a.ndim < 2:
-        raise ValueError("array must be at least 2-d")
-    if a.ndim == 2:
-        # Explicit, fast formula for the common case.  For 2-d arrays, we
-        # accept rectangular ones.
-        step = a.shape[1] + 1
-    else:
-        # For more than d=2, the strided formula is only valid for arrays with
-        # all dimensions equal, so we check first.
-        if not np.alltrue(np.diff(a.shape)==0):
-            raise ValueError("All dimensions of input must be of equal length")
-        step = np.cumprod((1,)+a.shape[:-1]).sum()
-
-    # Write the value out into the diagonal.
-    a.flat[::step] = val
+    return np.fill_diagonal(a,val)
 
 
 def diag_indices(n,ndim=2):
@@ -790,11 +909,10 @@ def diag_indices(n,ndim=2):
 
     See also
     --------
-    - diag_indices_from: create the indices based on the shape of an existing
+    - numpy.diag_indices_from: create the indices based on the shape of an existing
     array. 
     """
-    idx = np.arange(n)
-    return (idx,)*ndim
+    return np.diag_indices(n, ndim=ndim)
 
 
 def diag_indices_from(arr):
@@ -806,16 +924,9 @@ def diag_indices_from(arr):
     ----------
     arr : array, at least 2-d
     """
-    if not arr.ndim >= 2:
-        raise ValueError("input array must be at least 2-d")
-    # For more than d=2, the strided formula is only valid for arrays with
-    # all dimensions equal, so we check first.
-    if not np.alltrue(np.diff(a.shape)==0):
-        raise ValueError("All dimensions of input must be of equal length")
+    return np.diag_indices_from(arr)
 
-    return diag_indices(a.shape[0],a.ndim)
 
-    
 def mask_indices(n,mask_func,k=0):
     """Return the indices to access (n,n) arrays, given a masking function.
 
@@ -928,7 +1039,7 @@ def tril_indices(n,k=0):
     - triu_indices : similar function, for upper-triangular.
     - mask_indices : generic function accepting an arbitrary mask function.
     """
-    return mask_indices(n,np.tril,k)
+    return np.tril_indices(n,k)   #mask_indices(n,np.tril,k)
 
 
 def tril_indices_from(arr,k=0):
@@ -945,10 +1056,7 @@ def tril_indices_from(arr,k=0):
       Diagonal offset (see tril() for details).
 
     """
-    if not arr.ndim==2 and arr.shape[0] == arr.shape[1]:
-        raise ValueError("input array must be 2-d and square")
-    return tril_indices(arr.shape[0],k)
-
+    return np.tril_indices_from(arr, k)
     
 def triu_indices(n,k=0):
     """Return the indices for the upper-triangle of an (n,n) array.
@@ -1003,7 +1111,7 @@ def triu_indices(n,k=0):
     - tril_indices : similar function, for lower-triangular.
     - mask_indices : generic function accepting an arbitrary mask function.
     """
-    return mask_indices(n,np.triu,k)
+    return np.triu_indices(n,k) #mask_indices(n,np.triu,k)
 
 
 def triu_indices_from(arr,k=0):
@@ -1020,10 +1128,7 @@ def triu_indices_from(arr,k=0):
       Diagonal offset (see triu() for details).
 
     """
-    if not arr.ndim==2 and arr.shape[0] == arr.shape[1]:
-        raise ValueError("input array must be 2-d and square")
-    return triu_indices(arr.shape[0],k)
-
+    return np.tri_indices_from(arr, k)
 
 def structured_rand_arr(size, sample_func=np.random.random,
                         ltfac=None, utfac=None, fill_diag=None):
