@@ -117,15 +117,37 @@ def format_matrix2(data, s, sc, c, lk, co, idc=[],
     return cmat
 
 def threshold_adjacency_matrix(adj_matrix, cost):
-    """docstring for threshold_adjacency_matrix(adj_matrix, cost"""
+    """threshold adj_matrix at cost
+    
+    Parameters
+    ----------
+    adj_matrix : numpy array
+        graph adjacency matrix
+    cost : float
+        user specified cost
+    Returns
+    -------
+    thresholded : array of bools
+        binary matrix thresholded to result in cost
+    expected_cost : float
+        the real cost value (closest to cost)
+    """
     nnodes, _ = adj_matrix.shape
     ind = np.triu_indices(nnodes, 1)
     nedges = adj_matrix[ind].shape[0]
     lookup = make_cost_thresh_lookup(adj_matrix)
     cost_index = np.round(cost * float(nedges))
-    thresh, actual_cost, round_cost = lookup[cost_index]
-    return adj_matrix > thresh, actual_cost 
+    thresh, expected_cost, round_cost = lookup[cost_index]
+    return adj_matrix > thresh, expected_cost 
 
+def find_true_cost(boolean_matrix):
+    """ when passed a boolean matrix, presumably from thresholding to 
+    achieve a specific cost, this calculates the actual cost for 
+    this thresholded array"""
+    ind = np.triu_indices_from( boolean_matrix, 1)
+    alledges = np.array(boolean_matrix)[ind].shape[0]
+    found_edges = boolean_matrix[ind].sum()
+    return float(found_edges) / alledges
 
 def all_positive(adjacency_matrix):
     """ checks if edge values in adjacency matrix are all positive

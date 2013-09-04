@@ -115,6 +115,19 @@ class TestCost2Thresh(unittest.TestCase):
         npt.assert_equal(mask.sum(), 1840)
         npt.assert_equal(real_cost, 0.9)
 
+    def test_find_true_cost(self):
+        adj_matrix = self.data_5d[0,0,0].squeeze()
+        mask, real_cost = util.threshold_adjacency_matrix(adj_matrix, 0.2)
+        true_cost = util.find_true_cost(mask)
+        npt.assert_equal(real_cost, true_cost)
+        ## test on rounded array
+        adj_matrix = self.data_5d[0,0,0].squeeze().round(decimals = 1)
+        mask, expected_cost = util.threshold_adjacency_matrix(adj_matrix, 0.2)
+        true_cost = util.find_true_cost(mask)
+        ## the cost of the thresholded matrix will be less than expected
+        npt.assert_equal(real_cost >  true_cost, True)
+
+
 
 
 def test_apply_cost():
