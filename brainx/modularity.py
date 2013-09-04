@@ -1380,10 +1380,10 @@ def newman_partition(g, max_div=np.inf):
         Bc_mask[s==1, :] = 0
         Bc_mask[:, s==1] = 0
         Bc = (B_ * Bc_mask).sum(axis=0)
-        Bc = B_ - np.diag(Bc)
+        Bc = B_ - Bc
         q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
         q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
-        print p, q, q2
+        print 'orig delta q', q2, 'new delta q', q
         if q <= 0:
             return [p]
 
