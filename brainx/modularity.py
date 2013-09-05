@@ -177,11 +177,11 @@ class GraphPartition(object):
     modularity = modularity_newman
 
 
-    def find_solitary(self):
+    def find_unconnected_nodes(self):
         """ checks for nodes in graph with no edges """
         graph = nx.from_numpy_matrix(self.graph_adj_matrix)
-        solitary=[ n for n,d in graph.degree_iter() if d==0 ]
-        return solitary
+        unconnected = [ n for n,d in graph.degree_iter() if d==0 ]
+        return unconnected
 
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.
@@ -1382,9 +1382,9 @@ def newman_partition(g, max_div=np.inf):
         Bc = (B_ * Bc_mask).sum(axis=0)
         Bc = B_ - Bc
         q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
-        q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
+        q2 = s[None, :].dot(B_).dot(s) #/ (4.0 * graph_A_.number_of_edges())
         print 'orig delta q', q2, 'new delta q', q
-        if q <= 0:
+        if q2 <= 0:
             return [p]
 
         # Make the partitioning, and subdivide each

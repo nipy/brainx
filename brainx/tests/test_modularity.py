@@ -62,14 +62,14 @@ def test_graphpartition():
     graph = nx.from_numpy_matrix(jnk, nx.Graph(weighted=False))
     npt.assert_raises(ValueError, mod.GraphPartition, graph, index)
     
-def test_find_solitary():
+def test_find_unconnected_nodes():
     jnk = np.zeros((10,10))
     jnk[:6,:6] = 1
     jnk = np.triu(jnk,1)
     graph = nx.from_numpy_matrix(jnk>0, nx.Graph(weighted=False))
     index = {0:set([0,1,2,3,4,5,6,7,8,9])}
     graph_partition = mod.GraphPartition(graph, index)
-    solitary_nodes = graph_partition.find_solitary()
+    solitary_nodes = graph_partition.find_unconnected_nodes()
     npt.assert_equal(solitary_nodes, [6,7,8,9])
 
 def test_index_as_node_names():
