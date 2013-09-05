@@ -1382,9 +1382,9 @@ def newman_partition(g, max_div=np.inf):
         Bc = (B_ * Bc_mask).sum(axis=0)
         Bc = B_ - Bc
         q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
-        q2 = s[None, :].dot(B_).dot(s) #/ (4.0 * graph_A_.number_of_edges())
+        q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
         print 'orig delta q', q2, 'new delta q', q
-        if q2 <= 0:
+        if q <= 0:
             return [p]
 
         # Make the partitioning, and subdivide each
@@ -1408,6 +1408,8 @@ def newman_partition(g, max_div=np.inf):
 def adjust_partition(g, partition, max_iter=None):
     """Adjust partition, using the heuristic method described in Newman (2006),
     to have higher modularity.
+    ## TODO BROKEN FIX ME
+
 
     Parameters
     ----------
