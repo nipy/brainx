@@ -56,20 +56,17 @@ class GraphPartition(object):
           Graph to which the partition index refers to.
 
         index : dict
-          A dict that maps module labels to sets of nodes, this describes the
-          partition in full.
+          A dict of sets that maps module/partition labels to sets of 
+          nodes, this describes the partition in full.
 
         Note
         ----
-        The values in the index dict MUST be real sets, not lists.  No checks
-        are made of this fact, but later the code relies on them being sets and
-        may break in strange manners if the values were stored in non-set
-        objects.
+        The values in the index dict MUST be real sets, not lists. 
         """
         # Store references to the original graph and label dict
         if not type(index) == type({}):
-            raise TypeError('index should be of type dict(), not %s'%type(index))
-
+            raise TypeError('index should be of type dict(),'\
+                    'not %s'%type(index))
         self.index = copy.deepcopy(index)
 
         ## add quick check to make sure the passed index is
@@ -78,6 +75,11 @@ class GraphPartition(object):
        
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph)
+        #make sure adj_matrix is binary otherwise raise exception
+        if not self.graph_adj_matrix.sum() == \
+                self.graph_adj_matrix.astype(bool).sum():
+            raise ValueError('Adjacency matrix is weighted, need binary matrix')
+
 
         # Just to be sure, we don't want to count self-links, so we zero out the
         # diagonal.
@@ -174,6 +176,12 @@ class GraphPartition(object):
     ##TODO can we remove this?? CM
     modularity = modularity_newman
 
+
+    def find_unconnected_nodes(self):
+        """ checks for nodes in graph with no edges """
+        graph = nx.from_numpy_matrix(self.graph_adj_matrix)
+        unconnected = [ n for n,d in graph.degree_iter() if d==0 ]
+        return unconnected
 
     def compute_module_merge(self, m1, m2):
         """Merges two modules in a given partition.
@@ -1368,7 +1376,14 @@ def newman_partition(g, max_div=np.inf):
 
         # Compute the increase in modularity due to this partitioning.
         # If it is less than zero, we should rather not have partitioned.
-        q = s[None, :].dot(B_).dot(s)
+        Bc_mask = np.ones_like(B_)
+        Bc_mask[s==1, :] = 0
+        Bc_mask[:, s==1] = 0
+        Bc = (B_ * Bc_mask).sum(axis=0)
+        Bc = B_ - Bc
+        q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
+        q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
+        print 'orig delta q', q2, 'new delta q', q
         if q <= 0:
             return [p]
 
@@ -1393,6 +1408,8 @@ def newman_partition(g, max_div=np.inf):
 def adjust_partition(g, partition, max_iter=None):
     """Adjust partition, using the heuristic method described in Newman (2006),
     to have higher modularity.
+    ## TODO BROKEN FIX ME
+
 
     Parameters
     ----------
