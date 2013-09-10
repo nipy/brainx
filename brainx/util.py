@@ -66,7 +66,7 @@ def format_matrix(data, s, b, lk, co, idc=[], costlist=[],
         if True return boolean mask, otherwise returns thesholded
         weight matrix
     """
-    cmat = slice_data(data, b,s)
+    cmat = slice_data(data, s, b)
     th = cost2thresh(co,s,b,lk,idc,costlist) #get the right threshold
     cmat = thresholded_arr(cmat,th,fill_val=0)
     if not nouptri:
