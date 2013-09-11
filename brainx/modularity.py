@@ -1319,6 +1319,7 @@ def newman_partition(g, max_div=np.inf):
         raise ValueError('Adjacency matrix is weighted, need binary matrix')
     ## add line to binarize adj_matrix if not binary
     ## warning?
+    nedges = g.number_of_edges()
     k = np.sum(A, axis=0)
     M = np.sum(A) # 2x number of edges
     B = modularity_matrix(g)
@@ -1350,9 +1351,10 @@ def newman_partition(g, max_div=np.inf):
         # make sure partition has edges
         if graph_A_.number_of_edges() <= 1:
             return [p]
-        B_ = modularity_matrix(graph_A_)
-        w, v = sl.eigh(B_, eigvals=(len(B_) - 2, len(B_) - 1))
+        ## grab the relevent part of the modularity matrix
+        Bij = B[p, p[:,None]]
 
+        w, v = sl.eigh(Bij, eigvals=(len(Bij) - 2, len(Bij) - 1))
         # Find the maximum eigenvalue of the modularity matrix
         # If it is smaller than zero, then we won't be able to
         # increase the modularity any further by partitioning.
@@ -1376,15 +1378,9 @@ def newman_partition(g, max_div=np.inf):
 
         # Compute the increase in modularity due to this partitioning.
         # If it is less than zero, we should rather not have partitioned.
-        Bc_mask = np.ones_like(B_)
-        Bc_mask[s==1, :] = 0
-        Bc_mask[:, s==1] = 0
-        Bc = (B_ * Bc_mask).sum(axis=0)
-        Bc = B_ - Bc
-        q = s[None, :].dot(Bc).dot(s) / (4.0 * graph_A_.number_of_edges())
-        q2 = s[None, :].dot(B_).dot(s) / (4.0 * graph_A_.number_of_edges())
-        print 'orig delta q', q2, 'new delta q', q
-        if q <= 0:
+        Bg = Bij - np.diag(Bij.sum(axis=1))
+        deltaq = s[None,:].dot(Bg).dot(s) / (4.0 * nedges)
+        if deltaq <= 0:
             return [p]
 
         # Make the partitioning, and subdivide each
