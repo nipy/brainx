@@ -116,7 +116,7 @@ def format_matrix2(data, s, sc, c, lk, co, idc=[],
         return ~(cmat == 0)
     return cmat
 
-def threshold_adjacency_matrix(adj_matrix, cost):
+def threshold_adjacency_matrix(adj_matrix, cost, uptri=False):
     """threshold adj_matrix at cost
     
     Parameters
@@ -125,6 +125,8 @@ def threshold_adjacency_matrix(adj_matrix, cost):
         graph adjacency matrix
     cost : float
         user specified cost
+    uptri : bool
+        False returns symmetric matrix, True zeros out diagonal and below
     Returns
     -------
     thresholded : array of bools
@@ -138,7 +140,11 @@ def threshold_adjacency_matrix(adj_matrix, cost):
     lookup = make_cost_thresh_lookup(adj_matrix)
     cost_index = np.round(cost * float(nedges))
     thresh, expected_cost, round_cost = lookup[cost_index]
-    return adj_matrix > thresh, expected_cost 
+    adj_matrix = adj_matrix > thresh #threshold matrix
+    np.fill_diagonal(adj_matrix, 0) #zero out diagonal
+    if uptri: #also zero out below diagonal
+        adj_matrix = np.triu(adj_matrix) 
+    return adj_matrix, expected_cost 
 
 def find_true_cost(boolean_matrix):
     """ when passed a boolean matrix, presumably from thresholding to 
