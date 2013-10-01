@@ -112,7 +112,7 @@ class TestCost2Thresh(unittest.TestCase):
         npt.assert_equal(mask.sum(), 0)
         npt.assert_equal(real_cost, 0)
         mask, real_cost = util.threshold_adjacency_matrix(adj_matrix, .9)
-        npt.assert_equal(mask.sum(), 1840)
+        npt.assert_equal(mask.sum(), 1800)
         npt.assert_equal(real_cost, 0.9)
 
     def test_find_true_cost(self):
