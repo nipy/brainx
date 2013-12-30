@@ -192,7 +192,11 @@ def make_cost_thresh_lookup(adjacency_matrix):
        0.70
 
     """
-
+    ## check for nan in matrix, sorting will behave badly if nan found
+    if np.any(np.isnan(adjacency_matrix)):
+        raise ValueError('NAN found in adjacency matrix, this will cause'\
+                'improper behavior in sorting and improper results, '\
+                'please remove all nan ')
     ind = np.triu_indices_from(adjacency_matrix, k = 1)
     edges = adjacency_matrix[ind]
     nedges = edges.shape[0]

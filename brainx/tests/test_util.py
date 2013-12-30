@@ -50,6 +50,10 @@ def test_make_cost_thresh_lookup():
     # costs in ascending order
     ## last vector is same as second vector rounded to 2 decimals
     npt.assert_almost_equal(lookup.actual_cost, lookup.cost, decimal=2)
+    # add nan to adj_mat to raise error
+    adj_mat[2,:] = np.nan
+    npt.assert_raises(ValueError, util.make_cost_thresh_lookup, adj_mat)
+
 
 def test_cost_size():
     n_nodes = 5
