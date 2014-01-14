@@ -12,6 +12,43 @@ import networkx as nx
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
+
+def dictset_to_listset(dict_set):
+    """ converts a dict of sets to a list of sets
+    for converting partition.community objects"""
+    if  (type(dict_set) == type({}) \
+        and all(type(x) == type(set()) for x in dict_set.values())):
+        return dict_set.values()
+        
+    raise ValueError('{0} is not a dict of sets'.format(dict_set))
+   
+def listset_to_dictset(list_set):
+    """ converts a list of sets to a dict of sets
+    for converting partition.community objects"""
+    ## check input is dict of sets
+    if (type(list_set)==type([]) and \
+        all(type(x) == type(set()) for x in list_set)):
+        return {val: value for val, value in enumerate(list_set)}
+    raise ValueError('{0} is not a list of sets'.format(list_set))
+
+def _no_repeats_in_listlist(list_list):
+    """ checks for duplicates in list of lists
+    returns True or False"""
+    if type(list_list) == type([]) and \
+        all(type(x) == type([]) for x in list_list):
+        allitems = [item for sublist in list_list for item in sublist]
+        return sorted(allitems) == [x for x in sorted(set(allitems))] 
+    raise ValueError('{0} is not a list of lists'.format(list_list))
+
+def listlist_to_listset(list_list):
+    """ converts list of lists to a list of sets (with check)
+    for converting partition.community objects"""
+    if _no_repeats_in_listlist(list_list):
+        return [set(x) for x in list_list] 
+    else:
+        raise ValueError('found duplicate(s) in {0}, cannot validly format to '\
+            'list of sets'.format(list_list))
+
 def slice_data(data, sub, block, subcond=None):
     """ pull symmetric matrix from data block (4D or 5D)
     
