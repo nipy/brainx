@@ -16,8 +16,8 @@ import networkx as nx
 def dictset_to_listset(dict_set):
     """ converts a dict of sets to a list of sets
     for converting partition.community objects"""
-    if  (type(dict_set) == type({}) \
-        and all(type(x) == type(set()) for x in dict_set.values())):
+    if  isinstance(dict_set, dict) \
+        and _contains_only(dict_set, set):
         return dict_set.values()
         
     raise ValueError('{0} is not a dict of sets'.format(dict_set))
@@ -26,19 +26,28 @@ def listset_to_dictset(list_set):
     """ converts a list of sets to a dict of sets
     for converting partition.community objects"""
     ## check input is dict of sets
-    if (type(list_set)==type([]) and \
-        all(type(x) == type(set()) for x in list_set)):
+    if isinstance(list_set, list) and \
+        _contains_only(list_set, set):
         return {val: value for val, value in enumerate(list_set)}
     raise ValueError('{0} is not a list of sets'.format(list_set))
 
 def _no_repeats_in_listlist(list_list):
     """ checks for duplicates in list of lists
     returns True or False"""
-    if type(list_list) == type([]) and \
-        all(type(x) == type([]) for x in list_list):
+    if isinstance(list_list, list) and \
+        _contains_only(list_list, list):
         allitems = [item for sublist in list_list for item in sublist]
-        return sorted(allitems) == [x for x in sorted(set(allitems))] 
+        return len(allitems) == len(set(allitems))
     raise ValueError('{0} is not a list of lists'.format(list_list))
+
+def _contains_only(container, type):
+    """check that contents of a container are all fo the same type"""
+    try:
+        # dict
+        return all(isinstance(s, type) for s in container.values())
+    except:
+        # others
+        return all(isinstance(s,type) for s in container)
 
 def listlist_to_listset(list_list):
     """ converts list of lists to a list of sets (with check)
