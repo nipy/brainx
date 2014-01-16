@@ -17,6 +17,57 @@ from brainx import util
 # Functions
 #-----------------------------------------------------------------------------
 
+def make_testlists():
+    """ setup some data for the conversion Tests
+    eg lislist_to_listset"""
+    listlist = [[0,1,2],[3,4,5],[6,7,8,9]]
+    dictset = {val:set(item) for val, item in enumerate(listlist)}
+    listset = [set(item) for item in listlist]
+    return listlist, listset, dictset 
+
+def test_dictset_to_listset():
+    _, listset, dictset = make_testlists()
+    new_list_set = util.dictset_to_listset(dictset)
+    npt.assert_equal(new_list_set, listset)
+    with npt.assert_raises(ValueError):
+        # catch bad type
+        tmp = util.dictset_to_listset(listset)
+
+def test_listset_to_dictset():
+    _, listset, dictset = make_testlists()
+    new_dict_set = util.listset_to_dictset(listset)
+    npt.assert_equal(new_dict_set, dictset)
+    # capture wrong input type
+    with npt.assert_raises(ValueError):
+        tmp = util.listset_to_dictset(dictset)
+
+def test_no_repeats_in_listlist():
+    jnk = [[0,1,2],[3,4,5]] # all unique
+    nt.assert_true(util._no_repeats_in_listlist(jnk))
+    jnk = [[0,1,2], [0,1,2]] # repeats
+    nt.assert_false(util._no_repeats_in_listlist(jnk))
+    with npt.assert_raises(ValueError):
+        util._no_repeats_in_listlist({0:0})
+    with npt.assert_raises(ValueError):
+        util._no_repeats_in_listlist([set([0,1,2])])
+
+def test_contains_only():
+    listlist, listset, dictset = make_testlists()
+    nt.assert_true(util._contains_only(listlist, list))
+    nt.assert_true(util._contains_only(listset, set))
+    nt.assert_true(util._contains_only(dictset, set))
+    nt.assert_false(util._contains_only([1,2,3], set))
+
+
+def test_listlist_to_listset():
+    listlist, listset, _ = make_testlists()
+    new_listset = util.listlist_to_listset(listlist)
+    npt.assert_equal(new_listset, listset)
+    with npt.assert_raises(ValueError):
+        util.listlist_to_listset([[0,1,2],[0,1,2]])
+    with npt.assert_raises(ValueError):
+        util.listlist_to_listset({})
+
 def test_slice_data():
     subcond, blocks, subjects, nodes = 5, 10, 20, 4 
     data_4d = np.ones((blocks, subjects, nodes, nodes))

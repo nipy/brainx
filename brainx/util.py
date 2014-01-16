@@ -12,6 +12,52 @@ import networkx as nx
 #-----------------------------------------------------------------------------
 # Functions
 #-----------------------------------------------------------------------------
+
+def dictset_to_listset(dict_set):
+    """ converts a dict of sets to a list of sets
+    for converting partition.community objects"""
+    if  isinstance(dict_set, dict) \
+        and _contains_only(dict_set, set):
+        return dict_set.values()
+        
+    raise ValueError('{0} is not a dict of sets'.format(dict_set))
+   
+def listset_to_dictset(list_set):
+    """ converts a list of sets to a dict of sets
+    for converting partition.community objects"""
+    ## check input is dict of sets
+    if isinstance(list_set, list) and \
+        _contains_only(list_set, set):
+        return {val: value for val, value in enumerate(list_set)}
+    raise ValueError('{0} is not a list of sets'.format(list_set))
+
+def _no_repeats_in_listlist(list_list):
+    """ checks for duplicates in list of lists
+    returns True or False"""
+    if isinstance(list_list, list) and \
+        _contains_only(list_list, list):
+        allitems = [item for sublist in list_list for item in sublist]
+        return len(allitems) == len(set(allitems))
+    raise ValueError('{0} is not a list of lists'.format(list_list))
+
+def _contains_only(container, type):
+    """check that contents of a container are all of the same type"""
+    try:
+        container = container.values()  # dict
+    except AttributeError:
+        pass
+
+    return all(isinstance(s, type) for s in container)
+
+def listlist_to_listset(list_list):
+    """ converts list of lists to a list of sets (with check)
+    for converting partition.community objects"""
+    if _no_repeats_in_listlist(list_list):
+        return [set(x) for x in list_list] 
+    else:
+        raise ValueError('found duplicate(s) in {0}, cannot validly format to '\
+            'list of sets'.format(list_list))
+
 def slice_data(data, sub, block, subcond=None):
     """ pull symmetric matrix from data block (4D or 5D)
     
