@@ -41,13 +41,13 @@ def _no_repeats_in_listlist(list_list):
     raise ValueError('{0} is not a list of lists'.format(list_list))
 
 def _contains_only(container, type):
-    """check that contents of a container are all fo the same type"""
+    """check that contents of a container are all of the same type"""
     try:
-        # dict
-        return all(isinstance(s, type) for s in container.values())
-    except:
-        # others
-        return all(isinstance(s,type) for s in container)
+        container = container.values()  # dict
+    except AttributeError:
+        pass
+
+    return all(isinstance(s, type) for s in container)
 
 def listlist_to_listset(list_list):
     """ converts list of lists to a list of sets (with check)
