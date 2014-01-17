@@ -1,5 +1,6 @@
 
 
+import copy
 import numpy as np
 import networkx as nx
 from . import util
@@ -164,3 +165,16 @@ def _nodeweights_by_community(part, node):
         tmpcomm = part.get_node_community(neighbor)
         comm_weights[tmpcomm] += data.get('weight',1)
     return comm_weights
+
+def _communities_without_node(part, node):
+    """ returns a version of the partition with the node
+    removed, may result in empty community"""
+    node_comm = part.get_node_community(node)
+    newpart = copy.deepcopy(part.community)
+    newpart[node_comm].remove(node)
+    return newpart
+
+def weight_alledges_tonode(graph, node):
+    """ find the summed weight to node"""
+    return np.sum([graph[node][neighbor].get('weight',1) \
+        for neighbor in graph[node]])

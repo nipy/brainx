@@ -119,3 +119,22 @@ def test_nodeweights_by_community():
     part = wm.Partition(graph, community)
     cweights2node = wm._nodeweights_by_community(part,0)
     npt.assert_equal(len(cweights2node), 2)
+
+def test_communities_without_node():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node   
+    node = 0
+    updated_comm = wm._communities_without_node(part, node )
+    npt.assert_equal(updated_comm[0], set([]))
+    part = wm.Partition(graph, community)
+    updated_comm = wm._communities_without_node(part, node )
+    ## make sure we dont break community from original partition
+    npt.assert_equal(part.community, community)
+    npt.assert_equal(0 not in updated_comm[0], True)
+    
+def test_weight_alledges_tonode():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node   
+    node = 0    
+    res = wm.weight_alledges_tonode(graph, node)
+    npt.assert_almost_equal(res,36.9415167 )
