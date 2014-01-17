@@ -13,8 +13,10 @@ class Partition:
         Parameters
         ==========
         graph : networkx graph
-        community : list of lists
-            a list of lists with nodes in each list
+        community : list of sets
+            a list of sets with nodes in each set
+            if community is None, will initialize with
+            one community per node
         """
         self.graph = graph
         if community is None:
@@ -126,8 +128,10 @@ def modularity(partition):
     return modularity
 
 def meta_graph(partition):
-    """ takes partition communitites and creates a new graph with communities
-    as nodes, this includes self-loops"""
+    """ takes partition communities and creates a new meta graph where
+    communities are now the nodes, the new edges are created based on the 
+    node to node connections from original graph, and weighted accordingly,
+    this includes self-loops"""
     metagraph = nx.Graph()
     # new nodes are communities
     newnodes = [val for val,_ in enumerate(partition.community)]
@@ -146,3 +150,17 @@ def meta_graph(partition):
             weight = tmpw + data['weight'])
 
     return metagraph
+
+
+def _nodeweights_by_community(part, node):
+    """ looks for all neighbors to node, and builds a weight
+    list that adds the connection weights to all neighbors in 
+    each communityi
+    refers to Ki,in in Blondel paper"""
+    comm_weights = [0] * len(part.community)
+    for neighbor, data in part.graph[node].items():
+        if neighbor == node:
+            continue
+        tmpcomm = part.get_node_community(neighbor)
+        comm_weights[tmpcomm] += data.get('weight',1)
+    return comm_weights

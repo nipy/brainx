@@ -110,3 +110,12 @@ def test_meta_graph():
     npt.assert_almost_equal(metagraph.size(weight='weight'),
         graph.size(weight='weight'))
 
+def test_nodeweights_by_community():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node
+    cweights2node = wm._nodeweights_by_community(part,0)
+    # self loops not counted to weight to self community should be 0
+    npt.assert_equal(cweights2node[0],0)
+    part = wm.Partition(graph, community)
+    cweights2node = wm._nodeweights_by_community(part,0)
+    npt.assert_equal(len(cweights2node), 2)
