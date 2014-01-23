@@ -19,20 +19,21 @@ from .. import weighted_modularity as wm
 
 
 def get_test_data():
-	""" grabs local txt file with adj matrices
+    """ grabs local txt file with adj matrices
     Returns
     =======
     graph : networkx graph
     community : list of sets
     """
-	pth, _ = os.path.split(__file__)
-	testdir = os.path.join(pth, 'tdata_corr_txt')
-	data_file = os.path.join(testdir, '101_Block01.txt')
-	mat = np.loadtxt(data_file)
-	graph = nx.from_numpy_matrix(mat)
-	# graph has 85 nodes, make generic community
-	community = [set(range(42)), set(range(42,86))]
-	return graph, community
+    pth, _ = os.path.split(__file__)
+    testdir = os.path.join(pth, 'tdata_corr_txt')
+    data_file = os.path.join(testdir, '101_Block01.txt')
+    mat = np.loadtxt(data_file)
+    mat[mat<0] = 0
+    graph = nx.from_numpy_matrix(mat)
+    # graph has 85 nodes, make generic community
+    community = [set(range(42)), set(range(42,86))]
+    return graph, community
 
 class TestPartition(unittest.TestCase):
 
@@ -45,8 +46,7 @@ class TestPartition(unittest.TestCase):
     def test_init(self):
         part = wm.Partition(self.graph)
         self.assertEqual(type(part.degrees), type({}))
-        npt.assert_array_almost_equal(part.total_edge_weight, 1485.466536)
-        self.assertEquals(part.graph, self.graph)
+        npt.assert_array_almost_equal(part.total_edge_weight, 1500.5653444)
         # generated communities
         comm = [set([node]) for node in self.graph.nodes()]
         self.assertEqual(part.community, comm)
@@ -56,7 +56,7 @@ class TestPartition(unittest.TestCase):
         part = wm.Partition(self.graph)
         part = wm.Partition(self.graph, self.community)
         cdegree = part.community_degree()
-        self.assertEqual(round(cdegree[0]), 1444.0)
+        self.assertEqual(round(cdegree[0]), 1462.0)
 
 
     def test_set_community(self):
@@ -93,19 +93,25 @@ class TestPartition(unittest.TestCase):
 def test_modularity():
     graph, comm = get_test_data()
     part = wm.Partition(graph, comm)
-    npt.assert_almost_equal(wm.modularity(part), -0.00192480)
+    npt.assert_almost_equal(wm.modularity(part), 0.0555463)
+
+
+def test_dnodecom():
+    pass 
 
 def test_meta_graph():
     graph, community = get_test_data()
     part = wm.Partition(graph)
-    metagraph = wm.meta_graph(part)
+    metagraph,_ = wm.meta_graph(part)
     ## each node is a comm, so no change to metagraph
     npt.assert_equal(metagraph.nodes(), graph.nodes())
     ## two communitties
     part = wm.Partition(graph, community)
-    metagraph = wm.meta_graph(part)
+    metagraph,mapping = wm.meta_graph(part)
     npt.assert_equal(metagraph.nodes(), [0,1])
     npt.assert_equal(metagraph.edges(), [(0,0),(0,1), (1,1)])
+    # mapping should map new node 0 to community[0]
+    npt.assert_equal(mapping[0], community[0])
     ## weight should not be lost between graphs
     npt.assert_almost_equal(metagraph.size(weight='weight'),
         graph.size(weight='weight'))
@@ -131,10 +137,31 @@ def test_communities_without_node():
     ## make sure we dont break community from original partition
     npt.assert_equal(part.community, community)
     npt.assert_equal(0 not in updated_comm[0], True)
+
+def test_community_nodes_alledgesw():
+    graph, community = get_test_data()
+    part = wm.Partition(graph, community)    
+    node = 0
+    weights = wm._community_nodes_alledgesw(part, node)
+    npt.assert_almost_equal(weights[0], 1424.0220362)
+    ## test with possible empty node set
+    part = wm.Partition(graph)
+    weights = wm._community_nodes_alledgesw(part, node)
+    npt.assert_equal(weights[0], 0)
+    # other communities are made up of just one node
+    npt.assert_equal(weights[1], graph.degree(weight='weight')[1])
+
     
-def test_weight_alledges_tonode():
+def test_node_degree():
     graph, community = get_test_data()
     part = wm.Partition(graph) # one comm per node   
     node = 0    
-    res = wm.weight_alledges_tonode(graph, node)
-    npt.assert_almost_equal(res,36.9415167 )
+    res = wm.node_degree(graph, node)
+    npt.assert_almost_equal(res, 37.94151675 )
+
+def test_combine():
+    first = [set([0,1,2]), set([3,4,5]), set([6,7])]
+    second = [set([0,2]), set([1])]
+    npt.assert_raises(ValueError, wm._combine, second, first)
+    res = wm._combine(first, second)
+    npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])

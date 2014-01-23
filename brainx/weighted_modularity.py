@@ -1,6 +1,7 @@
 
 
 import copy
+import itertools
 import numpy as np
 import networkx as nx
 from . import util
@@ -19,7 +20,12 @@ class Partition:
             if community is None, will initialize with
             one community per node
         """
-        self.graph = graph
+        # make sure graph has edge weights, even if binary, and no neg weights
+        mat = nx.adjacency_matrix(graph)
+        if mat.min() < 0:
+            raise ValueError('Graph has invalid neg weights')
+
+        self.graph = nx.from_numpy_matrix(mat)
         if community is None:
             self._community = self._init_communities_from_nodes()
         else:
@@ -30,6 +36,7 @@ class Partition:
     @property
     def community(self):
         return self._community
+
     @community.setter
     def community(self, value):
         self._community = self.set_community(value)
@@ -93,6 +100,8 @@ def _intersect_neighbors_community(part, node):
 
 
 
+
+
 def modularity(partition):
     """Modularity of a graph with given partition
     using Newman 2004 Physical Review paper
@@ -109,24 +118,12 @@ def modularity(partition):
     """
     if partition.graph.is_directed():
         raise TypeError('only valid on non directed graphs')
-    graph = partition.graph
-    community_degree = partition.community_degree()
-    comm_within_weight = [0] * len(partition.community)
-    for node in graph:
-        within = _intersect_neighbors_community(partition, node)
-        inweight = 0
-        if node in within: # self loop
-            inweight += graph[node][node]['weight']
-            within.remove(node)
-        inweight += np.sum([graph[node][other]['weight'] \
-            for other in within]) / 2.0
-        comm_within_weight[partition.get_node_community(node)] += inweight
+    
+    m2 = partition.total_edge_weight
+    internal_connect = np.array(internal_links(partition))
+    total = np.array(total_links(partition))
+    return np.sum(internal_connect / m2 - (total/(2*m2))**2)
 
-    community_degree = np.array(partition.community_degree())
-    full_weight = np.array(partition.total_edge_weight)
-    modularity = np.sum((comm_within_weight / full_weight) - \
-        (community_degree / (2 * full_weight))**2)
-    return modularity
 
 def meta_graph(partition):
     """ takes partition communities and creates a new meta graph where
@@ -136,6 +133,7 @@ def meta_graph(partition):
     metagraph = nx.Graph()
     # new nodes are communities
     newnodes = [val for val,_ in enumerate(partition.community)]
+    mapping = {val: nodes for val, nodes in enumerate(partition.community)}
     metagraph.add_nodes_from(newnodes, weight=0.0) 
 
     for node1, node2, data in partition.graph.edges_iter(data=True):
@@ -150,14 +148,14 @@ def meta_graph(partition):
             node2_community,
             weight = tmpw + data['weight'])
 
-    return metagraph
+    return metagraph, mapping
 
 
 def _nodeweights_by_community(part, node):
     """ looks for all neighbors to node, and builds a weight
     list that adds the connection weights to all neighbors in 
-    each communityi
-    refers to Ki,in in Blondel paper"""
+    each community refers to Ki,in in Blondel paper
+    or dnodecom d(node,com) in implementation"""
     comm_weights = [0] * len(part.community)
     for neighbor, data in part.graph[node].items():
         if neighbor == node:
@@ -173,8 +171,200 @@ def _communities_without_node(part, node):
     newpart = copy.deepcopy(part.community)
     newpart[node_comm].remove(node)
     return newpart
+    mmunity_nodes_self
 
-def weight_alledges_tonode(graph, node):
-    """ find the summed weight to node"""
-    return np.sum([graph[node][neighbor].get('weight',1) \
-        for neighbor in graph[node]])
+
+## TODO  combine these into one func that takes a graph and
+##  a partition.community that can have nodes inserted
+##  or removed
+
+
+def _community_nodes_alledgesw(part, removed_node):
+    """ returns the sum of all weighted edges to nodes in each
+    community, once the removed_node is removed
+    this refers to totc in Blondel paper"""
+    comm_wo_node = _communities_without_node(part, removed_node)
+    weights = [0] * len(comm_wo_node)
+    ## make a list of all nodes degree weights
+    all_degree_weights = part.graph.degree(weight='weight').values()
+    all_degree_weights = np.array(all_degree_weights)
+    for val, nodeset in enumerate(comm_wo_node):
+        node_index = np.array(list(nodeset)) #index of nodes in community
+        #sum the weighted degree of nodes in community
+        if len(node_index)<1:
+            continue
+        weights[val] = np.sum(all_degree_weights[node_index])
+    return weights  
+
+def total_links(part):
+    """ sum of all links inside or outside community"""
+    comm = part.community
+    weights = [0] * len(comm)
+    all_degree_weights = part.graph.degree(weight='weight')
+    for node, weight in all_degree_weights.items():
+        node_comm = part.get_node_community(node)
+        weights[node_comm]+= weight
+    return weights
+
+def internal_links(part):
+    """ sum of weighted links strictly inside each community
+    includes self loops"""
+    comm = part.community
+    weights = [0] * len(comm)
+    comm = part.community
+    for val, nodeset in enumerate(comm):
+        for node in nodeset:
+            nodes_within = set([x for x in part.graph[node].keys() \
+                if x in nodeset])
+            if len(nodes_within) < 1:
+                continue
+            if node in nodes_within:
+                weights[val]+= part.graph[node][node]['weight']
+                nodes_within.remove(node)
+            weights[val] += np.sum(part.graph[node][x]['weight']/ 2. \
+                for x in nodes_within)
+    return weights
+
+def node_degree(graph, node):
+    """ find the summed weight to node
+    Ki in Blondel paper"""
+    return graph.degree(weight='weight')[node]
+
+
+def dnodecom(node, part):
+    """ Find the number of links from node to each community"""
+    comm_weights = [0] * len(part.community)
+    for neighbor, data in part.graph[node].items():
+        if neighbor == node:
+            continue
+        tmpcomm = part.get_node_community(neighbor)
+        comm_weights[tmpcomm] += data.get('weight',1)
+    return comm_weights
+
+def _calc_delta_modularity(node, part):
+    """calculate the increase in modularity if node is moved to other
+    communities
+    deltamod = inC - totc * ki / total_weight"""
+    noded = node_degree(part.graph, node)
+    dnc = dnodecom(node,part)
+    totc = _community_nodes_alledgesw(part, node)
+    total_weight = part.total_edge_weight
+    # cast to arrays to improve calc
+    dnc = np.array(dnc)
+    totc = np.array(totc)
+    return dnc - totc * noded / (total_weight*2)
+
+def gen_dendogram(graph, community = None, MIN = 0.0000001):
+    if type(graph) != nx.Graph :
+        raise TypeError("Bad graph type, use only non directed graph")
+
+    #special case, when there is no link 
+    #the best partition is everyone in its community
+    if graph.number_of_edges() == 0 :
+        return Partition(graph)
+        
+    current_graph = graph.copy()
+    part = Partition(graph, community)
+    # first pass
+    mod = modularity(part)
+    dendogram = list()
+    new_part = _one_level(part)
+    new_mod = modularity(new_part)
+
+    dendogram.append(new_part)
+    mod = new_mod
+    current_graph, _ = meta_graph(new_part)
+    
+    while True :
+        partition = Partition(current_graph)
+        newpart = _one_level(partition)
+        new_mod = modularity(newpart)
+        if new_mod - mod < MIN :
+            break
+
+        dendogram.append(newpart)
+        mod = new_mod
+        current_graph,_ = meta_graph(newpart)
+    return dendogram
+
+
+def _move_node(part, node, new_comm):
+    """generate a new partition with node put into new_comm"""
+    new_community = [x.copy() for x in part.community]
+    ## update
+    curr_node_comm = part.get_node_community(node)
+    ## remove
+    new_community[curr_node_comm].remove(node)
+    new_community[new_comm].add(node)
+    new_comm = [x for x in new_community if len(x) > 0]
+    return Partition(part.graph, new_comm)
+
+def partitions_from_dendogram(dendo):
+    """ returns community partitions based on results in dendogram
+    """
+    all_partitions = []
+    init_part = dendo[0].community
+    all_partitions.append(init_part)
+    for comm in dendo[1:]:
+        init_part = _combine(init_part, comm.community)
+        all_partitions.append(init_part)
+    return all_partitions
+
+
+
+def _combine(prev, next):
+    """combines nodes in set based on next level
+    community partition
+    Parameters
+    ====== ===
+    prev : list of sets
+        community partition
+    next : list of sets
+        next level community partition
+    """
+    expected_len = np.max([x for sublist in next for x in sublist])
+    if not len(prev) == expected_len + 1:
+        raise ValueError('Number of nodes in next does not'\
+            ' match number of communities in prev')
+    ret = []
+    for itemset in next:
+        newset = set()
+        for tmps in itemset:
+            newset.update(prev[tmps])
+        ret.append(newset)
+    return ret
+
+
+def _one_level(part, min_modularity= .0000001):
+    curr_mod = modularity(part)
+    modified = True
+    while modified:
+        modified = False
+        all_nodes = [x for x in part.graph.nodes()]
+        np.random.shuffle(all_nodes)
+        for node in all_nodes:
+            node_comm = part.get_node_community(node)
+            delta_mod = _calc_delta_modularity(node, part)
+            print node, delta_mod
+            if delta_mod.max() <= 0.0:
+                # no increase by moving this node
+                continue
+            best_comm = delta_mod.argmax()
+            if not best_comm == node_comm: 
+                new_part = _move_node(part, node, best_comm)
+                part = new_part
+                modified = True
+        new_mod = modularity(part)
+        change_in_modularity = new_mod - curr_mod
+        print 'change in mod', change_in_modularity
+        if change_in_modularity < min_modularity:
+            return part
+    return part
+            
+
+
+
+
+
+
+
