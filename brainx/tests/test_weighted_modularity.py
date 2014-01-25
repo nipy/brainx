@@ -96,8 +96,40 @@ def test_modularity():
     npt.assert_almost_equal(wm.modularity(part), 0.0555463)
 
 
+def test_total_links():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node
+    ## summ of all links in or out of community
+    ## since one per scommunity, just weighted degree of each node
+    tot_per_comm = wm.total_links(part)
+    degw = graph.degree(weight='weight').values()
+    npt.assert_equal(tot_per_comm, degw)
+    ## This isnt true of we have communities with multiple nodes
+    part_2comm = wm.Partition(graph, community)
+    npt.assert_equal(part_2comm == degw, False)
+
+def test_internal_links():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node
+    weights = wm.internal_links(part) 
+    ## this inlcudes seld links so      
+
+
 def test_dnodecom():
-    pass 
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node
+    node = 0
+    node2comm_weights = wm.dnodecom(node, part)
+    # self loops not added to weight 
+    # so community made only of node should be zero
+    npt.assert_equal(node2comm_weights[0],0)
+    # this should be equal to weight between two nodes
+    neighbor = 1
+    expected = graph[node][neighbor]['weight']
+    npt.assert_equal(node2comm_weights[neighbor],expected)
+    part = wm.Partition(graph, community)
+    node2comm_weights = wm.dnodecom(node, part)
+    npt.assert_equal(len(node2comm_weights), 2) 
 
 def test_meta_graph():
     graph, community = get_test_data()
@@ -116,15 +148,6 @@ def test_meta_graph():
     npt.assert_almost_equal(metagraph.size(weight='weight'),
         graph.size(weight='weight'))
 
-def test_nodeweights_by_community():
-    graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node
-    cweights2node = wm._nodeweights_by_community(part,0)
-    # self loops not counted to weight to self community should be 0
-    npt.assert_equal(cweights2node[0],0)
-    part = wm.Partition(graph, community)
-    cweights2node = wm._nodeweights_by_community(part,0)
-    npt.assert_equal(len(cweights2node), 2)
 
 def test_communities_without_node():
     graph, community = get_test_data()
@@ -151,7 +174,9 @@ def test_community_nodes_alledgesw():
     # other communities are made up of just one node
     npt.assert_equal(weights[1], graph.degree(weight='weight')[1])
 
-    
+
+
+
 def test_node_degree():
     graph, community = get_test_data()
     part = wm.Partition(graph) # one comm per node   
@@ -165,3 +190,33 @@ def test_combine():
     npt.assert_raises(ValueError, wm._combine, second, first)
     res = wm._combine(first, second)
     npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])
+
+
+def test_calc_delta_modularity():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node
+    node = 0
+    change = wm._calc_delta_modularity(node, part)
+    npt.assert_equal(len(change), len(part.community))
+    # change is an array
+    npt.assert_equal(change.shape[0], len(part.community))
+    npt.assert_equal(change[0] < change[1], True)
+    # this is one comm per node, so once removed from own
+    # comm, this delta_weight will be zero
+    npt.assert_equal(change[node] , 0) 
+
+
+def test_move_node():
+    graph, community = get_test_data()
+    part = wm.Partition(graph) # one comm per node 
+    #move first node to second community 
+    node = 0
+    comm = 1
+    newpart = wm._move_node(part, node, comm )
+    npt.assert_equal(set([0,1]) in newpart.community, True)
+    ## what happens if node or comm missing
+    with npt.assert_raises(ValueError):
+        newpart = wm._move_node(part, -1, comm) 
+    invalid_community = len(part.community) + 1
+    with npt.assert_raises(IndexError):
+        newpart = wm._move_node(part, node, invalid_community)  
