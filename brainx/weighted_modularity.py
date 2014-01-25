@@ -121,7 +121,26 @@ def total_links(part):
         weights[node_comm]+= weight
     return weights
 
+def internal_links(part):
+    """ sum of weighted links strictly inside each community
+    includes self loops"""
+    comm = part.community
+    weights = [0] * len(comm)
+    comm = part.community
+    for val, nodeset in enumerate(comm):
+        for node in nodeset:
+            nodes_within = set([x for x in part.graph[node].keys() \
+                if x in nodeset])
+            if len(nodes_within) < 1:
+                continue
+            if node in nodes_within:
+                weights[val]+= part.graph[node][node]['weight']
+                nodes_within.remove(node)
+            weights[val] += np.sum(part.graph[node][x]['weight']/ 2. \
+                for x in nodes_within)
+    return weights
 
+    
 def meta_graph(partition):
     """ takes partition communities and creates a new meta graph where
     communities are now the nodes, the new edges are created based on the 
@@ -177,24 +196,7 @@ def _community_nodes_alledgesw(part, removed_node):
 
 
 
-def internal_links(part):
-    """ sum of weighted links strictly inside each community
-    includes self loops"""
-    comm = part.community
-    weights = [0] * len(comm)
-    comm = part.community
-    for val, nodeset in enumerate(comm):
-        for node in nodeset:
-            nodes_within = set([x for x in part.graph[node].keys() \
-                if x in nodeset])
-            if len(nodes_within) < 1:
-                continue
-            if node in nodes_within:
-                weights[val]+= part.graph[node][node]['weight']
-                nodes_within.remove(node)
-            weights[val] += np.sum(part.graph[node][x]['weight']/ 2. \
-                for x in nodes_within)
-    return weights
+
 
 def node_degree(graph, node):
     """ find the summed weight to node
