@@ -8,22 +8,27 @@ from . import util
 
 
 class Partition:
+    """Represent a weighted Graph Partition
+
+       The main object keeping track of the nodes in each partition is the
+       community attribute. 
+    """
     def __init__(self, graph, community=None):
         """ initialize partition of graph, with optional community
-        defined
 
         Parameters
         ==========
         graph : networkx graph
+        
         community : list of sets
             a list of sets with nodes in each set
             if community is None, will initialize with
             one community per node
         """
-        # make sure graph has edge weights, even if binary, and no neg weights
+        # assert graph has edge weights, and no negative weights
         mat = nx.adjacency_matrix(graph)
         if mat.min() < 0:
-            raise ValueError('Graph has invalid neg weights')
+            raise ValueError('Graph has invalid negative weights')
 
         self.graph = nx.from_numpy_matrix(mat)
         if community is None:
@@ -31,7 +36,7 @@ class Partition:
         else:
             self.set_community(community)
         self.total_edge_weight = graph.size(weight='weight')
-        self.degrees = graph.degree(weight = 'weight')
+        self.degrees = graph.degree(weight='weight')
 
     @property
     def community(self):
@@ -157,7 +162,7 @@ def meta_graph(partition):
         node2_community = partition.get_node_community(node2)
         try:
             tmpw = metagraph[node1_community][node2_community]['weight']
-        except:
+        except KeyError:
             tmpw = 0
         metagraph.add_edge(
             node1_community,
@@ -174,7 +179,6 @@ def _communities_without_node(part, node):
     newpart = copy.deepcopy(part.community)
     newpart[node_comm].remove(node)
     return newpart
-    mmunity_nodes_self
 
 
 def _community_nodes_alledgesw(part, removed_node):
