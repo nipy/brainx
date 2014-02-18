@@ -1,13 +1,12 @@
 
 
 import copy
-import itertools
 import numpy as np
 import networkx as nx
 from . import util
 
 
-class Partition:
+class Partition(object):
     """Represent a weighted Graph Partition
 
        The main object keeping track of the nodes in each partition is the
@@ -40,6 +39,7 @@ class Partition:
 
     @property
     def community(self):
+        """list of sets decribing the communities"""
         return self._community
 
     @community.setter
@@ -86,7 +86,7 @@ class Partition:
         duplicate nodes"""
         if not (isinstance(community, list) and \
             util._contains_only(community, set)):
-            raise TypeError('community should be list of sets, not'\
+            raise TypeError('community should be list of sets, not '\
                 '{}'.format(community))  
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
@@ -199,9 +199,6 @@ def _community_nodes_alledgesw(part, removed_node):
     return weights  
 
 
-
-
-
 def node_degree(graph, node):
     """ find the summed weight to node
     Ki in Blondel paper"""
@@ -220,7 +217,9 @@ def dnodecom(node, part):
 
 
 
-def gen_dendogram(graph, community = None, MIN = 0.0000001):
+def gen_dendogram(graph, community=None, min=0.0000001):
+    """generate dendogram based on muti-levels of partitioning"""
+
     if type(graph) != nx.Graph :
         raise TypeError("Bad graph type, use only non directed graph")
 
@@ -245,7 +244,7 @@ def gen_dendogram(graph, community = None, MIN = 0.0000001):
         partition = Partition(current_graph)
         newpart = _one_level(partition)
         new_mod = modularity(newpart)
-        if new_mod - mod < MIN :
+        if new_mod - mod < min :
             break
 
         dendogram.append(newpart)
@@ -267,17 +266,17 @@ def partitions_from_dendogram(dendo):
 
 
 def _calc_delta_modularity(node, part):
-    """calculate the increase in modularity if node is moved to other
+    """calculate the increase(s) in modularity if node is moved to other
     communities
     deltamod = inC - totc * ki / total_weight"""
     noded = node_degree(part.graph, node)
-    dnc = dnodecom(node,part)
+    dnc = dnodecom(node, part)
     totc = _community_nodes_alledgesw(part, node)
     total_weight = part.total_edge_weight
     # cast to arrays to improve calc
     dnc = np.array(dnc)
     totc = np.array(totc)
-    return dnc - totc * noded / (total_weight*2)
+    return dnc - totc*noded / (total_weight*2)
 
 
 def _move_node(part, node, new_comm):
@@ -294,6 +293,7 @@ def _move_node(part, node, new_comm):
 
 
 def _one_level(part, min_modularity= .0000001):
+    """run one level of patitioning"""
     curr_mod = modularity(part)
     modified = True
     while modified:
@@ -322,8 +322,9 @@ def _one_level(part, min_modularity= .0000001):
 def _combine(prev, next):
     """combines nodes in set based on next level
     community partition
+
     Parameters
-    ====== ===
+    ==========
     prev : list of sets
         community partition
     next : list of sets
