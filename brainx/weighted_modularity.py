@@ -16,10 +16,10 @@ class Partition(object):
         """ initialize partition of graph, with optional community
 
         Parameters
-        ==========
+        ----------
         graph : networkx graph
         
-        community : list of sets
+        community : list of sets, optional
             a list of sets with nodes in each set
             if community is None, will initialize with
             one community per node
@@ -65,10 +65,9 @@ class Partition(object):
         """returns the node's community"""
         try:
             return [val for val,x in enumerate(self.community) if node in x][0]
-        except:
+        except IndexError:
             if not node in self.graph.nodes():
-                raise ValueError('node {0} not in graph for this '\
-                    'partition'.format(node))
+                raise ValueError('node:{0} is not in the graph'.format(node))
             else:
                 raise StandardError('cannot find community for node '\
                     '{0}'.format(node))
@@ -94,18 +93,25 @@ class Partition(object):
 
 
 def modularity(partition):
-    """Modularity of a graph with given partition
-    using Newman 2004 Physical Review paper
+    """Calculates the proportion of within community edges compared to 
+    between community edges for all nodes in graph with given partition
 
     Parameters
-    ==========
+    ----------
     partition : weighted graph partition object
 
     Returns
-    =======
+    -------
     modularity : float
         value reflecting the relation of within community connection
         to across community connections
+
+
+    References
+    ----------
+    .. [1] M. Newman, "Fast algorithm for detecting community structure
+        in networks", Physical Review E vol. 69(6), 2004. 
+
     """
     if partition.graph.is_directed():
         raise TypeError('only valid on non directed graphs')
@@ -113,7 +119,7 @@ def modularity(partition):
     m2 = partition.total_edge_weight
     internal_connect = np.array(internal_links(partition))
     total = np.array(total_links(partition))
-    return np.sum(internal_connect / m2 - (total/(2*m2))**2)
+    return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 
 def total_links(part):
     """ sum of all links inside or outside community
@@ -123,7 +129,7 @@ def total_links(part):
     all_degree_weights = part.graph.degree(weight='weight')
     for node, weight in all_degree_weights.items():
         node_comm = part.get_node_community(node)
-        weights[node_comm]+= weight
+        weights[node_comm] += weight
     return weights
 
 def internal_links(part):
@@ -139,7 +145,7 @@ def internal_links(part):
             if len(nodes_within) < 1:
                 continue
             if node in nodes_within:
-                weights[val]+= part.graph[node][node]['weight']
+                weights[val] += part.graph[node][node]['weight']
                 nodes_within.remove(node)
             weights[val] += np.sum(part.graph[node][x]['weight']/ 2. \
                 for x in nodes_within)
@@ -154,7 +160,7 @@ def meta_graph(partition):
     metagraph = nx.Graph()
     # new nodes are communities
     newnodes = [val for val,_ in enumerate(partition.community)]
-    mapping = {val: nodes for val, nodes in enumerate(partition.community)}
+    mapping = {val:nodes for val,nodes in enumerate(partition.community)}
     metagraph.add_nodes_from(newnodes, weight=0.0) 
 
     for node1, node2, data in partition.graph.edges_iter(data=True):
@@ -212,13 +218,21 @@ def dnodecom(node, part):
         if neighbor == node:
             continue
         tmpcomm = part.get_node_community(neighbor)
-        comm_weights[tmpcomm] += data.get('weight',1)
+        comm_weights[tmpcomm] += data.get('weight', 1)
     return comm_weights
 
 
 
-def gen_dendogram(graph, community=None, min=0.0000001):
-    """generate dendogram based on muti-levels of partitioning"""
+def gen_dendogram(graph, community=None, minthr=0.0000001):
+    """generate dendogram based on muti-levels of partitioning
+
+    Parameters
+    ----------
+    graph : networkx undirected graph
+    community : list of sets, optional
+    minthr : float
+        min stoping threshold for difference in old and new modularity
+    """
 
     if type(graph) != nx.Graph :
         raise TypeError("Bad graph type, use only non directed graph")
@@ -244,7 +258,7 @@ def gen_dendogram(graph, community=None, min=0.0000001):
         partition = Partition(current_graph)
         newpart = _one_level(partition)
         new_mod = modularity(newpart)
-        if new_mod - mod < min :
+        if new_mod - mod < minthr :
             break
 
         dendogram.append(newpart)
@@ -324,11 +338,18 @@ def _combine(prev, next):
     community partition
 
     Parameters
-    ==========
+    ----------
     prev : list of sets
         community partition
     next : list of sets
         next level community partition
+
+    Examples
+    --------
+    >>> prev = [set([0,1,2]), set([3,4])]
+    >>> next = [set([0,1])]
+    >>> result = _combine(prev, next)
+    [set([0, 1, 2, 3, 4])]
     """
     expected_len = np.max([x for sublist in next for x in sublist])
     if not len(prev) == expected_len + 1:
