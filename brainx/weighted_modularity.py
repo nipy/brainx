@@ -171,6 +171,32 @@ class WeightedPartition(object):
 
 
 class LouvainCommunityDetection(object):
+    """ Uses the Louvain Community Detection algorithm to detect
+    communities in networks
+
+    Parameters
+    ----------
+    graph : netwrokx Graph object
+    communities : list of sets, optional
+        initial identified communties 
+    minthr : float, optional
+        minimum threshold value for change in modularity
+        default(0.0000001)
+
+    Examples
+    --------
+    >>> louvain = LouvainCommunityDetection(graph)
+    >>> partitions = louvain.run()
+    >>> ## best partition
+    >>> partitions[-1].modularity()
+
+    References
+    ----------
+    .. [1] VD Blondel, JL Guillaume, R Lambiotte, E Lefebvre, "Fast 
+        unfolding of communities in large networks", Journal of Statistical 
+        Mechanics: Theory and Experiment vol.10, P10008  2008. 
+
+    """
 
     def __init__(self, graph, communities=None, minthr=0.0000001):
         self.graph = graph
@@ -180,7 +206,7 @@ class LouvainCommunityDetection(object):
     def run(self):
         dendogram = self.gen_dendogram()
         partitions = self.partitions_from_dendogram(dendogram)
-        return partitions
+        return [WeightedPartition(self.graph, part) for part in partitions]
 
 
     def gen_dendogram(self):
@@ -191,13 +217,13 @@ class LouvainCommunityDetection(object):
 
         #special case, when there is no link 
         #the best partition is everyone in its communities
-        if graph.number_of_edges() == 0 :
-            return WeightedPartition(self.graph)
+        if self.graph.number_of_edges() == 0 :
+            return [WeightedPartition(self.graph)]
             
         current_graph = self.graph.copy()
-        part = WeightedPartition(self.graph, self.communities)
+        part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
-        mod = modularity(part)
+        mod = part.modularity()
         dendogram = list()
         new_part = self._one_level(part, self.minthr)
         new_mod = new_part.modularity()
@@ -210,7 +236,7 @@ class LouvainCommunityDetection(object):
             partition = WeightedPartition(current_graph)
             newpart = self._one_level(partition, self.minthr)
             new_mod = newpart.modularity()
-            if new_mod - mod < minthr :
+            if new_mod - mod < self.minthr :
                 break
 
             dendogram.append(newpart)
@@ -218,8 +244,7 @@ class LouvainCommunityDetection(object):
             current_graph,_ = meta_graph(newpart)
         return dendogram
 
-    @staticmethod
-    def _one_level(part, min_modularity= .0000001):
+    def _one_level(self, part, min_modularity= .0000001):
         """run one level of patitioning"""
         curr_mod = part.modularity()
         modified = True

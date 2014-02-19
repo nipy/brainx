@@ -200,7 +200,26 @@ class TestLouvainCommunityDetection(unittest.TestCase):
             newpart = self.louvain._move_node(part, -1, comm) 
         invalid_communities = len(part.communities) + 1
         with self.assertRaises(IndexError):
-            newpart = self.louvain._move_node(part, node, invalid_communities)  
+            newpart = self.louvain._move_node(part, node, invalid_communities) 
+
+    def test_gen_dendogram(self):
+        graph = nx.Graph() 
+        nodeslist = [0,1,2,3,4]
+        graph.add_nodes_from(nodeslist, weight=True)
+        louvain = wm.LouvainCommunityDetection(graph)
+        dendo = louvain.gen_dendogram()
+        self.assertEqual(len(dendo), 1)
+        expected = [set([x]) for x in nodeslist]
+        self.assertEqual(dendo[0].communities, expected)
+
+    def test_run(self):
+        karate = nx.karate_club_graph()
+        louvain = wm.LouvainCommunityDetection(karate)
+        final_partitions = louvain.run()
+        self.assertEqual(final_partitions[-1].modularity() > .38,
+                         True)
+        self.assertEqual(len(final_partitions), 2)
+
 
 def test_combine():
     first = [set([0,1,2]), set([3,4,5]), set([6,7])]
