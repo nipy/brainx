@@ -35,7 +35,7 @@ def get_test_data():
     communities = [set(range(42)), set(range(42,86))]
     return graph, communities
 
-class TestPartition(unittest.TestCase):
+class TestWeightedPartition(unittest.TestCase):
 
     def setUp(self):
         ## generate a default graph and communities
@@ -134,23 +134,21 @@ class TestPartition(unittest.TestCase):
         node2comm_weights = part.dnodecom(node)
         npt.assert_equal(len(node2comm_weights), 2) 
 
-def test_meta_graph():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph)
-    metagraph,_ = wm.meta_graph(part)
-    ## each node is a comm, so no change to metagraph
-    npt.assert_equal(metagraph.nodes(), graph.nodes())
-    ## two communitties
-    part = wm.WeightedPartition(graph, communities)
-    metagraph,mapping = wm.meta_graph(part)
-    npt.assert_equal(metagraph.nodes(), [0,1])
-    npt.assert_equal(metagraph.edges(), [(0,0),(0,1), (1,1)])
-    # mapping should map new node 0 to communities[0]
-    npt.assert_equal(mapping[0], communities[0])
-    ## weight should not be lost between graphs
-    npt.assert_almost_equal(metagraph.size(weight='weight'),
-        graph.size(weight='weight'))
 
+class TestLouvainCommunityDetection(unittest.TestCase):
+
+    def setUp(self):
+        ## generate a default graph and communities
+        graph, communities = get_test_data()
+        self.graph = graph
+        self.communities = communities
+
+    def test_init(self):
+        louvain = wm.LouvainCommunityDetection(self.graph)
+        self.assertEqual(louvain.graph, self.graph)
+        self.assertEqual(louvain.initial_communities, None)
+        self.assertEqual(louvain.minthr, 0.0000001)
+"""
 
 def test_communities_without_node():
     graph, communities = get_test_data()
@@ -181,12 +179,6 @@ def test_communities_nodes_alledgesw():
 
 
 
-def test_combine():
-    first = [set([0,1,2]), set([3,4,5]), set([6,7])]
-    second = [set([0,2]), set([1])]
-    npt.assert_raises(ValueError, wm._combine, second, first)
-    res = wm._combine(first, second)
-    npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])
 
 
 def test_calc_delta_modularity():
@@ -217,3 +209,28 @@ def test_move_node():
     invalid_communities = len(part.communities) + 1
     with npt.assert_raises(IndexError):
         newpart = wm._move_node(part, node, invalid_communities)  
+
+"""
+def test_combine():
+    first = [set([0,1,2]), set([3,4,5]), set([6,7])]
+    second = [set([0,2]), set([1])]
+    npt.assert_raises(ValueError, wm._combine, second, first)
+    res = wm._combine(first, second)
+    npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])
+
+def test_meta_graph():
+    graph, communities = get_test_data()
+    part = wm.WeightedPartition(graph)
+    metagraph,_ = wm.meta_graph(part)
+    ## each node is a comm, so no change to metagraph
+    npt.assert_equal(metagraph.nodes(), graph.nodes())
+    ## two communitties
+    part = wm.WeightedPartition(graph, communities)
+    metagraph,mapping = wm.meta_graph(part)
+    npt.assert_equal(metagraph.nodes(), [0,1])
+    npt.assert_equal(metagraph.edges(), [(0,0),(0,1), (1,1)])
+    # mapping should map new node 0 to communities[0]
+    npt.assert_equal(mapping[0], communities[0])
+    ## weight should not be lost between graphs
+    npt.assert_almost_equal(metagraph.size(weight='weight'),
+        graph.size(weight='weight'))

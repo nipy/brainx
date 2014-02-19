@@ -170,9 +170,158 @@ class WeightedPartition(object):
 
 
 
-    
+class LouvainCommunityDetection(object):
+
+    def __init__(self, graph, communities=None, minthr=0.0000001):
+        self.graph = graph
+        self.initial_communities = communities
+        self.minthr = minthr
+
+    def run(self):
+        dendogram = self.gen_dendogram()
+        partitions = self.partitions_from_dendogram(dendogram)
+        return partitions
+
+
+    def gen_dendogram(self):
+        """generate dendogram based on muti-levels of partitioning
+        """
+        if type(self.graph) != nx.Graph :
+            raise TypeError("Bad graph type, use only non directed graph")
+
+        #special case, when there is no link 
+        #the best partition is everyone in its communities
+        if graph.number_of_edges() == 0 :
+            return WeightedPartition(self.graph)
+            
+        current_graph = self.graph.copy()
+        part = WeightedPartition(self.graph, self.communities)
+        # first pass
+        mod = modularity(part)
+        dendogram = list()
+        new_part = self._one_level(part, self.minthr)
+        new_mod = new_part.modularity()
+
+        dendogram.append(new_part)
+        mod = new_mod
+        current_graph, _ = meta_graph(new_part)
+        
+        while True :
+            partition = WeightedPartition(current_graph)
+            newpart = self._one_level(partition, self.minthr)
+            new_mod = newpart.modularity()
+            if new_mod - mod < minthr :
+                break
+
+            dendogram.append(newpart)
+            mod = new_mod
+            current_graph,_ = meta_graph(newpart)
+        return dendogram
+
+    @staticmethod
+    def _one_level(part, min_modularity= .0000001):
+        """run one level of patitioning"""
+        curr_mod = part.modularity()
+        modified = True
+        while modified:
+            modified = False
+            all_nodes = [x for x in part.graph.nodes()]
+            np.random.shuffle(all_nodes)
+            for node in all_nodes:
+                node_comm = part.get_node_community(node)
+                delta_mod = self._calc_delta_modularity(node, part)
+                #print node, delta_mod
+                if delta_mod.max() <= 0.0:
+                    # no increase by moving this node
+                    continue
+                best_comm = delta_mod.argmax()
+                if not best_comm == node_comm: 
+                    new_part = self._move_node(part, node, best_comm)
+                    part = new_part
+                    modified = True
+            new_mod = part.modularity()
+            change_in_modularity = new_mod - curr_mod
+            if change_in_modularity < min_modularity:
+                return part
+        return part
+
+    @staticmethod
+    def _calc_delta_modularity(node, part):
+        """calculate the increase(s) in modularity if node is moved to other
+        communities
+        deltamod = inC - totc * ki / total_weight"""
+        noded = part.node_degree(node)
+        dnc = part.dnodecom(node)
+        totc = self._communities_nodes_alledgesw(part, node)
+        total_weight = part.total_edge_weight
+        # cast to arrays to improve calc
+        dnc = np.array(dnc)
+        totc = np.array(totc)
+        return dnc - totc*noded / (total_weight*2)
+
+
+    @staticmethod
+    def _communities_without_node(part, node):
+        """ returns a version of the partition with the node
+        removed, may result in empty communities"""
+        node_comm = part.get_node_community(node)
+        newpart = copy.deepcopy(part.communities)
+        newpart[node_comm].remove(node)
+        return newpart
+
+    @staticmethod
+    def _communities_nodes_alledgesw(part, removed_node):
+        """ returns the sum of all weighted edges to nodes in each
+        community, once the removed_node is removed
+        this refers to totc in Blondel paper"""
+        comm_wo_node = self._communities_without_node(part, removed_node)
+        weights = [0] * len(comm_wo_node)
+        ## make a list of all nodes degree weights
+        all_degree_weights = part.graph.degree(weight='weight').values()
+        all_degree_weights = np.array(all_degree_weights)
+        for val, nodeset in enumerate(comm_wo_node):
+            node_index = np.array(list(nodeset)) #index of nodes in community
+            #sum the weighted degree of nodes in community
+            if len(node_index)<1:
+                continue
+            weights[val] = np.sum(all_degree_weights[node_index])
+        return weights  
+
+    @staticmethod
+    def _move_node(part, node, new_comm):
+        """generate a new partition with node put into new community
+        designated by index (new_comm) into existing part.communities"""
+        ## copy
+        new_community = [x.copy() for x in part.communities]
+        ## update
+        curr_node_comm = part.get_node_community(node)
+        ## remove
+        new_community[curr_node_comm].remove(node)
+        new_community[new_comm].add(node)
+        # Remove any empty sets from ne
+        new_community = [x for x in new_community if len(x) > 0]
+        return WeightedPartition(part.graph, new_community)
+
+
+    @staticmethod
+    def partitions_from_dendogram(dendo):
+        """ returns community partitions based on results in dendogram
+        """
+        all_partitions = []
+        init_part = dendo[0].communities
+        all_partitions.append(init_part)
+        for partition in dendo[1:]:
+            init_part = _combine(init_part, partition.communities)
+            all_partitions.append(init_part)
+        return all_partitions
+
+
+
+
+
+            
 def meta_graph(partition):
-    """ takes partition communities and creates a new meta graph where
+    """ takes weighted partition communities and creates a new meta graph where
     communities are now the nodes, the new edges are created based on the 
     node to node connections from original graph, and weighted accordingly,
     this includes self-loops"""
@@ -195,148 +344,6 @@ def meta_graph(partition):
             weight = tmpw + data['weight'])
 
     return metagraph, mapping
-
-
-def _communities_without_node(part, node):
-    """ returns a version of the partition with the node
-    removed, may result in empty communities"""
-    node_comm = part.get_node_community(node)
-    newpart = copy.deepcopy(part.communities)
-    newpart[node_comm].remove(node)
-    return newpart
-
-
-def _communities_nodes_alledgesw(part, removed_node):
-    """ returns the sum of all weighted edges to nodes in each
-    community, once the removed_node is removed
-    this refers to totc in Blondel paper"""
-    comm_wo_node = _communities_without_node(part, removed_node)
-    weights = [0] * len(comm_wo_node)
-    ## make a list of all nodes degree weights
-    all_degree_weights = part.graph.degree(weight='weight').values()
-    all_degree_weights = np.array(all_degree_weights)
-    for val, nodeset in enumerate(comm_wo_node):
-        node_index = np.array(list(nodeset)) #index of nodes in community
-        #sum the weighted degree of nodes in community
-        if len(node_index)<1:
-            continue
-        weights[val] = np.sum(all_degree_weights[node_index])
-    return weights  
-
-
-
-
-
-
-def gen_dendogram(graph, communities=None, minthr=0.0000001):
-    """generate dendogram based on muti-levels of partitioning
-
-    Parameters
-    ----------
-    graph : networkx undirected graph
-    communities : list of sets, optional
-    minthr : float
-        min stoping threshold for difference in old and new modularity
-    """
-
-    if type(graph) != nx.Graph :
-        raise TypeError("Bad graph type, use only non directed graph")
-
-    #special case, when there is no link 
-    #the best partition is everyone in its communities
-    if graph.number_of_edges() == 0 :
-        return WeightedPartition(graph)
-        
-    current_graph = graph.copy()
-    part = WeightedPartition(graph, communities)
-    # first pass
-    mod = modularity(part)
-    dendogram = list()
-    new_part = _one_level(part)
-    new_mod = modularity(new_part)
-
-    dendogram.append(new_part)
-    mod = new_mod
-    current_graph, _ = meta_graph(new_part)
-    
-    while True :
-        partition = WeightedPartition(current_graph)
-        newpart = _one_level(partition)
-        new_mod = modularity(newpart)
-        if new_mod - mod < minthr :
-            break
-
-        dendogram.append(newpart)
-        mod = new_mod
-        current_graph,_ = meta_graph(newpart)
-    return dendogram
-
-
-def partitions_from_dendogram(dendo):
-    """ returns community partitions based on results in dendogram
-    """
-    all_partitions = []
-    init_part = dendo[0].communities
-    all_partitions.append(init_part)
-    for comm in dendo[1:]:
-        init_part = _combine(init_part, comm.communities)
-        all_partitions.append(init_part)
-    return all_partitions
-
-
-def _calc_delta_modularity(node, part):
-    """calculate the increase(s) in modularity if node is moved to other
-    communities
-    deltamod = inC - totc * ki / total_weight"""
-    noded = part.node_degree(node)
-    dnc = part.dnodecom(node)
-    totc = _communities_nodes_alledgesw(part, node)
-    total_weight = part.total_edge_weight
-    # cast to arrays to improve calc
-    dnc = np.array(dnc)
-    totc = np.array(totc)
-    return dnc - totc*noded / (total_weight*2)
-
-
-def _move_node(part, node, new_comm):
-    """generate a new partition with node put into new_comm"""
-    ## copy
-    new_community = [x.copy() for x in part.communities]
-    ## update
-    curr_node_comm = part.get_node_community(node)
-    ## remove
-    new_community[curr_node_comm].remove(node)
-    new_community[new_comm].add(node)
-    new_comm = [x for x in new_community if len(x) > 0]
-    return WeightedPartition(part.graph, new_comm)
-
-
-def _one_level(part, min_modularity= .0000001):
-    """run one level of patitioning"""
-    curr_mod = modularity(part)
-    modified = True
-    while modified:
-        modified = False
-        all_nodes = [x for x in part.graph.nodes()]
-        np.random.shuffle(all_nodes)
-        for node in all_nodes:
-            node_comm = part.get_node_community(node)
-            delta_mod = _calc_delta_modularity(node, part)
-            #print node, delta_mod
-            if delta_mod.max() <= 0.0:
-                # no increase by moving this node
-                continue
-            best_comm = delta_mod.argmax()
-            if not best_comm == node_comm: 
-                new_part = _move_node(part, node, best_comm)
-                part = new_part
-                modified = True
-        new_mod = modularity(part)
-        change_in_modularity = new_mod - curr_mod
-        if change_in_modularity < min_modularity:
-            return part
-    return part
-            
 
 def _combine(prev, next):
     """combines nodes in set based on next level
