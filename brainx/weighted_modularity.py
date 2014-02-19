@@ -53,13 +53,13 @@ class WeightedPartition(object):
         return [set([node]) for node in self.graph.nodes()]
 
 
-    def community_degree(self):
+    def communities_degree(self):
         """ calculates the joint degree of a community"""
-        community_degrees = []
+        communities_degrees = []
         for com in self.communities:
             tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
-            community_degrees.append(tmp)
-        return community_degrees
+            communities_degrees.append(tmp)
+        return communities_degrees
 
     def get_node_community(self, node):
         """returns the node's community"""
@@ -91,65 +91,67 @@ class WeightedPartition(object):
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
 
+    def total_links(self):
+        """ sum of all links inside or outside community
+        no nodes are missing"""
+        comm = self.communities
+        weights = [0] * len(comm)
+        all_degree_weights = self.graph.degree(weight='weight')
+        for node, weight in all_degree_weights.items():
+            node_comm = self.get_node_community(node)
+            weights[node_comm] += weight
+        return weights
 
-def modularity(partition):
-    """Calculates the proportion of within community edges compared to 
-    between community edges for all nodes in graph with given partition
+    def internal_links(self):
+        """ sum of weighted links strictly inside each community
+        includes self loops"""
+        comm = self.communities
+        weights = [0] * len(comm)
+        comm = self.communities
+        for val, nodeset in enumerate(comm):
+            for node in nodeset:
+                nodes_within = set([x for x in self.graph[node].keys() \
+                    if x in nodeset])
+                if len(nodes_within) < 1:
+                    continue
+                if node in nodes_within:
+                    weights[val] += self.graph[node][node]['weight']
+                    nodes_within.remove(node)
+                weights[val] += np.sum(self.graph[node][x]['weight']/ 2. \
+                    for x in nodes_within)
+        return weights
 
-    Parameters
-    ----------
-    partition : weighted graph partition object
 
-    Returns
-    -------
-    modularity : float
-        value reflecting the relation of within community connection
-        to across community connections
+    def modularity(self):
+        """Calculates the proportion of within community edges compared to 
+        between community edges for all nodes in graph with given partition
+
+        Parameters
+        ----------
+        partition : weighted graph partition object
+
+        Returns
+        -------
+        modularity : float
+            value reflecting the relation of within community connection
+            to across community connections
 
 
-    References
-    ----------
-    .. [1] M. Newman, "Fast algorithm for detecting community structure
-        in networks", Physical Review E vol. 69(6), 2004. 
+        References
+        ----------
+        .. [1] M. Newman, "Fast algorithm for detecting community structure
+            in networks", Physical Review E vol. 69(6), 2004. 
 
-    """
-    if partition.graph.is_directed():
-        raise TypeError('only valid on non directed graphs')
-    
-    m2 = partition.total_edge_weight
-    internal_connect = np.array(internal_links(partition))
-    total = np.array(total_links(partition))
-    return np.sum(internal_connect/m2 - (total/(2*m2))**2)
+        """
+        if self.graph.is_directed():
+            raise TypeError('only valid on non directed graphs')
+        
+        m2 = self.total_edge_weight
+        internal_connect = np.array(self.internal_links())
+        total = np.array(self.total_links())
+        return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 
-def total_links(part):
-    """ sum of all links inside or outside community
-    no nodes are missing"""
-    comm = part.communities
-    weights = [0] * len(comm)
-    all_degree_weights = part.graph.degree(weight='weight')
-    for node, weight in all_degree_weights.items():
-        node_comm = part.get_node_community(node)
-        weights[node_comm] += weight
-    return weights
 
-def internal_links(part):
-    """ sum of weighted links strictly inside each community
-    includes self loops"""
-    comm = part.communities
-    weights = [0] * len(comm)
-    comm = part.communities
-    for val, nodeset in enumerate(comm):
-        for node in nodeset:
-            nodes_within = set([x for x in part.graph[node].keys() \
-                if x in nodeset])
-            if len(nodes_within) < 1:
-                continue
-            if node in nodes_within:
-                weights[val] += part.graph[node][node]['weight']
-                nodes_within.remove(node)
-            weights[val] += np.sum(part.graph[node][x]['weight']/ 2. \
-                for x in nodes_within)
-    return weights
 
     
 def meta_graph(partition):

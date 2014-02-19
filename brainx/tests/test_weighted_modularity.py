@@ -51,11 +51,11 @@ class TestPartition(unittest.TestCase):
         comm = [set([node]) for node in self.graph.nodes()]
         self.assertEqual(part.communities, comm)
 
-    def test_community_degree(self):
+    def test_communities_degree(self):
         ## if no community, method will raise error
         part = wm.WeightedPartition(self.graph)
         part = wm.WeightedPartition(self.graph, self.communities)
-        cdegree = part.community_degree()
+        cdegree = part.communities_degree()
         self.assertEqual(round(cdegree[0]), 1462.0)
 
 
@@ -90,29 +90,28 @@ class TestPartition(unittest.TestCase):
         self.assertEqual(part.get_node_community(0), 0)
 
 
-def test_modularity():
-    graph, comm = get_test_data()
-    part = wm.WeightedPartition(graph, comm)
-    npt.assert_almost_equal(wm.modularity(part), 0.0555463)
+    def test_modularity(self):
+        part = wm.WeightedPartition(self.graph, self.communities)
+        npt.assert_almost_equal(part.modularity(), 0.0555463)
 
 
-def test_total_links():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node
-    ## summ of all links in or out of communities
-    ## since one per scommunity, just weighted degree of each node
-    tot_per_comm = wm.total_links(part)
-    degw = graph.degree(weight='weight').values()
-    npt.assert_equal(tot_per_comm, degw)
-    ## This isnt true of we have communities with multiple nodes
-    part_2comm = wm.WeightedPartition(graph, communities)
-    npt.assert_equal(part_2comm == degw, False)
+    def test_total_links(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        ## summ of all links in or out of communities
+        ## since one per scommunity, just weighted degree of each node
+        tot_per_comm = part.total_links()
+        degw = self.graph.degree(weight='weight').values()
+        self.assertEqual(tot_per_comm, degw)
+        ## This isnt true of we have communities with multiple nodes
+        part_2comm = wm.WeightedPartition(self.graph, self.communities)
+        self.assertEqual(part_2comm == degw, False)
 
-def test_internal_links():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node
-    weights = wm.internal_links(part) 
-    ## this inlcudes seld links so      
+    def test_internal_links(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        weights = part.internal_links() 
+        ## this inlcudes self links so 
+        self.assertEqual(weights[0], 1.0)
+
 
 
 def test_dnodecom():
