@@ -6,7 +6,7 @@ import networkx as nx
 from . import util
 
 
-class Partition(object):
+class WeightedPartition(object):
     """Represent a weighted Graph Partition
 
        The main object keeping track of the nodes in each partition is the
@@ -240,10 +240,10 @@ def gen_dendogram(graph, community=None, minthr=0.0000001):
     #special case, when there is no link 
     #the best partition is everyone in its community
     if graph.number_of_edges() == 0 :
-        return Partition(graph)
+        return WeightedPartition(graph)
         
     current_graph = graph.copy()
-    part = Partition(graph, community)
+    part = WeightedPartition(graph, community)
     # first pass
     mod = modularity(part)
     dendogram = list()
@@ -255,7 +255,7 @@ def gen_dendogram(graph, community=None, minthr=0.0000001):
     current_graph, _ = meta_graph(new_part)
     
     while True :
-        partition = Partition(current_graph)
+        partition = WeightedPartition(current_graph)
         newpart = _one_level(partition)
         new_mod = modularity(newpart)
         if new_mod - mod < minthr :
@@ -303,7 +303,7 @@ def _move_node(part, node, new_comm):
     new_community[curr_node_comm].remove(node)
     new_community[new_comm].add(node)
     new_comm = [x for x in new_community if len(x) > 0]
-    return Partition(part.graph, new_comm)
+    return WeightedPartition(part.graph, new_comm)
 
 
 def _one_level(part, min_modularity= .0000001):

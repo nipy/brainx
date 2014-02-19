@@ -44,7 +44,7 @@ class TestPartition(unittest.TestCase):
         self.community = community
 
     def test_init(self):
-        part = wm.Partition(self.graph)
+        part = wm.WeightedPartition(self.graph)
         self.assertEqual(type(part.degrees), type({}))
         npt.assert_array_almost_equal(part.total_edge_weight, 1500.5653444)
         # generated communities
@@ -53,14 +53,14 @@ class TestPartition(unittest.TestCase):
 
     def test_community_degree(self):
         ## if no community, method will raise error
-        part = wm.Partition(self.graph)
-        part = wm.Partition(self.graph, self.community)
+        part = wm.WeightedPartition(self.graph)
+        part = wm.WeightedPartition(self.graph, self.community)
         cdegree = part.community_degree()
         self.assertEqual(round(cdegree[0]), 1462.0)
 
 
     def test_set_community(self):
-        part = wm.Partition(self.graph, self.community)
+        part = wm.WeightedPartition(self.graph, self.community)
         self.assertEqual(part.community, self.community)
         with self.assertRaises(TypeError):
             # raise error if not list of sets
@@ -75,49 +75,49 @@ class TestPartition(unittest.TestCase):
     def test_allnodes_in_community(self):
         """checks communities contain all nodes
         with no repetition"""
-        part = wm.Partition(self.graph)
+        part = wm.WeightedPartition(self.graph)
         self.assertTrue(part._allnodes_in_community(self.community))
         self.assertFalse(part._allnodes_in_community([self.community[0]]))
 
 
     def test_get_node_community(self):
-        part = wm.Partition(self.graph, self.community)
+        part = wm.WeightedPartition(self.graph, self.community)
         self.assertEqual(part.get_node_community(0), 0)
         self.assertEqual(part.get_node_community(self.graph.nodes()[-1]),1)
         with self.assertRaises(ValueError):
             part.get_node_community(-1)
-        part = wm.Partition(self.graph)
+        part = wm.WeightedPartition(self.graph)
         self.assertEqual(part.get_node_community(0), 0)
 
 
 def test_modularity():
     graph, comm = get_test_data()
-    part = wm.Partition(graph, comm)
+    part = wm.WeightedPartition(graph, comm)
     npt.assert_almost_equal(wm.modularity(part), 0.0555463)
 
 
 def test_total_links():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node
+    part = wm.WeightedPartition(graph) # one comm per node
     ## summ of all links in or out of community
     ## since one per scommunity, just weighted degree of each node
     tot_per_comm = wm.total_links(part)
     degw = graph.degree(weight='weight').values()
     npt.assert_equal(tot_per_comm, degw)
     ## This isnt true of we have communities with multiple nodes
-    part_2comm = wm.Partition(graph, community)
+    part_2comm = wm.WeightedPartition(graph, community)
     npt.assert_equal(part_2comm == degw, False)
 
 def test_internal_links():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node
+    part = wm.WeightedPartition(graph) # one comm per node
     weights = wm.internal_links(part) 
     ## this inlcudes seld links so      
 
 
 def test_dnodecom():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node
+    part = wm.WeightedPartition(graph) # one comm per node
     node = 0
     node2comm_weights = wm.dnodecom(node, part)
     # self loops not added to weight 
@@ -127,18 +127,18 @@ def test_dnodecom():
     neighbor = 1
     expected = graph[node][neighbor]['weight']
     npt.assert_equal(node2comm_weights[neighbor],expected)
-    part = wm.Partition(graph, community)
+    part = wm.WeightedPartition(graph, community)
     node2comm_weights = wm.dnodecom(node, part)
     npt.assert_equal(len(node2comm_weights), 2) 
 
 def test_meta_graph():
     graph, community = get_test_data()
-    part = wm.Partition(graph)
+    part = wm.WeightedPartition(graph)
     metagraph,_ = wm.meta_graph(part)
     ## each node is a comm, so no change to metagraph
     npt.assert_equal(metagraph.nodes(), graph.nodes())
     ## two communitties
-    part = wm.Partition(graph, community)
+    part = wm.WeightedPartition(graph, community)
     metagraph,mapping = wm.meta_graph(part)
     npt.assert_equal(metagraph.nodes(), [0,1])
     npt.assert_equal(metagraph.edges(), [(0,0),(0,1), (1,1)])
@@ -151,11 +151,11 @@ def test_meta_graph():
 
 def test_communities_without_node():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node   
+    part = wm.WeightedPartition(graph) # one comm per node   
     node = 0
     updated_comm = wm._communities_without_node(part, node )
     npt.assert_equal(updated_comm[0], set([]))
-    part = wm.Partition(graph, community)
+    part = wm.WeightedPartition(graph, community)
     updated_comm = wm._communities_without_node(part, node )
     ## make sure we dont break community from original partition
     npt.assert_equal(part.community, community)
@@ -163,12 +163,12 @@ def test_communities_without_node():
 
 def test_community_nodes_alledgesw():
     graph, community = get_test_data()
-    part = wm.Partition(graph, community)    
+    part = wm.WeightedPartition(graph, community)    
     node = 0
     weights = wm._community_nodes_alledgesw(part, node)
     npt.assert_almost_equal(weights[0], 1424.0220362)
     ## test with possible empty node set
-    part = wm.Partition(graph)
+    part = wm.WeightedPartition(graph)
     weights = wm._community_nodes_alledgesw(part, node)
     npt.assert_equal(weights[0], 0)
     # other communities are made up of just one node
@@ -179,7 +179,7 @@ def test_community_nodes_alledgesw():
 
 def test_node_degree():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node   
+    part = wm.WeightedPartition(graph) # one comm per node   
     node = 0    
     res = wm.node_degree(graph, node)
     npt.assert_almost_equal(res, 37.94151675 )
@@ -194,7 +194,7 @@ def test_combine():
 
 def test_calc_delta_modularity():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node
+    part = wm.WeightedPartition(graph) # one comm per node
     node = 0
     change = wm._calc_delta_modularity(node, part)
     npt.assert_equal(len(change), len(part.community))
@@ -208,7 +208,7 @@ def test_calc_delta_modularity():
 
 def test_move_node():
     graph, community = get_test_data()
-    part = wm.Partition(graph) # one comm per node 
+    part = wm.WeightedPartition(graph) # one comm per node 
     #move first node to second community 
     node = 0
     comm = 1
