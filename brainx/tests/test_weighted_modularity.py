@@ -89,6 +89,11 @@ class TestPartition(unittest.TestCase):
         part = wm.WeightedPartition(self.graph)
         self.assertEqual(part.get_node_community(0), 0)
 
+    def test_node_degree(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node   
+        node = 0    
+        res = part.node_degree(node)
+        npt.assert_almost_equal(res, 37.94151675 )
 
     def test_modularity(self):
         part = wm.WeightedPartition(self.graph, self.communities)
@@ -114,21 +119,20 @@ class TestPartition(unittest.TestCase):
 
 
 
-def test_dnodecom():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node
-    node = 0
-    node2comm_weights = wm.dnodecom(node, part)
-    # self loops not added to weight 
-    # so communities made only of node should be zero
-    npt.assert_equal(node2comm_weights[0],0)
-    # this should be equal to weight between two nodes
-    neighbor = 1
-    expected = graph[node][neighbor]['weight']
-    npt.assert_equal(node2comm_weights[neighbor],expected)
-    part = wm.WeightedPartition(graph, communities)
-    node2comm_weights = wm.dnodecom(node, part)
-    npt.assert_equal(len(node2comm_weights), 2) 
+    def test_dnodecom(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        node = 0
+        node2comm_weights = part.dnodecom(node)
+        # self loops not added to weight 
+        # so communities made only of node should be zero
+        npt.assert_equal(node2comm_weights[0],0)
+        # this should be equal to weight between two nodes
+        neighbor = 1
+        expected = self.graph[node][neighbor]['weight']
+        npt.assert_equal(node2comm_weights[neighbor],expected)
+        part = wm.WeightedPartition(self.graph, self.communities)
+        node2comm_weights = part.dnodecom(node)
+        npt.assert_equal(len(node2comm_weights), 2) 
 
 def test_meta_graph():
     graph, communities = get_test_data()
@@ -176,12 +180,6 @@ def test_communities_nodes_alledgesw():
 
 
 
-def test_node_degree():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node   
-    node = 0    
-    res = wm.node_degree(graph, node)
-    npt.assert_almost_equal(res, 37.94151675 )
 
 def test_combine():
     first = [set([0,1,2]), set([3,4,5]), set([6,7])]

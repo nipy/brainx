@@ -91,6 +91,23 @@ class WeightedPartition(object):
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
 
+    def node_degree(self, node):
+        """ find the summed weight of all node edges
+        """
+        return self.graph.degree(weight='weight')[node]
+
+
+    def dnodecom(self, node):
+        """ Find the number of links from node to each community"""
+        comm_weights = [0] * len(self.communities)
+        for neighbor, data in self.graph[node].items():
+            if neighbor == node:
+                continue
+            tmpcomm = self.get_node_community(neighbor)
+            comm_weights[tmpcomm] += data.get('weight', 1)
+        return comm_weights
+
+
     def total_links(self):
         """ sum of all links inside or outside community
         no nodes are missing"""
@@ -207,21 +224,7 @@ def _communities_nodes_alledgesw(part, removed_node):
     return weights  
 
 
-def node_degree(graph, node):
-    """ find the summed weight to node
-    Ki in Blondel paper"""
-    return graph.degree(weight='weight')[node]
 
-
-def dnodecom(node, part):
-    """ Find the number of links from node to each community"""
-    comm_weights = [0] * len(part.communities)
-    for neighbor, data in part.graph[node].items():
-        if neighbor == node:
-            continue
-        tmpcomm = part.get_node_community(neighbor)
-        comm_weights[tmpcomm] += data.get('weight', 1)
-    return comm_weights
 
 
 
@@ -285,8 +288,8 @@ def _calc_delta_modularity(node, part):
     """calculate the increase(s) in modularity if node is moved to other
     communities
     deltamod = inC - totc * ki / total_weight"""
-    noded = node_degree(part.graph, node)
-    dnc = dnodecom(node, part)
+    noded = part.node_degree(node)
+    dnc = part.dnodecom(node)
     totc = _communities_nodes_alledgesw(part, node)
     total_weight = part.total_edge_weight
     # cast to arrays to improve calc
