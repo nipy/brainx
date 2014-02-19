@@ -10,19 +10,19 @@ class WeightedPartition(object):
     """Represent a weighted Graph Partition
 
        The main object keeping track of the nodes in each partition is the
-       community attribute. 
+       communities attribute. 
     """
-    def __init__(self, graph, community=None):
-        """ initialize partition of graph, with optional community
+    def __init__(self, graph, communities=None):
+        """ initialize partition of graph, with optional communities
 
         Parameters
         ----------
         graph : networkx graph
         
-        community : list of sets, optional
+        communities : list of sets, optional
             a list of sets with nodes in each set
-            if community is None, will initialize with
-            one community per node
+            if communities is None, will initialize with
+            one  per node
         """
         # assert graph has edge weights, and no negative weights
         mat = nx.adjacency_matrix(graph)
@@ -30,25 +30,25 @@ class WeightedPartition(object):
             raise ValueError('Graph has invalid negative weights')
 
         self.graph = nx.from_numpy_matrix(mat)
-        if community is None:
-            self._community = self._init_communities_from_nodes()
+        if communities is None:
+            self._communities = self._init_communities_from_nodes()
         else:
-            self.set_community(community)
+            self.set_communities(communities)
         self.total_edge_weight = graph.size(weight='weight')
         self.degrees = graph.degree(weight='weight')
 
     @property
-    def community(self):
+    def communities(self):
         """list of sets decribing the communities"""
-        return self._community
+        return self._communities
 
-    @community.setter
-    def community(self, value):
-        self._community = self.set_community(value)
+    @communities.setter
+    def communities(self, value):
+        self._communities = self.set_communities(value)
 
     def _init_communities_from_nodes(self):
-        """ creates a new community with one node per community
-        eg nodes = [0,1,2] -> community = [set([0]), set([1]), set([2])]
+        """ creates a new communities with one node per community
+        eg nodes = [0,1,2] -> communities = [set([0]), set([1]), set([2])]
         """
         return [set([node]) for node in self.graph.nodes()]
 
@@ -56,7 +56,7 @@ class WeightedPartition(object):
     def community_degree(self):
         """ calculates the joint degree of a community"""
         community_degrees = []
-        for com in self.community:
+        for com in self.communities:
             tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
             community_degrees.append(tmp)
         return community_degrees
@@ -64,7 +64,7 @@ class WeightedPartition(object):
     def get_node_community(self, node):
         """returns the node's community"""
         try:
-            return [val for val,x in enumerate(self.community) if node in x][0]
+            return [val for val,x in enumerate(self.communities) if node in x][0]
         except IndexError:
             if not node in self.graph.nodes():
                 raise ValueError('node:{0} is not in the graph'.format(node))
@@ -72,24 +72,24 @@ class WeightedPartition(object):
                 raise StandardError('cannot find community for node '\
                     '{0}'.format(node))
 
-    def set_community(self, community):
-        """ set the partition community to the input community"""
-        if self._allnodes_in_community(community):
-            self._community = community
+    def set_communities(self, communities):
+        """ set the partition communities to the input communities"""
+        if self._allnodes_in_communities(communities):
+            self._communities = communities
         else:
-            raise ValueError('missing nodes {0}'.format(community))
+            raise ValueError('missing nodes {0}'.format(communities))
 
 
-    def _allnodes_in_community(self, community):
+    def _allnodes_in_communities(self, communities):
         """ checks all nodes are represented in communities, also catches
         duplicate nodes"""
-        if not (isinstance(community, list) and \
-            util._contains_only(community, set)):
-            raise TypeError('community should be list of sets, not '\
-                '{}'.format(community))  
+        if not (isinstance(communities, list) and \
+            util._contains_only(communities, set)):
+            raise TypeError('communities should be list of sets, not '\
+                '{}'.format(communities))  
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
-            len([item for com in community for item in com])
+            len([item for com in communities for item in com])
 
 
 def modularity(partition):
@@ -124,7 +124,7 @@ def modularity(partition):
 def total_links(part):
     """ sum of all links inside or outside community
     no nodes are missing"""
-    comm = part.community
+    comm = part.communities
     weights = [0] * len(comm)
     all_degree_weights = part.graph.degree(weight='weight')
     for node, weight in all_degree_weights.items():
@@ -135,9 +135,9 @@ def total_links(part):
 def internal_links(part):
     """ sum of weighted links strictly inside each community
     includes self loops"""
-    comm = part.community
+    comm = part.communities
     weights = [0] * len(comm)
-    comm = part.community
+    comm = part.communities
     for val, nodeset in enumerate(comm):
         for node in nodeset:
             nodes_within = set([x for x in part.graph[node].keys() \
@@ -159,8 +159,8 @@ def meta_graph(partition):
     this includes self-loops"""
     metagraph = nx.Graph()
     # new nodes are communities
-    newnodes = [val for val,_ in enumerate(partition.community)]
-    mapping = {val:nodes for val,nodes in enumerate(partition.community)}
+    newnodes = [val for val,_ in enumerate(partition.communities)]
+    mapping = {val:nodes for val,nodes in enumerate(partition.communities)}
     metagraph.add_nodes_from(newnodes, weight=0.0) 
 
     for node1, node2, data in partition.graph.edges_iter(data=True):
@@ -180,14 +180,14 @@ def meta_graph(partition):
 
 def _communities_without_node(part, node):
     """ returns a version of the partition with the node
-    removed, may result in empty community"""
+    removed, may result in empty communities"""
     node_comm = part.get_node_community(node)
-    newpart = copy.deepcopy(part.community)
+    newpart = copy.deepcopy(part.communities)
     newpart[node_comm].remove(node)
     return newpart
 
 
-def _community_nodes_alledgesw(part, removed_node):
+def _communities_nodes_alledgesw(part, removed_node):
     """ returns the sum of all weighted edges to nodes in each
     community, once the removed_node is removed
     this refers to totc in Blondel paper"""
@@ -213,7 +213,7 @@ def node_degree(graph, node):
 
 def dnodecom(node, part):
     """ Find the number of links from node to each community"""
-    comm_weights = [0] * len(part.community)
+    comm_weights = [0] * len(part.communities)
     for neighbor, data in part.graph[node].items():
         if neighbor == node:
             continue
@@ -223,13 +223,13 @@ def dnodecom(node, part):
 
 
 
-def gen_dendogram(graph, community=None, minthr=0.0000001):
+def gen_dendogram(graph, communities=None, minthr=0.0000001):
     """generate dendogram based on muti-levels of partitioning
 
     Parameters
     ----------
     graph : networkx undirected graph
-    community : list of sets, optional
+    communities : list of sets, optional
     minthr : float
         min stoping threshold for difference in old and new modularity
     """
@@ -238,12 +238,12 @@ def gen_dendogram(graph, community=None, minthr=0.0000001):
         raise TypeError("Bad graph type, use only non directed graph")
 
     #special case, when there is no link 
-    #the best partition is everyone in its community
+    #the best partition is everyone in its communities
     if graph.number_of_edges() == 0 :
         return WeightedPartition(graph)
         
     current_graph = graph.copy()
-    part = WeightedPartition(graph, community)
+    part = WeightedPartition(graph, communities)
     # first pass
     mod = modularity(part)
     dendogram = list()
@@ -271,10 +271,10 @@ def partitions_from_dendogram(dendo):
     """ returns community partitions based on results in dendogram
     """
     all_partitions = []
-    init_part = dendo[0].community
+    init_part = dendo[0].communities
     all_partitions.append(init_part)
     for comm in dendo[1:]:
-        init_part = _combine(init_part, comm.community)
+        init_part = _combine(init_part, comm.communities)
         all_partitions.append(init_part)
     return all_partitions
 
@@ -285,7 +285,7 @@ def _calc_delta_modularity(node, part):
     deltamod = inC - totc * ki / total_weight"""
     noded = node_degree(part.graph, node)
     dnc = dnodecom(node, part)
-    totc = _community_nodes_alledgesw(part, node)
+    totc = _communities_nodes_alledgesw(part, node)
     total_weight = part.total_edge_weight
     # cast to arrays to improve calc
     dnc = np.array(dnc)
@@ -296,7 +296,7 @@ def _calc_delta_modularity(node, part):
 def _move_node(part, node, new_comm):
     """generate a new partition with node put into new_comm"""
     ## copy
-    new_community = [x.copy() for x in part.community]
+    new_community = [x.copy() for x in part.communities]
     ## update
     curr_node_comm = part.get_node_community(node)
     ## remove
@@ -335,14 +335,14 @@ def _one_level(part, min_modularity= .0000001):
 
 def _combine(prev, next):
     """combines nodes in set based on next level
-    community partition
+    communities partition
 
     Parameters
     ----------
     prev : list of sets
-        community partition
+        communities partition
     next : list of sets
-        next level community partition
+        next level communities partition
 
     Examples
     --------
