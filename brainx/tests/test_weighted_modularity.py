@@ -162,56 +162,46 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         ## make sure we dont break communities from original partition
         self.assertEqual(part.communities, self.communities)
         self.assertEqual(0 not in updated_comm[0], True)
-"""
-def test_communities_nodes_alledgesw():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph, communities)    
-    node = 0
-    weights = wm._communities_nodes_alledgesw(part, node)
-    npt.assert_almost_equal(weights[0], 1424.0220362)
-    ## test with possible empty node set
-    part = wm.WeightedPartition(graph)
-    weights = wm._communities_nodes_alledgesw(part, node)
-    npt.assert_equal(weights[0], 0)
-    # other communities are made up of just one node
-    npt.assert_equal(weights[1], graph.degree(weight='weight')[1])
+
+    def test_communities_nodes_alledgesw(self):
+        part = wm.WeightedPartition(self.graph, self.communities)    
+        node = 0
+        weights = self.louvain_comm._communities_nodes_alledgesw(part, node)
+        npt.assert_almost_equal(weights[0], 1424.0220362)
+        ## test with possible empty node set
+        part = wm.WeightedPartition(self.graph)
+        weights = self.louvain._communities_nodes_alledgesw(part, node)
+        self.assertEqual(weights[0], 0)
+        # other communities are made up of just one node
+        self.assertEqual(weights[1], self.graph.degree(weight='weight')[1])
 
 
+    def test_calc_delta_modularity(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        node = 0
+        change = self.louvain._calc_delta_modularity(node, part)
+        self.assertEqual(len(change), len(part.communities))
+        # change is an array
+        self.assertEqual(change.shape[0], len(part.communities))
+        self.assertEqual(change[0] < change[1], True)
+        # this is one comm per node, so once removed from own
+        # comm, this delta_weight will be zero
+        self.assertEqual(change[node] , 0) 
 
+    def test_move_node(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node 
+        #move first node to second community 
+        node = 0
+        comm = 1
+        newpart = self.louvain._move_node(part, node, comm)
+        self.assertEqual(set([0,1]) in newpart.communities, True)
+        ## what happens if node or comm missing
+        with self.assertRaises(ValueError):
+            newpart = self.louvain._move_node(part, -1, comm) 
+        invalid_communities = len(part.communities) + 1
+        with self.assertRaises(IndexError):
+            newpart = self.louvain._move_node(part, node, invalid_communities)  
 
-
-
-
-def test_calc_delta_modularity():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node
-    node = 0
-    change = wm._calc_delta_modularity(node, part)
-    npt.assert_equal(len(change), len(part.communities))
-    # change is an array
-    npt.assert_equal(change.shape[0], len(part.communities))
-    npt.assert_equal(change[0] < change[1], True)
-    # this is one comm per node, so once removed from own
-    # comm, this delta_weight will be zero
-    npt.assert_equal(change[node] , 0) 
-
-
-def test_move_node():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node 
-    #move first node to second community 
-    node = 0
-    comm = 1
-    newpart = wm._move_node(part, node, comm )
-    npt.assert_equal(set([0,1]) in newpart.communities, True)
-    ## what happens if node or comm missing
-    with npt.assert_raises(ValueError):
-        newpart = wm._move_node(part, -1, comm) 
-    invalid_communities = len(part.communities) + 1
-    with npt.assert_raises(IndexError):
-        newpart = wm._move_node(part, node, invalid_communities)  
-
-"""
 def test_combine():
     first = [set([0,1,2]), set([3,4,5]), set([6,7])]
     second = [set([0,2]), set([1])]

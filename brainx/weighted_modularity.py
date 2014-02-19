@@ -245,8 +245,7 @@ class LouvainCommunityDetection(object):
                 return part
         return part
 
-    @staticmethod
-    def _calc_delta_modularity(node, part):
+    def _calc_delta_modularity(self, node, part):
         """calculate the increase(s) in modularity if node is moved to other
         communities
         deltamod = inC - totc * ki / total_weight"""
@@ -268,8 +267,7 @@ class LouvainCommunityDetection(object):
         newpart[node_comm].remove(node)
         return newpart
 
-    @staticmethod
-    def _communities_nodes_alledgesw(part, removed_node):
+    def _communities_nodes_alledgesw(self, part, removed_node):
         """ returns the sum of all weighted edges to nodes in each
         community, once the removed_node is removed
         this refers to totc in Blondel paper"""
@@ -312,9 +310,6 @@ class LouvainCommunityDetection(object):
             init_part = _combine(init_part, partition.communities)
             all_partitions.append(init_part)
         return all_partitions
-
-
-
 
 
             
