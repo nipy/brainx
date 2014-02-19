@@ -142,26 +142,27 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         graph, communities = get_test_data()
         self.graph = graph
         self.communities = communities
+        self.louvain = wm.LouvainCommunityDetection(graph)
+        self.louvain_comm = wm.LouvainCommunityDetection(graph, communities)
 
     def test_init(self):
-        louvain = wm.LouvainCommunityDetection(self.graph)
+        louvain = self.louvain
         self.assertEqual(louvain.graph, self.graph)
         self.assertEqual(louvain.initial_communities, None)
         self.assertEqual(louvain.minthr, 0.0000001)
+
+
+    def test_communities_without_node(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node   
+        node = 0
+        updated_comm = self.louvain._communities_without_node(part, node)
+        self.assertEqual(updated_comm[0], set([]))
+        part = wm.WeightedPartition(self.graph, self.communities)
+        updated_comm = self.louvain_comm._communities_without_node(part, node)
+        ## make sure we dont break communities from original partition
+        self.assertEqual(part.communities, self.communities)
+        self.assertEqual(0 not in updated_comm[0], True)
 """
-
-def test_communities_without_node():
-    graph, communities = get_test_data()
-    part = wm.WeightedPartition(graph) # one comm per node   
-    node = 0
-    updated_comm = wm._communities_without_node(part, node )
-    npt.assert_equal(updated_comm[0], set([]))
-    part = wm.WeightedPartition(graph, communities)
-    updated_comm = wm._communities_without_node(part, node )
-    ## make sure we dont break communities from original partition
-    npt.assert_equal(part.communities, communities)
-    npt.assert_equal(0 not in updated_comm[0], True)
-
 def test_communities_nodes_alledgesw():
     graph, communities = get_test_data()
     part = wm.WeightedPartition(graph, communities)    

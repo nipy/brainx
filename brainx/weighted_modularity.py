@@ -259,7 +259,6 @@ class LouvainCommunityDetection(object):
         totc = np.array(totc)
         return dnc - totc*noded / (total_weight*2)
 
-
     @staticmethod
     def _communities_without_node(part, node):
         """ returns a version of the partition with the node
@@ -301,7 +300,6 @@ class LouvainCommunityDetection(object):
         # Remove any empty sets from ne
         new_community = [x for x in new_community if len(x) > 0]
         return WeightedPartition(part.graph, new_community)
-
 
     @staticmethod
     def partitions_from_dendogram(dendo):
