@@ -336,6 +336,36 @@ class LouvainCommunityDetection(object):
             all_partitions.append(init_part)
         return all_partitions
 
+    def _combine(prev, next):
+        """combines nodes in sets (prev) based on mapping defined by
+        (next) (which now treats a previous communitity as a node)
+        but maintains specification of all original nodes
+
+        Parameters
+        ----------
+        prev : list of sets
+            communities partition
+        next : list of sets
+            next level communities partition
+
+        Examples
+        --------
+        >>> prev = [set([0,1,2]), set([3,4]), set([5,6])]
+        >>> next = [set([0,1]), set([2])]
+        >>> result = _combine(prev, next)
+        [set([0, 1, 2, 3, 4]), set([5,6])]
+        """
+        expected_len = np.max([x for sublist in next for x in sublist])
+        if not len(prev) == expected_len + 1:
+            raise ValueError('Number of nodes in next does not'\
+                ' match number of communities in prev')
+        ret = []
+        for itemset in next:
+            newset = set()
+            for tmps in itemset:
+                newset.update(prev[tmps])
+            ret.append(newset)
+        return ret
 
 
 def meta_graph(partition):
@@ -363,36 +393,6 @@ def meta_graph(partition):
 
     return metagraph, mapping
 
-def _combine(prev, next):
-    """combines nodes in sets (prev) based on mapping defined by
-    (next) (which now treats a previous communitity as a node)
-    but maintains specification of all original nodes
-
-    Parameters
-    ----------
-    prev : list of sets
-        communities partition
-    next : list of sets
-        next level communities partition
-
-    Examples
-    --------
-    >>> prev = [set([0,1,2]), set([3,4]), set([5,6])]
-    >>> next = [set([0,1]), set([2])]
-    >>> result = _combine(prev, next)
-    [set([0, 1, 2, 3, 4]), set([5,6])]
-    """
-    expected_len = np.max([x for sublist in next for x in sublist])
-    if not len(prev) == expected_len + 1:
-        raise ValueError('Number of nodes in next does not'\
-            ' match number of communities in prev')
-    ret = []
-    for itemset in next:
-        newset = set()
-        for tmps in itemset:
-            newset.update(prev[tmps])
-        ret.append(newset)
-    return ret
 
 
 
