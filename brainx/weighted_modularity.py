@@ -10,7 +10,7 @@ class WeightedPartition(object):
     """Represent a weighted Graph Partition
 
        The main object keeping track of the nodes in each partition is the
-       communities attribute. 
+       communities attribute.
     """
     def __init__(self, graph, communities=None):
         """ initialize partition of graph, with optional communities
@@ -18,7 +18,7 @@ class WeightedPartition(object):
         Parameters
         ----------
         graph : networkx graph
-        
+
         communities : list of sets, optional
             a list of sets with nodes in each set
             if communities is None, will initialize with
@@ -86,7 +86,7 @@ class WeightedPartition(object):
         if not (isinstance(communities, list) and \
             util._contains_only(communities, set)):
             raise TypeError('communities should be list of sets, not '\
-                '{}'.format(communities))  
+                '{}'.format(communities))
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
@@ -140,7 +140,7 @@ class WeightedPartition(object):
 
 
     def modularity(self):
-        """Calculates the proportion of within community edges compared to 
+        """Calculates the proportion of within community edges compared to
         between community edges for all nodes in graph with given partition
 
         Parameters
@@ -157,12 +157,12 @@ class WeightedPartition(object):
         References
         ----------
         .. [1] M. Newman, "Fast algorithm for detecting community structure
-            in networks", Physical Review E vol. 69(6), 2004. 
+            in networks", Physical Review E vol. 69(6), 2004.
 
         """
         if self.graph.is_directed():
             raise TypeError('only valid on non directed graphs')
-        
+
         m2 = self.total_edge_weight
         internal_connect = np.array(self.internal_links())
         total = np.array(self.total_links())
@@ -178,7 +178,7 @@ class LouvainCommunityDetection(object):
     ----------
     graph : netwrokx Graph object
     communities : list of sets, optional
-        initial identified communties 
+        initial identified communties
     minthr : float, optional
         minimum threshold value for change in modularity
         default(0.0000001)
@@ -192,9 +192,9 @@ class LouvainCommunityDetection(object):
 
     References
     ----------
-    .. [1] VD Blondel, JL Guillaume, R Lambiotte, E Lefebvre, "Fast 
-        unfolding of communities in large networks", Journal of Statistical 
-        Mechanics: Theory and Experiment vol.10, P10008  2008. 
+    .. [1] VD Blondel, JL Guillaume, R Lambiotte, E Lefebvre, "Fast
+        unfolding of communities in large networks", Journal of Statistical
+        Mechanics: Theory and Experiment vol.10, P10008  2008.
 
     """
 
@@ -215,11 +215,11 @@ class LouvainCommunityDetection(object):
         if type(self.graph) != nx.Graph :
             raise TypeError("Bad graph type, use only non directed graph")
 
-        #special case, when there is no link 
+        #special case, when there is no link
         #the best partition is everyone in its communities
         if self.graph.number_of_edges() == 0 :
-            return [WeightedPartition(self.graph)]
-            
+            raise IOError('graph has no edges why do you want a partition?')
+
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
@@ -231,7 +231,7 @@ class LouvainCommunityDetection(object):
         dendogram.append(new_part)
         mod = new_mod
         current_graph, _ = meta_graph(new_part)
-        
+
         while True :
             partition = WeightedPartition(current_graph)
             newpart = self._one_level(partition, self.minthr)
@@ -260,7 +260,7 @@ class LouvainCommunityDetection(object):
                     # no increase by moving this node
                     continue
                 best_comm = delta_mod.argmax()
-                if not best_comm == node_comm: 
+                if not best_comm == node_comm:
                     new_part = self._move_node(part, node, best_comm)
                     part = new_part
                     modified = True
@@ -307,7 +307,7 @@ class LouvainCommunityDetection(object):
             if len(node_index)<1:
                 continue
             weights[val] = np.sum(all_degree_weights[node_index])
-        return weights  
+        return weights
 
     @staticmethod
     def _move_node(part, node, new_comm):
@@ -337,17 +337,17 @@ class LouvainCommunityDetection(object):
         return all_partitions
 
 
-            
+
 def meta_graph(partition):
     """ takes weighted partition communities and creates a new meta graph where
-    communities are now the nodes, the new edges are created based on the 
+    communities are now the nodes, the new edges are created based on the
     node to node connections from original graph, and weighted accordingly,
     this includes self-loops"""
     metagraph = nx.Graph()
     # new nodes are communities
     newnodes = [val for val,_ in enumerate(partition.communities)]
     mapping = {val:nodes for val,nodes in enumerate(partition.communities)}
-    metagraph.add_nodes_from(newnodes, weight=0.0) 
+    metagraph.add_nodes_from(newnodes, weight=0.0)
 
     for node1, node2, data in partition.graph.edges_iter(data=True):
         node1_community = partition.get_node_community(node1)

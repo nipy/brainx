@@ -90,8 +90,8 @@ class TestWeightedPartition(unittest.TestCase):
         self.assertEqual(part.get_node_community(0), 0)
 
     def test_node_degree(self):
-        part = wm.WeightedPartition(self.graph) # one comm per node   
-        node = 0    
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        node = 0
         res = part.node_degree(node)
         npt.assert_almost_equal(res, 37.94151675 )
 
@@ -113,8 +113,8 @@ class TestWeightedPartition(unittest.TestCase):
 
     def test_internal_links(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
-        weights = part.internal_links() 
-        ## this inlcudes self links so 
+        weights = part.internal_links()
+        ## this inlcudes self links so
         self.assertEqual(weights[0], 1.0)
 
 
@@ -123,7 +123,7 @@ class TestWeightedPartition(unittest.TestCase):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
         node2comm_weights = part.dnodecom(node)
-        # self loops not added to weight 
+        # self loops not added to weight
         # so communities made only of node should be zero
         npt.assert_equal(node2comm_weights[0],0)
         # this should be equal to weight between two nodes
@@ -132,7 +132,7 @@ class TestWeightedPartition(unittest.TestCase):
         npt.assert_equal(node2comm_weights[neighbor],expected)
         part = wm.WeightedPartition(self.graph, self.communities)
         node2comm_weights = part.dnodecom(node)
-        npt.assert_equal(len(node2comm_weights), 2) 
+        npt.assert_equal(len(node2comm_weights), 2)
 
 
 class TestLouvainCommunityDetection(unittest.TestCase):
@@ -153,7 +153,7 @@ class TestLouvainCommunityDetection(unittest.TestCase):
 
 
     def test_communities_without_node(self):
-        part = wm.WeightedPartition(self.graph) # one comm per node   
+        part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
         updated_comm = self.louvain._communities_without_node(part, node)
         self.assertEqual(updated_comm[0], set([]))
@@ -164,7 +164,7 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         self.assertEqual(0 not in updated_comm[0], True)
 
     def test_communities_nodes_alledgesw(self):
-        part = wm.WeightedPartition(self.graph, self.communities)    
+        part = wm.WeightedPartition(self.graph, self.communities)
         node = 0
         weights = self.louvain_comm._communities_nodes_alledgesw(part, node)
         npt.assert_almost_equal(weights[0], 1424.0220362)
@@ -186,31 +186,28 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         self.assertEqual(change[0] < change[1], True)
         # this is one comm per node, so once removed from own
         # comm, this delta_weight will be zero
-        self.assertEqual(change[node] , 0) 
+        self.assertEqual(change[node] , 0)
 
     def test_move_node(self):
-        part = wm.WeightedPartition(self.graph) # one comm per node 
-        #move first node to second community 
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        #move first node to second community
         node = 0
         comm = 1
         newpart = self.louvain._move_node(part, node, comm)
         self.assertEqual(set([0,1]) in newpart.communities, True)
         ## what happens if node or comm missing
         with self.assertRaises(ValueError):
-            newpart = self.louvain._move_node(part, -1, comm) 
+            newpart = self.louvain._move_node(part, -1, comm)
         invalid_communities = len(part.communities) + 1
         with self.assertRaises(IndexError):
-            newpart = self.louvain._move_node(part, node, invalid_communities) 
+            newpart = self.louvain._move_node(part, node, invalid_communities)
 
     def test_gen_dendogram(self):
-        graph = nx.Graph() 
+        graph = nx.Graph()
         nodeslist = [0,1,2,3,4]
         graph.add_nodes_from(nodeslist, weight=True)
         louvain = wm.LouvainCommunityDetection(graph)
-        dendo = louvain.gen_dendogram()
-        self.assertEqual(len(dendo), 1)
-        expected = [set([x]) for x in nodeslist]
-        self.assertEqual(dendo[0].communities, expected)
+        self.assertRaises(IOError, louvain.gen_dendogram)
 
     def test_run(self):
         karate = nx.karate_club_graph()
