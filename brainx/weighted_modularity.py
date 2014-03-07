@@ -364,8 +364,9 @@ def meta_graph(partition):
     return metagraph, mapping
 
 def _combine(prev, next):
-    """combines nodes in set based on next level
-    communities partition
+    """combines nodes in sets (prev) based on mapping defined by
+    (next) (which now treats a previous communitity as a node)
+    but maintains specification of all original nodes
 
     Parameters
     ----------
