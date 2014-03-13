@@ -116,9 +116,13 @@ class WeightedPartition(object):
         return comm_weights
 
 
-    def total_links(self):
-        """ sum of all links inside or outside community
-        no nodes are missing"""
+    def degree_by_community(self):
+        """ sum of all edges within or between communities
+        for each community
+        Returns
+        -------
+        weights : list
+            list is size of total number of communities"""
         comm = self.communities
         weights = [0] * len(comm)
         all_degree_weights = self.graph.degree(weight='weight')
@@ -173,7 +177,7 @@ class WeightedPartition(object):
 
         m2 = self.total_edge_weight
         internal_connect = np.array(self.internal_links())
-        total = np.array(self.total_links())
+        total = np.array(self.degree_by_community())
         return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 
 

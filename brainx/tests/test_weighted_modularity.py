@@ -109,11 +109,11 @@ class TestWeightedPartition(unittest.TestCase):
         npt.assert_almost_equal(part.modularity(), 0.0555463)
 
 
-    def test_total_links(self):
+    def test_degree_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         ## summ of all links in or out of communities
         ## since one per scommunity, just weighted degree of each node
-        tot_per_comm = part.total_links()
+        tot_per_comm = part.degree_by_community()
         degw = self.graph.degree(weight='weight').values()
         self.assertEqual(tot_per_comm, degw)
         ## This isnt true of we have communities with multiple nodes
