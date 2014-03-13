@@ -100,8 +100,13 @@ class WeightedPartition(object):
         return self.graph.degree(weight='weight')[node]
 
 
-    def dnodecom(self, node):
-        """ Find the number of links from node to each community"""
+    def node_degree_by_community(self, node):
+        """ Find the number of links from a node to each community
+        Returns
+        -------
+        comm_weights : list
+            list holding the weighted degree of a node to each community
+        """
         comm_weights = [0] * len(self.communities)
         for neighbor, data in self.graph[node].items():
             if neighbor == node:
@@ -278,7 +283,7 @@ class LouvainCommunityDetection(object):
         communities
         deltamod = inC - totc * ki / total_weight"""
         noded = part.node_degree(node)
-        dnc = part.dnodecom(node)
+        dnc = part.node_degree_by_community(node)
         totc = self._communities_nodes_alledgesw(part, node)
         total_weight = part.total_edge_weight
         # cast to arrays to improve calc

@@ -128,10 +128,10 @@ class TestWeightedPartition(unittest.TestCase):
 
 
 
-    def test_dnodecom(self):
+    def test_node_degree_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
-        node2comm_weights = part.dnodecom(node)
+        node2comm_weights = part.node_degree_by_community(node)
         # self loops not added to weight
         # so communities made only of node should be zero
         npt.assert_equal(node2comm_weights[0],0)
@@ -140,7 +140,7 @@ class TestWeightedPartition(unittest.TestCase):
         expected = self.graph[node][neighbor]['weight']
         npt.assert_equal(node2comm_weights[neighbor],expected)
         part = wm.WeightedPartition(self.graph, self.communities)
-        node2comm_weights = part.dnodecom(node)
+        node2comm_weights = part.node_degree_by_community(node)
         npt.assert_equal(len(node2comm_weights), 2)
 
 
