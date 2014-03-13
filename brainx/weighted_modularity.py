@@ -131,9 +131,9 @@ class WeightedPartition(object):
             weights[node_comm] += weight
         return weights
 
-    def internal_links(self):
-        """ sum of weighted links strictly inside each community
-        includes self loops"""
+    def degree_within_community(self):
+        """ sum of weighted edges strictly inside each community
+        including self loops"""
         comm = self.communities
         weights = [0] * len(comm)
         comm = self.communities
@@ -176,7 +176,7 @@ class WeightedPartition(object):
             raise TypeError('only valid on non directed graphs')
 
         m2 = self.total_edge_weight
-        internal_connect = np.array(self.internal_links())
+        internal_connect = np.array(self.degree_within_community())
         total = np.array(self.degree_by_community())
         return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 

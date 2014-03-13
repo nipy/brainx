@@ -120,9 +120,9 @@ class TestWeightedPartition(unittest.TestCase):
         part_2comm = wm.WeightedPartition(self.graph, self.communities)
         self.assertEqual(part_2comm == degw, False)
 
-    def test_internal_links(self):
+    def test_degree_within_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
-        weights = part.internal_links()
+        weights = part.degree_within_community()
         ## this inlcudes self links so
         self.assertEqual(weights[0], 1.0)
 
