@@ -18,11 +18,14 @@ class WeightedPartition(object):
         Parameters
         ----------
         graph : networkx graph
-
         communities : list of sets, optional
             a list of sets with nodes in each set
             if communities is None, will initialize with
             one  per node
+
+        Returns
+        -------
+        part : WeightedPartition object
         """
         # assert graph has edge weights, and no negative weights
         mat = nx.adjacency_matrix(graph)
