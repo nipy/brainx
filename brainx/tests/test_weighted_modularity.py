@@ -53,6 +53,9 @@ class TestWeightedPartition(unittest.TestCase):
         # test communities cannot be replaced by garbage
         with self.assertRaises(TypeError):
             part.communities = 11
+        # doesnt work if nodes are missing from partition
+        with self.assertRaises(ValueError):
+            part.communities = [set([1,2,3])]
         # but we can pass a valid community partition
         part.communities = comm
         self.assertEqual(part.communities, comm)
