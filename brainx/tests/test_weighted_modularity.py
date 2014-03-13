@@ -50,6 +50,12 @@ class TestWeightedPartition(unittest.TestCase):
         # generated communities
         comm = [set([node]) for node in self.graph.nodes()]
         self.assertEqual(part.communities, comm)
+        # test communities cannot be replaced by garbage
+        with self.assertRaises(TypeError):
+            part.communities = 11
+        # but we can pass a valid community partition
+        part.communities = comm
+        self.assertEqual(part.communities, comm)
 
     def test_communities_degree(self):
         ## if no community, method will raise error

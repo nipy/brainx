@@ -44,7 +44,7 @@ class WeightedPartition(object):
 
     @communities.setter
     def communities(self, value):
-        self._communities = self.set_communities(value)
+        self.set_communities(value)
 
     def _init_communities_from_nodes(self):
         """ creates a new communities with one node per community
