@@ -216,7 +216,7 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         nodeslist = [0,1,2,3,4]
         graph.add_nodes_from(nodeslist, weight=True)
         louvain = wm.LouvainCommunityDetection(graph)
-        self.assertRaises(IOError, louvain.gen_dendogram)
+        self.assertRaises(IOError, louvain._gen_dendogram)
 
     def test_run(self):
         karate = nx.karate_club_graph()

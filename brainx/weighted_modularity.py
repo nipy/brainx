@@ -195,6 +195,11 @@ class LouvainCommunityDetection(object):
         minimum threshold value for change in modularity
         default(0.0000001)
 
+    Methods
+    -------
+    run()
+        run the algorithm to find partitions at multiple levels
+
     Examples
     --------
     >>> louvain = LouvainCommunityDetection(graph)
@@ -211,17 +216,30 @@ class LouvainCommunityDetection(object):
     """
 
     def __init__(self, graph, communities=None, minthr=0.0000001):
+        """initialize the algorithm with a graph and (optional) initial
+        community partition , use minthr to provide a stopping limit
+        for the algorith (based on change in modularity)"""
         self.graph = graph
         self.initial_communities = communities
         self.minthr = minthr
 
     def run(self):
-        dendogram = self.gen_dendogram()
-        partitions = self.partitions_from_dendogram(dendogram)
+        """ run the algorithm
+
+        Returns
+        -------
+        partitions : list
+        a list containing instances of a WeightedPartition with the
+        community partition reflecting that level of the algorithm
+        The last item in the list is the final partition
+        The first item was the initial partition
+        """
+        dendogram = self._gen_dendogram()
+        partitions = self._partitions_from_dendogram(dendogram)
         return [WeightedPartition(self.graph, part) for part in partitions]
 
 
-    def gen_dendogram(self):
+    def _gen_dendogram(self):
         """generate dendogram based on muti-levels of partitioning
         """
         if type(self.graph) != nx.Graph :
@@ -336,7 +354,7 @@ class LouvainCommunityDetection(object):
         new_community = [x for x in new_community if len(x) > 0]
         return WeightedPartition(part.graph, new_community)
 
-    def partitions_from_dendogram(self, dendo):
+    def _partitions_from_dendogram(self, dendo):
         """ returns community partitions based on results in dendogram
         """
         all_partitions = []
