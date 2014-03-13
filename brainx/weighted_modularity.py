@@ -324,18 +324,18 @@ class LouvainCommunityDetection(object):
         new_community = [x for x in new_community if len(x) > 0]
         return WeightedPartition(part.graph, new_community)
 
-    @staticmethod
-    def partitions_from_dendogram(dendo):
+    def partitions_from_dendogram(self, dendo):
         """ returns community partitions based on results in dendogram
         """
         all_partitions = []
         init_part = dendo[0].communities
         all_partitions.append(init_part)
         for partition in dendo[1:]:
-            init_part = _combine(init_part, partition.communities)
+            init_part = self._combine(init_part, partition.communities)
             all_partitions.append(init_part)
         return all_partitions
 
+    @staticmethod
     def _combine(prev, next):
         """combines nodes in sets (prev) based on mapping defined by
         (next) (which now treats a previous communitity as a node)

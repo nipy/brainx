@@ -218,12 +218,13 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         self.assertEqual(len(final_partitions), 2)
 
 
-def test_combine():
-    first = [set([0,1,2]), set([3,4,5]), set([6,7])]
-    second = [set([0,2]), set([1])]
-    npt.assert_raises(ValueError, wm._combine, second, first)
-    res = wm._combine(first, second)
-    npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])
+    def test_combine(self):
+
+        first = [set([0,1,2]), set([3,4,5]), set([6,7])]
+        second = [set([0,2]), set([1])]
+        npt.assert_raises(ValueError, self.louvain._combine, second, first)
+        res = self.louvain._combine(first, second)
+        npt.assert_equal(res, [set([0,1,2,6,7]), set([3,4,5])])
 
 def test_meta_graph():
     graph, communities = get_test_data()
