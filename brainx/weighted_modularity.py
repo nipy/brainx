@@ -224,7 +224,7 @@ class LouvainCommunityDetection(object):
         self.minthr = minthr
 
     def run(self):
-        """ run the algorithm
+        """ run the algorithm to find partitions in graph
 
         Returns
         -------
@@ -248,7 +248,7 @@ class LouvainCommunityDetection(object):
         #special case, when there is no link
         #the best partition is everyone in its communities
         if self.graph.number_of_edges() == 0 :
-            raise IOError('graph has no edges why do you want a partition?')
+            raise IOError('graph has no edges why do you want to partition?')
 
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
@@ -399,10 +399,21 @@ class LouvainCommunityDetection(object):
 
 
 def meta_graph(partition):
-    """ takes weighted partition communities and creates a new meta graph where
-    communities are now the nodes, the new edges are created based on the
-    node to node connections from original graph, and weighted accordingly,
-    this includes self-loops"""
+    """creates a new graph object based on input graph and partition
+
+    Takes WeightedPartition object with specified communities and
+    creates a new graph object where
+    1. communities are now the nodes in the new graph
+    2. the new edges are created based on the node to node connections (weights)
+        from communities in the original graph, and weighted accordingly,
+        (this includes self-loops)
+
+    Returns
+    -------
+    metagraph : networkX graph
+    mapping : dict
+        dict showing the mapping from newnode -> original community nodes
+    """
     metagraph = nx.Graph()
     # new nodes are communities
     newnodes = [val for val,_ in enumerate(partition.communities)]
