@@ -54,7 +54,7 @@ def within_module_degree(graph, partition, weighted = False):
     return wd_dict
 
 
-def participation_coefficient(graph, partition):
+def participation_coefficient(graph, partition, weighted = False):
     '''
     Computes the participation coefficient for each node (Guimera et al. 2005).
 
