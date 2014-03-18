@@ -32,6 +32,8 @@ def within_community_degree(weighted_partition):
                 partition.degree_within_community(node)
                 all_community_degree.append()
             all_community_degrees[node_community] = all_community_degree
+        # I don't know if it's faster to compute this on the fly every
+        # time or store the results in a dictionary?
         std = np.std(all_community_degree) # std of community's degrees
         mean = np.mean(all_community_degree) # mean of community's degrees
         # z-score
