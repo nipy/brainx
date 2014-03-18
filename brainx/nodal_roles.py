@@ -25,17 +25,17 @@ def within_community_degree(weighted_partition):
         node_community = weighted_partition.get_node_community(node)
         within_community_degree = weighted_partition.degree_within_community(node)
         try: # to load average within module degree of community
-            all_community_degree = all_community_degrees[node_community]
+            community_degrees = all_community_degrees[node_community]
         except: # collect within module degree of community
-            all_community_degree = []
+            community_degrees = []
             for node in node_community:
                 partition.degree_within_community(node)
                 all_community_degree.append()
-            all_community_degrees[node_community] = all_community_degree
+            all_community_degrees[node_community] = community_degrees
         # I don't know if it's faster to compute this on the fly every
         # time or store the results in a dictionary?
-        std = np.std(all_community_degree) # std of community's degrees
-        mean = np.mean(all_community_degree) # mean of community's degrees
+        std = np.std(community_degrees) # std of community's degrees
+        mean = np.mean(community_degrees) # mean of community's degrees
         # z-score
         wc_dict[node] = (within_community_degree - mean / std)
     return wc_dict
