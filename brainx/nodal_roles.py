@@ -30,7 +30,7 @@ def within_community_degree(weighted_partition):
             community_degrees = []
             for node in node_community:
                 partition.degree_within_community(node)
-                all_community_degree.append()
+                community_degrees.append()
             all_community_degrees[node_community] = community_degrees
         # I don't know if it's faster to compute this on the fly every
         # time or store the results in a dictionary?
