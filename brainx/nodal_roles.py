@@ -11,7 +11,7 @@ def within_community_degree(weighted_partition, nan = 0.0, catch_edgeless_node=T
     Parameters
     ------
     weighted_partition: Louvain Weighted Partition
-        louvain = weighted_modularity.wm.LouvainCommunityDetection()
+        louvain = weighted_modularity.LouvainCommunityDetection(graph)
         weighted_partitions = louvain.run()
         weighted_partition = weighted_partition[0], where index is the partition level
     nan : int
@@ -42,10 +42,10 @@ def within_community_degree(weighted_partition, nan = 0.0, catch_edgeless_node=T
         for node in community: #get node's within_community-degree z-score
             within_community_degree = weighted_partition.node_degree_by_community(node)[c]
             std = np.std(community_degrees) # std of community's degrees
+            mean = np.mean(community_degrees) # mean of community's degrees
             if std == 0.0: #so we don't divide by 0
                 wc_dict[node] = (within_community_degree - mean) #z_score
                 continue
-            mean = np.mean(community_degrees) # mean of community's degrees
             wc_dict[node] = (within_community_degree - mean / std) #z_score
     return wc_dict
 
@@ -57,7 +57,7 @@ def participation_coefficient(weighted_partition, catch_edgeless_node=True):
     Parameters
     ------
     weighted_partition: Louvain Weighted Partition
-        louvain = weighted_modularity.wm.LouvainCommunityDetection()
+        louvain = weighted_modularity.LouvainCommunityDetection(graph)
         weighted_partitions = louvain.run()
         weighted_partition = weighted_partition[0], where index is the partition level
     catch_edgeless_node: Boolean
