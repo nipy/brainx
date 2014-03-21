@@ -4,53 +4,55 @@ import numpy as np
 from random import choice
 import networkx as nx
 
-def within_community_degree(weighted_partition, inf = 0.0, catch_edgeless_node=True):
-    '''
-    Computes the "within-module degree" (z-score) for each node (Guimera et al. 2005)
+def within_community_degree(weighted_partition, nan = 0.0, catch_edgeless_node=True):
+    ''' Computes "within-module degree" (z-score) for each node (Guimera 2007, J Stat Mech)
 
     ------
-    Inputs
+    Parameters
     ------
-    partition = dictionary from modularity partition of graph using Louvain method
+    weighted_partition = Louvain Weighted Partition
+    nan = number to replace unexpected values (e.g., -infinity) with
+    catch_edgeless_node = raise ValueError if node degree is zero
 
     ------
-    Output
+    Returns
     ------
-    Dictionary of the within-module degree of each node.
+    Dictionary of the within community degree of each node.
 
     '''
     wc_dict = {}
     for c, community in enumerate(weighted_partition.communities):
         community_degrees = []
-        # community = list(community)
         for node in community: #get average within-community-degree
-            community_degrees.append(weighted_partition.node_degree_by_community(node)[c])
-        for node in community:
-            within_community_degree = weighted_partition.node_degree_by_community(node)[c]
-            if within_community_degree > 3 or within_community_degree < -3:
-                wc_dict[node] = inf
-                continue
-            if node_degree == 0.0: 
+            node_degree = weighted_partition.node_degree(node)
+            if node_degree == 0.0: #catch edgeless nodes
                 if catch_edgeless_node:
                     raise ValueError("Node {} is edgeless".format(node))
                 wc_dict[node] = 0.0
-                continue    
+                continue
+            community_degrees.append(weighted_partition.node_degree_by_community(node)[c])
+        for node in community: #get node's within_community-degree z-score
+            within_community_degree = weighted_partition.node_degree_by_community(node)[c]
             std = np.std(community_degrees) # std of community's degrees
+            if std == 0.0: #so we don't divide by 0
+                wc_dict[node] = (within_community_degree - mean) #z_score
+                continue
             mean = np.mean(community_degrees) # mean of community's degrees
-            wc_dict[node] = (within_community_degree - mean / std) #zscore
+            wc_dict[node] = (within_community_degree - mean / std) #z_score
     return wc_dict
 
-def participation_coefficient(weighted_partition, catch_edgeless_node=True, nan=0.0):
+def participation_coefficient(weighted_partition, catch_edgeless_node=True):
     '''
-    Computes the participation coefficient for each node (Guimera et al. 2005).
+    Computes the participation coefficient for each node (Guimera 2007, J Stat Mech)
 
     ------
-    Inputs
+    Parameters
     ------
-    partition = modularity partition of graph
+    weighted_partition = Louvain Weighted Partition
+    catch_edgeless_node = raise ValueError if node degree is zero
 
     ------
-    Output
+    Returns
     ------
     Dictionary of the participation coefficient for each node.
 
@@ -65,12 +67,8 @@ def participation_coefficient(weighted_partition, catch_edgeless_node=True, nan=
             pc_dict[node] = 0.0
             continue    
         deg_per_comm = weighted_partition.node_degree_by_community(node)
-        node_comm = weighted_partition.get_node_community(node)
-        deg_per_comm.pop(node_comm) 
+        deg_per_comm.pop(weighted_partition.get_node_community(node))
         bc_degree = sum(deg_per_comm) #between community degree
-        if bc_degree == np.nan():
-            pc_dict[node] == nan
-            continue
         if bc_degree == 0.0:
             pc_dict[node] = 0.0
             continue
