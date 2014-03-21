@@ -1,10 +1,10 @@
-#Author: Maxwell Bertolero 
+#Author: Maxwell Bertolero, bertolero@berkeley.edu, mbertolero@gmail.com
 
 import numpy as np
 from random import choice
 import networkx as nx
 
-def within_community_degree(weighted_partition):
+def within_community_degree(weighted_partition, inf = 0.0, catch_edgeless_node=True):
     '''
     Computes the "within-module degree" (z-score) for each node (Guimera et al. 2005)
 
@@ -27,12 +27,20 @@ def within_community_degree(weighted_partition):
             community_degrees.append(weighted_partition.node_degree_by_community(node)[c])
         for node in community:
             within_community_degree = weighted_partition.node_degree_by_community(node)[c]
+            if within_community_degree > 3 or within_community_degree < -3:
+                wc_dict[node] = inf
+                continue
+            if node_degree == 0.0: 
+                if catch_edgeless_node:
+                    raise ValueError("Node {} is edgeless".format(node))
+                wc_dict[node] = 0.0
+                continue    
             std = np.std(community_degrees) # std of community's degrees
             mean = np.mean(community_degrees) # mean of community's degrees
             wc_dict[node] = (within_community_degree - mean / std) #zscore
     return wc_dict
 
-def participation_coefficient(weighted_partition, catch_edgeless_node=True):
+def participation_coefficient(weighted_partition, catch_edgeless_node=True, nan=0.0):
     '''
     Computes the participation coefficient for each node (Guimera et al. 2005).
 
@@ -60,6 +68,9 @@ def participation_coefficient(weighted_partition, catch_edgeless_node=True):
         node_comm = weighted_partition.get_node_community(node)
         deg_per_comm.pop(node_comm) 
         bc_degree = sum(deg_per_comm) #between community degree
+        if bc_degree == np.nan():
+            pc_dict[node] == nan
+            continue
         if bc_degree == 0.0:
             pc_dict[node] = 0.0
             continue
