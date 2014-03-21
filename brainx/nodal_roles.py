@@ -19,27 +19,18 @@ def within_community_degree(weighted_partition):
     Dictionary of the within-module degree of each node.
 
     '''
-    all_community_degrees = {}
     wc_dict = {}
-    for node in weighted_partition.graph:
-        node_community = weighted_partition.get_node_community(node)
-        within_community_degree = weighted_partition.degree_within_community(node)
-        try: # to load average within module degree of community
-            community_degrees = all_community_degrees[node_community]
-        except: # collect within module degree of community
-            community_degrees = []
-            for node in node_community:
-                partition.degree_within_community(node)
-                community_degrees.append()
-            all_community_degrees[node_community] = community_degrees
-        # I don't know if it's faster to compute this on the fly every
-        # time or store the results in a dictionary?
-        std = np.std(community_degrees) # std of community's degrees
-        mean = np.mean(community_degrees) # mean of community's degrees
-        # z-score
-        wc_dict[node] = (within_community_degree - mean / std)
+    for c, community in enumerate(weighted_partition.communities):
+        community_degrees = []
+        # community = list(community)
+        for node in community: #get average within-community-degree
+            community_degrees.append(weighted_partition.node_degree_by_community(node)[c])
+        for node in community:
+            within_community_degree = weighted_partition.node_degree_by_community(node)[c]
+            std = np.std(community_degrees) # std of community's degrees
+            mean = np.mean(community_degrees) # mean of community's degrees
+            wc_dict[node] = (within_community_degree - mean / std) #zscore
     return wc_dict
-
 
 def participation_coefficient(weighted_partition, catch_edgeless_node=True):
     '''
