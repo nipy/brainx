@@ -10,14 +10,22 @@ def within_community_degree(weighted_partition, nan = 0.0, catch_edgeless_node=T
     ------
     Parameters
     ------
-    weighted_partition = Louvain Weighted Partition
-    nan = number to replace unexpected values (e.g., -infinity) with
-    catch_edgeless_node = raise ValueError if node degree is zero
+    weighted_partition: Louvain Weighted Partition
+        louvain = weighted_modularity.wm.LouvainCommunityDetection()
+        weighted_partitions = louvain.run()
+        weighted_partition = weighted_partition[0], where index is the partition level
+    nan : int
+        number to replace unexpected values (e.g., -infinity) with
+        default = 0.0
+    catch_edgeless_node: Boolean
+        raise ValueError if node degree is zero
+        default = True
 
     ------
     Returns
     ------
-    Dictionary of the within community degree of each node.
+    within_community_degree: dict
+        Dictionary of the within community degree of each node.
 
     '''
     wc_dict = {}
@@ -48,14 +56,19 @@ def participation_coefficient(weighted_partition, catch_edgeless_node=True):
     ------
     Parameters
     ------
-    weighted_partition = Louvain Weighted Partition
-    catch_edgeless_node = raise ValueError if node degree is zero
+    weighted_partition: Louvain Weighted Partition
+        louvain = weighted_modularity.wm.LouvainCommunityDetection()
+        weighted_partitions = louvain.run()
+        weighted_partition = weighted_partition[0], where index is the partition level
+    catch_edgeless_node: Boolean
+        raise ValueError if node degree is zero
+        default = True
 
     ------
     Returns
     ------
-    Dictionary of the participation coefficient for each node.
-
+    participation_coefficient: dict
+        Dictionary of the participation coefficient of each node.
     '''
     pc_dict = {}
     graph = weighted_partition.graph
