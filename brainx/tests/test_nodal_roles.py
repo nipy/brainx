@@ -1,8 +1,8 @@
 #test nodal roles 
 import unittest
 import networkx as nx
-import nodal_roles as nr
-import weighted_modularity as wm
+from .. import nodal_roles as nr
+from .. import weighted_modularity as wm
 
 class TestNodalRoles(unittest.TestCase):
 	def test_participation_coefficient_edgeless(self):
