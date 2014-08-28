@@ -162,7 +162,7 @@ def format_matrix2(data, s, sc, c, lk, co, idc=[],
         return ~(cmat == 0)
     return cmat
 
-def threshold_adjacency_matrix(adj_matrix, cost, uptri=False):
+def threshold_adjacency_matrix(adj_matrix, cost, uptri=False, return_thresh = False):
     """threshold adj_matrix at cost
     
     Parameters
@@ -173,12 +173,16 @@ def threshold_adjacency_matrix(adj_matrix, cost, uptri=False):
         user specified cost
     uptri : bool
         False returns symmetric matrix, True zeros out diagonal and below
+    return_thresh: bool
+        False returns thresholded correlation matrix and expected cost, True also returns the threshold value 
     Returns
     -------
     thresholded : array of bools
         binary matrix thresholded to result in cost
     expected_cost : float
         the real cost value (closest to cost)
+    thresh (optional): float
+        the real threshold value used to result in cost
     """
     nnodes, _ = adj_matrix.shape
     ind = np.triu_indices(nnodes, 1)
@@ -190,7 +194,10 @@ def threshold_adjacency_matrix(adj_matrix, cost, uptri=False):
     np.fill_diagonal(adj_matrix, 0) #zero out diagonal
     if uptri: #also zero out below diagonal
         adj_matrix = np.triu(adj_matrix) 
-    return adj_matrix, expected_cost 
+    if return_thresh: # also return threshold value
+        return adj_matrix, expected_cost, thresh 
+    else:
+        return adj_matrix, expected_cost
 
 def find_true_cost(boolean_matrix):
     """ when passed a boolean matrix, presumably from thresholding to 
