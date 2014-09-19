@@ -1,5 +1,4 @@
 #Author: Maxwell Bertolero, bertolero@berkeley.edu, mbertolero@gmail.com
-#Author: Maxwell Bertolero, bertolero@berkeley.edu, mbertolero@gmail.com
 
 import numpy as np
 from random import choice
@@ -47,7 +46,7 @@ def within_community_degree(weighted_partition, nan = 0.0, catch_edgeless_node=T
             if std == 0.0: #so we don't divide by 0
                 wc_dict[node] = (within_community_degree - mean) #z_score
                 continue
-            wc_dict[node] = ((within_community_degree - mean) / std) #z_score
+            wc_dict[node] = (within_community_degree - mean / std) #z_score
     return wc_dict
 
 def participation_coefficient(weighted_partition, catch_edgeless_node=True):
@@ -72,19 +71,20 @@ def participation_coefficient(weighted_partition, catch_edgeless_node=True):
         Dictionary of the participation coefficient of each node.
     '''
     pc_dict = {}
-    for node in weighted_partition.graph:
+    graph = weighted_partition.graph
+    for node in graph:
         node_degree = weighted_partition.node_degree(node)
         if node_degree == 0.0: 
             if catch_edgeless_node:
                 raise ValueError("Node {} is edgeless".format(node))
             pc_dict[node] = 0.0
             continue    
-        pc = 0.0
-        for comm_degree in weighted_partition.node_degree_by_community(node):
-            try:
-                pc = pc + ((comm_degree/node_degree)**2)
-            except:
-                continue
-        pc = 1-pc
+        deg_per_comm = weighted_partition.node_degree_by_community(node)
+        deg_per_comm.pop(weighted_partition.get_node_community(node))
+        bc_degree = sum(deg_per_comm) #between community degree
+        if bc_degree == 0.0:
+            pc_dict[node] = 0.0
+            continue
+        pc = 1 - ((float(bc_degree) / float(node_degree))**2)
         pc_dict[node] = pc
     return pc_dict
