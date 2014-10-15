@@ -162,6 +162,46 @@ def format_matrix2(data, s, sc, c, lk, co, idc=[],
         return ~(cmat == 0)
     return cmat
 
+def format_matrix3(data, s, c, b, lk, co, idc=[],
+        costlist=[], nouptri=False, asbool=True):
+    """ Function which formats matrix for a particular subject and 
+    particular block (thresholds, upper-tris it) so that we can 
+    make a graph object out of it
+
+    Parameters
+    ----------
+    data : numpy array
+        full data array 5D (subcondition, condition, subject, node, node) 
+    s : int
+        index of subject
+    c : int
+        index of condition
+    b : int
+        index of block
+    lk : numpy array
+        lookup table for thresholds at each possible cost
+    co : float
+        cost value to threshold at
+    idc : float
+        ideal cost 
+    costlist : list
+        list of possible costs
+    nouptri : bool
+        False zeros out diag and below, True returns symmetric matrix
+    asbool : bool
+        If true returns boolean mask, otherwise returns thresholded w
+        weighted matrix
+    """
+    cmat = slice_data(data, s, b, c) 
+    th = cost2thresh2(co,s,c,b,lk,[],idc,costlist) #get the right threshold
+    cmat = thresholded_arr(cmat,th,fill_val=0)
+    if not nouptri:
+        cmat = np.triu(cmat,1)
+    if asbool:
+        # return boolean mask
+        return ~(cmat == 0)
+    return cmat
+
 def threshold_adjacency_matrix(adj_matrix, cost, uptri=False):
     """threshold adj_matrix at cost
     
@@ -314,6 +354,26 @@ def store_metrics(b, s, co, metd, arr):
         idx = b,s,co,slice(None)
     else:
         raise ValueError("only know how to handle 3 or 4-d arrays")
+    
+    for met_name, met_val in metd.iteritems():
+        arr[idx][met_name] = met_val
+
+
+def store_metrics2(c, b, s, co, metd, arr):
+     """Store a set of metrics into a structured array
+    c = condition
+    b = block
+    s = subject
+    co = cost? float
+    metd = dict of metrics
+    arr : array?"""
+
+    if arr.ndim == 4:
+        idx = c,b,s,co
+    elif arr.ndim == 5:
+        idx = c,b,s,co,slice(None)
+    else:
+        raise ValueError("only know how to handle 4 or 5-d arrays")
     
     for met_name, met_val in metd.iteritems():
         arr[idx][met_name] = met_val
