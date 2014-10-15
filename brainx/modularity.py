@@ -75,7 +75,6 @@ class GraphPartition(object):
        
         # We'll need the graph's adjacency matrix often, so store it once
         self.graph_adj_matrix = nx.adj_matrix(graph).todense() # Must convert to dense matrix before making into a numpy array (line was previously: self.graph_adj_matrix = nx.adj_matrix(graph))
-        self.graph_adj_matrix = nx.adj_matrix(graph)
         #make sure adj_matrix is binary otherwise raise exception
         if not self.graph_adj_matrix.sum() == \
                 self.graph_adj_matrix.astype(bool).sum():
