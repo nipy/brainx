@@ -28,7 +28,7 @@ class WeightedPartition(object):
         part : WeightedPartition object
         """
         # assert graph has edge weights, and no negative weights
-        mat = nx.adjacency_matrix(graph)
+        mat = nx.adjacency_matrix(graph).todense()
         if mat.min() < 0:
             raise ValueError('Graph has invalid negative weights')
 
