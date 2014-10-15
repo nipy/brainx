@@ -8,10 +8,11 @@ import os
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-from setuptools import setup
+from distutils.core import setup
 
 # Get version and release info, which is all stored in brainx/version.py
-execfile(os.path.join('brainx', 'version.py'))
+ver_file = os.path.join('brainx', 'version.py')
+exec(open(ver_file).read())
 
 opts = dict(name=name,
             maintainer=maintainer,
