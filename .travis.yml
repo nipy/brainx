@@ -4,7 +4,7 @@ python:
     - "3.4"
 install:
     - python setup.py install
-    - pip install nosetests ipython runipy
+    - pip install nose ipython runipy
 script:
     - tools/run_tests.sh
 
