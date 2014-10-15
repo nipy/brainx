@@ -162,7 +162,6 @@ def format_matrix2(data, s, sc, c, lk, co, idc=[],
         return ~(cmat == 0)
     return cmat
 
-<<<<<<< HEAD
 def format_matrix3(data, s, c, b, lk, co, idc=[],
         costlist=[], nouptri=False, asbool=True):
     """ Function which formats matrix for a particular subject and 
