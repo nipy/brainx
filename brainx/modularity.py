@@ -74,6 +74,7 @@ class GraphPartition(object):
         self._check_index_contains_sets()
        
         # We'll need the graph's adjacency matrix often, so store it once
+        self.graph_adj_matrix = nx.adj_matrix(graph).todense() # Must convert to dense matrix before making into a numpy array (line was previously: self.graph_adj_matrix = nx.adj_matrix(graph))
         self.graph_adj_matrix = nx.adj_matrix(graph)
         #make sure adj_matrix is binary otherwise raise exception
         if not self.graph_adj_matrix.sum() == \
@@ -1290,7 +1291,7 @@ def modularity_matrix(g):
         modularity matrix (graph laplacian)
     
     """
-    A = np.asarray(nx.adjacency_matrix(g))
+    A = np.asarray(nx.adjacency_matrix(g).todense()) # Must convert to dense matrix before making into a numpy array (line was previously: A = np.asarray(nx.adjacency_matrix(g)))
     k = np.sum(A, axis=0) #vertex degree
     M = np.sum(k) # 2x number of edges
 
@@ -1314,7 +1315,7 @@ def newman_partition(g, max_div=np.inf):
         Estimated optimal partitioning.
 
     """
-    A = np.asarray(nx.adjacency_matrix(g))
+    A = np.asarray(nx.adjacency_matrix(g).todense()) # Must convert to dense matrix before making into a numpy array (line was previously:(A = np.asarray(nx.adjacency_matrix(g)))
     if not A.sum() == A.astype(bool).sum():
         raise ValueError('Adjacency matrix is weighted, need binary matrix')
     ## add line to binarize adj_matrix if not binary
