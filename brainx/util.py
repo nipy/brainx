@@ -367,7 +367,7 @@ def store_metrics(b, s, co, metd, arr):
 
 
 def store_metrics2(c, b, s, co, metd, arr):
-     """Store a set of metrics into a structured array
+    """Store a set of metrics into a structured array
     c = condition
     b = block
     s = subject
