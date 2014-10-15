@@ -8,7 +8,7 @@ import os
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-from distutils.core import setup
+from setuptools import setup
 
 # Get version and release info, which is all stored in brainx/version.py
 execfile(os.path.join('brainx', 'version.py'))
@@ -28,7 +28,8 @@ opts = dict(name=name,
             version=version,
             packages=packages,
             package_data=package_data,
-            requires=requires,
+            install_requires=install_requires,
+            tests_require=test_requires
             )
 
 # Only add setuptools-specific flags if the user called for setuptools, but

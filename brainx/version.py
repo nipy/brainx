@@ -79,4 +79,5 @@ packages            = ['brainx',
                        'brainx.tests',
                        ]
 package_data        = {"brainx": ["LICENSE"]}
-requires            = ["numpy", "matplotlib", "scipy", "networkx"]
+install_requires    = ["numpy", "matplotlib", "scipy", "networkx"]
+test_requires       = ["nose", "runipy", "ipython"]
