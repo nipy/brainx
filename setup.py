@@ -28,8 +28,6 @@ opts = dict(name=name,
             version=version,
             packages=packages,
             package_data=package_data,
-            install_requires=install_requires,
-            tests_require=test_requires
             )
 
 # Only add setuptools-specific flags if the user called for setuptools, but
