@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ex
+
 nosetests brainx
 
 for nb in brainx/notebooks/*.ipynb; do
