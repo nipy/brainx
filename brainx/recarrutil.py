@@ -102,7 +102,7 @@ reduction_names = ['mean', 'std', 'var', 'min', 'max',
                    'sum', 'cumsum', 'prod', 'cumprod' ]
 
 for fname in reduction_names:
-    exec "%s = reduction_factory('%s')" % (fname, fname)
+    exec("%s = reduction_factory('%s')" % (fname, fname))
 
 def binop_factory(func):
     """Create a binary operation for a given name.
@@ -135,7 +135,7 @@ binops = [('add', np.add), ('subtract', np.subtract),
           ('multiply', np.multiply), ('divide', np.divide) ]
 #binops = [('add',np.add), np.subtract, np.multiply, np.divide ]
 for name, func in binops:
-    exec "%s = binop_factory(func)" % name
+    exec("%s = binop_factory(func)" % name)
 
 
 #-----------------------------------------------------------------------------
