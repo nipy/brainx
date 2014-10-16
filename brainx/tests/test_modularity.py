@@ -108,7 +108,7 @@ def test_random_modular_graph_between_fraction():
                     # degree we get may be off from the reuqested one by a bit.
                     # We allow it to be off by up to 1.
                     #print 'av deg:',av_degree, av_degree_actual  # dbg
-                    nt.assert_true (abs(av_degree-av_degree_actual)<1.25,
+                    nt.assert_true (abs(av_degree-av_degree_actual)<1.5,
                           """av deg: %.2f  av deg actual: %.2f -
                           This is a stochastic test - repeat to confirm.""" %
                                           (av_degree, av_degree_actual))
