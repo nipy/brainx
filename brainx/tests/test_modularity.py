@@ -1,6 +1,8 @@
 """Tests for modularity code.
 """
 
+from __future__ import print_function
+
 #-----------------------------------------------------------------------------
 # Library imports
 #-----------------------------------------------------------------------------
@@ -76,12 +78,14 @@ def test_index_as_node_names():
     graph = nx.Graph()
     graph.add_edge('a','b')
     graph.add_edge('c','d')
+
     ## NOTE network x does not store names as added
-    ## for this graph ['a', 'c', 'b', 'd']
+    nodes = graph.nodes()
+
     index = {0:set([0,2]), 1:set([1,3])}
     gpart = mod.GraphPartition(graph, index)
     named_index = gpart.index_as_node_names()
-    assert ['a','b'] in named_index
+    assert [nodes[0], nodes[2]] in named_index
 
 def test_random_modular_graph_between_fraction():
     """Test for graphs with non-zero between_fraction"""
@@ -99,7 +103,7 @@ def test_random_modular_graph_between_fraction():
                                                  btwn_fraction)
 
                     # First, check the average degree.
-                    av_degree_actual = np.mean(g.degree().values())
+                    av_degree_actual = np.mean(list(g.degree().values()))
                     # Since we are generating random graphs, the actual average
                     # degree we get may be off from the reuqested one by a bit.
                     # We allow it to be off by up to 1.
@@ -159,8 +163,8 @@ def test_modularity():
                 graph_partition = mod.GraphPartition(g,part)
                 #call modularity
                 mod_meas = graph_partition.modularity()
-                mod_true = 1.0 - 1.0/nmod
-                npt.assert_almost_equal(mod_meas, mod_true, 2)
+                mod_true = 1.0 - 1.0 / nmod
+                npt.assert_almost_equal(mod_meas, mod_true, 1)
 
 
 def test_apply_module_merge():
@@ -189,7 +193,7 @@ def test_apply_module_merge():
                     part_rand = mod.rand_partition(g)
 
                 #List of modules in the partition
-                r_mod=range(len(part))
+                r_mod=list(range(len(part)))
 
                 #Loop through pairs of modules
                 for i in range(1): # DB: why is this necessary?
@@ -235,7 +239,7 @@ def test_apply_module_merge():
 
                     # Test that the keys are equivalent after merging modules
                     npt.assert_equal(r_mod[:-1],
-                                           sorted(graph_part2.index.keys()))
+                                     sorted(graph_part2.index.keys()))
 
                     # Test that the values in the mod_e and mod_a matrices for
                     # the merged module are correct.
@@ -281,7 +285,7 @@ def danon_benchmark():
                 for av_degree in av_degrees:
                     x_mod = []
                     for ix,btwn_frac in enumerate(btwn_fracs):
-                        print 'btwn_frac: ',btwn_frac
+                        print('btwn_frac: ',btwn_frac)
                         g = mod.random_modular_graph(nnod, nmod, av_degree,btwn_frac)
                         #Compute the # of nodes per module
                         nnod_mod = nnod/nmod
@@ -295,8 +299,8 @@ def danon_benchmark():
                         #print "SA partition",graph_out.index
                         mi = mod.mutual_information(ppart,graph_out.index)
                         t2 = time.clock()
-                        print 'Elapsed time: ', (float(t2-t1)/60), ' minutes'
-                        print 'partition similarity: ',mi
+                        print('Elapsed time: ', (float(t2-t1)/60), ' minutes')
+                        print('partition similarity: ', mi)
                         mi_arr[ix,rep] = mi
                         ## plot_partition(g,graph_out.index,'mi: '+ str(mi),'danon_test_6mod'+str(btwn_frac)+'_graph.png')
                         x_mod.append(betweenness_to_modularity(g,ppart))
@@ -355,12 +359,13 @@ def SA():
                     temperature = temperature,temp_scaling = temp_scaling,
                     tmin=tmin, nochange_ratio_min = nochange_ratio_min)
 
-                    print "perfect partition", ppart
-                    print "SA partition",graph_out.index
+                    print("perfect partition", ppart)
+                    print("SA partition",graph_out.index)
 
                     t2 = time.clock()
-                    print 'Elapsed time: ', float(t2-t1)/60, 'minutes'
-                    print 'partition similarity: ',mod.mutual_information(ppart,graph_out.index)
+                    print('Elapsed time: ', float(t2-t1)/60, 'minutes')
+                    print('partition similarity: ',
+                          mod.mutual_information(ppart,graph_out.index))
                     return graph_out, g, energy_array, rej_array, ppart, temp_array
 
 
@@ -397,12 +402,12 @@ def test_mutual_information_empty():
 
     try:
         mod.mutual_information(a, b)
-    except ValueError, e:
+    except ValueError as e:
         nt.assert_equals(e.args[0], "Empty module in second partition.")
 
     try:
         mod.mutual_information(b, a)
-    except ValueError, e:
+    except ValueError as e:
         nt.assert_equals(e.args[0], "Empty module in first partition.")
 
 
@@ -427,7 +432,7 @@ def test_mutual_information():
                 g = mod.random_modular_graph(nnod, nmod, av_degree)
 
                 #Compute the of nodes per module
-                nnod_mod = nnod/nmod
+                nnod_mod = nnod//nmod
                 #Make a "correct" partition for the graph
                 ppart = mod.perfect_partition(nmod,nnod_mod)
 
@@ -587,17 +592,17 @@ def test_apply_module_split():
                 ## part = mod.perfect_partition(nmod,nnod/nmod)
 
                 # Make a random partition for the graph
-                part_rand = mod.rand_partition(g, nnod/2)
+                part_rand = mod.rand_partition(g, nnod//2)
 
                 #List of modules in the partition that have two or more nodes
                 r_mod = []
-                for m, nodes in part_rand.iteritems():
+                for m, nodes in part_rand.items():
                     if len(nodes)>2:
                         r_mod.append(m)
 
                 # Note: The above can be written in this more compact, if
                 # slightly less intuitively clear, list comprehension:
-                # r_mod = [ m for m, nodes in part_rand.iteritems() if
+                # r_mod = [ m for m, nodes in part_rand.items() if
                 #          len(nodes)>2 ]
 
                 #Module that we are splitting
@@ -711,7 +716,7 @@ def test_apply_node_move():
         for nmod in nmods:
             nnod = nnod_mod*nmod
             for av_degree in av_degrees:
-                print nnod_mod,nmod,av_degree
+                print(nnod_mod,nmod,av_degree)
                 g = mod.random_modular_graph(nnod, nmod, av_degree)
 
                 #Make a "correct" partition for the graph

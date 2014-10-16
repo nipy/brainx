@@ -18,7 +18,7 @@ def dictset_to_listset(dict_set):
     for converting partition.community objects"""
     if  isinstance(dict_set, dict) \
         and _contains_only(dict_set, set):
-        return dict_set.values()
+        return list(dict_set.values())
         
     raise ValueError('{0} is not a dict of sets'.format(dict_set))
    
@@ -362,7 +362,7 @@ def store_metrics(b, s, co, metd, arr):
     else:
         raise ValueError("only know how to handle 3 or 4-d arrays")
     
-    for met_name, met_val in metd.iteritems():
+    for met_name, met_val in metd.items():
         arr[idx][met_name] = met_val
 
 
@@ -382,7 +382,7 @@ def store_metrics2(c, b, s, co, metd, arr):
     else:
         raise ValueError("only know how to handle 4 or 5-d arrays")
     
-    for met_name, met_val in metd.iteritems():
+    for met_name, met_val in metd.items():
         arr[idx][met_name] = met_val
     
 
@@ -400,9 +400,9 @@ def regular_lattice(n,k):
     # Code simplified from the networkx.watts_strogatz_graph one
     G = nx.Graph()
     G.name="regular_lattice(%s,%s)"%(n,k)
-    nodes = range(n) # nodes are labeled 0 to n-1
+    nodes = list(range(n)) # nodes are labeled 0 to n-1
     # connect each node to k/2 neighbors
-    for j in range(1, k/2+1):
+    for j in range(1, k//2+1):
         targets = nodes[j:] + nodes[:j] # first j nodes are now last in list
         G.add_edges_from(zip(nodes,targets))
     return G
@@ -1320,7 +1320,7 @@ def structured_rand_arr(size, sample_func=np.random.random,
         out[didx] = fill_diag
     else:
         out[didx] = rmat[didx]
-        
+
     return out
 
 
@@ -1456,9 +1456,9 @@ def compare_dicts(d1,d2):
         longest_dict=len(d2)
     check=0
     #loop through the keys in the first dict
-    for m1,val1 in d1.iteritems():
+    for m1,val1 in d1.items():
         #compare to the values in each key of the second dict
-        for m2,val2 in d2.iteritems():
+        for m2,val2 in d2.items():
             if val1 == val2:
                 check+=1
     return float(check)/longest_dict
@@ -1475,6 +1475,6 @@ def assert_no_empty_modules(part):
     part : dict
       A dict describing a graph partition.
     """
-    for label, mod in part.iteritems():
+    for label, mod in part.items():
         if len(mod)==0:
             raise ValueError("Module %s in partition is empty" % label)

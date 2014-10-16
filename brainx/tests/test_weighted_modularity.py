@@ -114,7 +114,7 @@ class TestWeightedPartition(unittest.TestCase):
         ## summ of all links in or out of communities
         ## since one per scommunity, just weighted degree of each node
         tot_per_comm = part.degree_by_community()
-        degw = self.graph.degree(weight='weight').values()
+        degw = list(self.graph.degree(weight='weight').values())
         self.assertEqual(tot_per_comm, degw)
         ## This isnt true of we have communities with multiple nodes
         part_2comm = wm.WeightedPartition(self.graph, self.communities)

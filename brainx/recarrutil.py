@@ -223,9 +223,9 @@ def run_test_suite():
 
     # Stop clock and summarize
     end = clock()
-    print '-'*70
-    print "Ran %s tests in %.3f" % (ntests, end-start)
-    print '\nOK'
+    print('-'*70)
+    print("Ran %s tests in %.3f" % (ntests, end-start))
+    print('\nOK')
     
 run_test_suite.__test__ = False
 

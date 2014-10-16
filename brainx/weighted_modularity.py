@@ -3,7 +3,7 @@
 import copy
 import numpy as np
 import networkx as nx
-import util
+from . import util
 
 
 class WeightedPartition(object):
@@ -329,7 +329,7 @@ class LouvainCommunityDetection(object):
         comm_wo_node = self._communities_without_node(part, removed_node)
         weights = [0] * len(comm_wo_node)
         ## make a list of all nodes degree weights
-        all_degree_weights = part.graph.degree(weight='weight').values()
+        all_degree_weights = list(part.graph.degree(weight='weight').values())
         all_degree_weights = np.array(all_degree_weights)
         for val, nodeset in enumerate(comm_wo_node):
             node_index = np.array(list(nodeset)) #index of nodes in community

@@ -124,7 +124,6 @@ class InheritanceGraph(object):
                     classes.append(cls)
             return classes
 
-        print 'todoc?',todoc
         raise ValueError(
             "'%s' does not resolve to a class or module" % name)
 
