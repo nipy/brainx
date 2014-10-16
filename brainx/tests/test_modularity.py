@@ -139,6 +139,11 @@ def test_random_modular_graph_between_fraction():
                                            btwn_real_frac, 1,
                     "This is a stochastic test, repeat to confirm failure")
 
+                    nt.assert_true(abs(btwn_fraction - btwn_real_frac) < 0.1,
+                          """btwn fraction: %.2f  real btwn frac: %.2f -
+                          This is a stochastic test - repeat to confirm.""" %
+                                          (btwn_fraction, btwn_real_frac))
+
 
 def test_modularity():
     """Test the values that go into the modularity calculation after randomly
