@@ -1,0 +1,4 @@
+matplotlib>=1.1.0
+numpy>=1.6.1
+scipy>=0.9
+networkx>=1.9

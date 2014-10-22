@@ -81,7 +81,7 @@ def nodal_pathlengths(graph):
 
     """
     lengths = inter_node_distances(graph)
-    nodal_means = [np.mean(lengths[src].values()) for src in sorted(lengths)]
+    nodal_means = [np.mean(list(lengths[src].values())) for src in sorted(lengths)]
     return np.array(nodal_means)
 
 
@@ -112,7 +112,7 @@ def path_lengths(graph):
     length = nx.all_pairs_shortest_path_length(graph)
     paths = []
     seen = set()
-    for src,targets in length.iteritems():
+    for src,targets in length.items():
         seen.add(src)
         neigh = set(targets.keys()) - seen
         paths.extend(targets[targ] for targ in neigh)
@@ -149,7 +149,7 @@ def path_lengthsSPARSE(graph):
     nnod = graph.number_of_nodes()
     paths_mat = sparse.dok_matrix((nnod,nnod))
     
-    for src,targets in length.iteritems():
+    for src,targets in length.items():
         for targ,val in targets.items():
             paths_mat[src,targ] = val
 
@@ -194,7 +194,7 @@ def nodal_efficiency(graph):
     lengths = inter_node_distances(graph)
     nodal_efficiencies = np.zeros(len(lengths), dtype=float)
     for src in sorted(lengths):
-        inverse_paths = [1.0 / val for val in lengths[src].itervalues()]
+        inverse_paths = [1.0 / val for val in lengths[src].values()]
         nodal_efficiencies[src] = np.mean(inverse_paths)
     return nodal_efficiencies
 
@@ -211,8 +211,8 @@ def local_efficiency(graph):
         nneighb= nx.neighbors(graph,n)
         
         paths=[]
-        for src,targets in length.iteritems():
-            for targ,val in targets.iteritems():
+        for src,targets in length.items():
+            for targ,val in targets.items():
                 val=float(val)
                 if src==targ:
                     continue
@@ -306,7 +306,7 @@ def graph_summary(graph):
     
     # Average path length
     lp = path_lengths(graph)
-    clust = np.array(nx.clustering(graph).values())
+    clust = np.array(list(nx.clustering(graph).values()))
     glob_eff = glob_efficiency(graph)
     loc_eff = local_efficiency(graph)
     

@@ -13,6 +13,8 @@ doi:10.1088/1742-5468/2005/09/P09008
 
 """
 
+from __future__ import print_function
+
 # Modules from the stdlib
 import math
 import copy
@@ -27,7 +29,7 @@ import scipy.linalg as sl
 from matplotlib import pyplot as plt
 
 # Our own modules
-import util
+from . import util
 
 
 #-----------------------------------------------------------------------------
@@ -144,7 +146,7 @@ class GraphPartition(object):
         norm_factor = 1.0 / (2.0 * self.num_edges)
         mat = self.graph_adj_matrix
         node_set = self._node_set
-        for m, modnodes in index.iteritems():
+        for m, modnodes in index.items():
             btwnnodes = list(node_set - modnodes)
             modnodes  = list(modnodes)
             mat_within  = mat[modnodes,:][:,modnodes]
@@ -623,7 +625,7 @@ class GraphPartition(object):
         nodes as indexed in the adjacency matrix defined in the original graph. 
         This will return the index (partition) using the graph node names"""
         named_part = []
-        for nmod, part in self.index.iteritems():
+        for nmod, part in self.index.items():
             named_part.append( [self._node_names[x] for x in part] )
         return named_part
             
@@ -842,7 +844,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
 
     niter = 0
     edge_list_between = []
-    for m,val in part.iteritems():
+    for m,val in part.items():
 
         if niter <len(col):
             if within_mod == 'none': #note: assumes part_coeff also there
@@ -913,7 +915,7 @@ def plot_partition(g,part,title,fname='figure',nod_labels = None, pos = None,
 
     #add loop for damage labels
     if les_dam != 'none':
-        for m,val in part.iteritems():
+        for m,val in part.items():
             for v in val:
                 if les_dam[v] > 0:
                     plt.scatter(pos[v][0],pos[v][1],s=500*les_dam[v]+100,c='orange',marker=(10,1,0))
@@ -1223,17 +1225,17 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
                         break
 
                     if 0: #for debugging. 0 suppresses this for now.
-                        print 'T: %.2e' % temperature, \
-                            'accept nod ratio: %.2e ' %accept_nod_ratio, \
-                            'bad accept nod ratio: %.2e' % bad_accept_nod_ratio, \
-                            'energy: %.2e' % energy
+                        print('T: %.2e' % temperature,
+                              'accept nod ratio: %.2e ' %accept_nod_ratio,
+                              'bad accept nod ratio: %.2e' % bad_accept_nod_ratio,
+                              'energy: %.2e' % energy)
 
         #print 'T: %.2e' % temperature, \
         #    'accept mod ratio: %.2e ' %accept_mod_ratio, \
         #    'bad accept mod ratio: %.2e' % bad_accept_mod_ratio, \
         #    'energy: %.2e' %energy, 'best: %.2e' %energy_best
-        print 'T: %.2e' % temperature, \
-            'energy: %.2e' %energy, 'best: %.2e' %energy_best
+        print('T: %.2e' % temperature,
+              'energy: %.2e' %energy, 'best: %.2e' %energy_best)
         temperature *= temp_scaling
 
 
@@ -1241,7 +1243,7 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
     #NEED TO APPLY THE BEST PARTITION JUST IN CASE...
     #make a new graph object, apply the best partition
     #graph_partition.index = graph_partition.bestindex
-    print graph_partition.modularity()
+    print(graph_partition.modularity())
     graph_part_final = GraphPartition(g,graph_partition.bestindex)
 
 
@@ -1263,11 +1265,11 @@ def simulated_annealing(g, p0=None, temperature = 50, temp_scaling = 0.995, tmin
 
         #check that the energy matches the computed modularity value of the partition
         finalmodval = graph_part_final.modularity()
-        print finalmodval
-        print -energy_best
-        print graph_part_final.index
+        print(finalmodval)
+        print(-energy_best)
+        print(graph_part_final.index)
 
-        print np.abs(finalmodval - (-energy_best))
+        print(np.abs(finalmodval - (-energy_best)))
 
         if np.abs(finalmodval - (-energy_best)) > 0.000001: #to account for float error
             raise ValueError('mismatch in energy and modularity')
@@ -1458,7 +1460,7 @@ def adjust_partition(g, partition, max_iter=None):
         node_map[n] = p1
         nodes.remove(n)
 
-        print '[%d/%d] -> %.4f' % (len(nodes), L, partition.modularity())
+        print('[%d/%d] -> %.4f' % (len(nodes), L, partition.modularity()))
 
         M = partition.modularity()
         if M > best_modularity:

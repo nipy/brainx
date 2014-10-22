@@ -79,4 +79,3 @@ packages            = ['brainx',
                        'brainx.tests',
                        ]
 package_data        = {"brainx": ["LICENSE"]}
-requires            = ["numpy", "matplotlib", "scipy", "networkx"]

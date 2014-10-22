@@ -488,7 +488,7 @@ def draw_networkx_edges(G, pos,
         from matplotlib.colors import colorConverter,Colormap
         from matplotlib.collections import LineCollection
     except ImportError:
-        raise ImportError, "Matplotlib required for draw()"
+        raise ImportError("Matplotlib required for draw()")
     except RuntimeError:
         pass # unable to open display
 
