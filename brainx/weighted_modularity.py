@@ -1,5 +1,3 @@
-
-
 import copy
 import numpy as np
 import networkx as nx
@@ -27,12 +25,8 @@ class WeightedPartition(object):
         -------
         part : WeightedPartition object
         """
-        # assert graph has edge weights, and no negative weights
-        mat = nx.adjacency_matrix(graph).todense()
-        if mat.min() < 0:
-            raise ValueError('Graph has invalid negative weights')
-
-        self.graph = nx.from_numpy_matrix(mat)
+        self.graph = graph
+        self._init_weight_attributes()
         if communities is None:
             self._communities = self._init_communities_from_nodes()
         else:
@@ -54,7 +48,18 @@ class WeightedPartition(object):
         eg nodes = [0,1,2] -> communities = [set([0]), set([1]), set([2])]
         """
         return [set([node]) for node in self.graph.nodes()]
-
+        
+    def _init_weight_attributes(self):
+        """adds edge attributes to graph to accomodate postive_ and 
+        negative_weight calculations"""
+        weights = np.array(nx.get_edge_attributes(self.graph,'weight').values(),\
+                               dtype=float)
+        nx.set_edge_attributes(self.graph, 'positive_weight',\
+                               dict(zip(nx.get_edge_attributes(self.graph,'weight').keys(),\
+                                        weights * np.array(weights > 0.,dtype=bool)))
+        nx.set_edge_attributes(self.graph, 'negative_weight',\
+                               dict(zip(nx.get_edge_attributes(self.graph,'weight').keys(),\
+                                        weights * np.array(weights < 0.,dtype=bool))))
 
     def communities_degree(self):
         """ calculates the joint degree of a community"""
@@ -82,7 +87,6 @@ class WeightedPartition(object):
         else:
             raise ValueError('missing nodes {0}'.format(communities))
 
-
     def _allnodes_in_communities(self, communities):
         """ checks all nodes are represented in communities, also catches
         duplicate nodes"""
@@ -99,7 +103,6 @@ class WeightedPartition(object):
         """
         return self.graph.degree(weight='weight')[node]
 
-
     def node_degree_by_community(self, node):
         """ Find the number of links from a node to each community
         Returns
@@ -114,7 +117,6 @@ class WeightedPartition(object):
             tmpcomm = self.get_node_community(neighbor)
             comm_weights[tmpcomm] += data.get('weight', 1)
         return comm_weights
-
 
     def degree_by_community(self):
         """ sum of all edges within or between communities
@@ -149,7 +151,6 @@ class WeightedPartition(object):
                 weights[val] += np.sum(self.graph[node][x]['weight']/ 2. \
                     for x in nodes_within)
         return weights
-
 
     def modularity(self):
         """Calculates the proportion of within community edges compared to
