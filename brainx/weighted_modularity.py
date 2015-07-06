@@ -118,22 +118,6 @@ class WeightedPartition(object):
             communities_negative_strengths.append(tmp)
         return communities_negative_strengths
 
-    def communities_positive_strength(self):
-        """ calculates the joint positive strength of a community"""
-        communities_positive_strengths = []
-        for com in self.communities:
-            tmp = np.sum([self.graph.degree(weight='positive_weight')[x] for x in com])
-            communities_positive_strengths.append(tmp)
-        return communities_positive_strengths
-
-    def communities_negative_strength(self):
-        """ calculates the joint negative strength of a community"""
-        communities_negative_strengths = []
-        for com in self.communities:
-            tmp = np.sum([self.graph.degree(weight='negative_weight')[x] for x in com])
-            communities_negative_strengths.append(tmp)
-        return communities_negative_strengths
-
     def node_strength(self, node):
         """ find the weighted sum of all node edges
         """
