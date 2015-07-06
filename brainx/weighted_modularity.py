@@ -32,7 +32,7 @@ class WeightedPartition(object):
         else:
             self.set_communities(communities)
         self.total_edge_weight = graph.size(weight='weight')
-        self.degrees = graph.degree(weight='weight')
+        self.strengths = graph.degree(weight='weight')
 
     @property
     def communities(self):
@@ -60,14 +60,6 @@ class WeightedPartition(object):
         nx.set_edge_attributes(self.graph, 'negative_weight',\
                                dict(zip(nx.get_edge_attributes(self.graph,'weight').keys(),\
                                         weights * np.array(weights < 0.,dtype=bool))))
-
-    def communities_degree(self):
-        """ calculates the joint degree of a community"""
-        communities_degrees = []
-        for com in self.communities:
-            tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
-            communities_degrees.append(tmp)
-        return communities_degrees
 
     def get_node_community(self, node):
         """returns the node's community"""
@@ -97,47 +89,55 @@ class WeightedPartition(object):
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
-
-    def node_degree(self, node):
-        """ find the summed weight of all node edges
+            
+    def communities_strength(self):
+        """ calculates the joint strength of a community"""
+        communities_strengths = []
+        for com in self.communities:
+            tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
+            communities_strengths.append(tmp)
+        return communities_strengths
+        
+    def node_strength(self, node):
+        """ find the weighted sum of all node edges
         """
         return self.graph.degree(weight='weight')[node]
 
-    def node_degree_by_community(self, node):
-        """ Find the number of links from a node to each community
+    def node_strength_by_community(self, node):
+        """ Find the weighted sum of the edges from a node to each community
         Returns
         -------
-        comm_weights : list
-            list holding the weighted degree of a node to each community
+        comm_strengths : list
+            list holding the strength of a node to each community
         """
-        comm_weights = [0] * len(self.communities)
+        comm_strengths = [0] * len(self.communities)
         for neighbor, data in self.graph[node].items():
             if neighbor == node:
                 continue
             tmpcomm = self.get_node_community(neighbor)
-            comm_weights[tmpcomm] += data.get('weight', 1)
-        return comm_weights
+            comm_strengths[tmpcomm] += data.get('weight', 1)
+        return comm_strengths
 
-    def degree_by_community(self):
-        """ sum of all edges within or between communities
+    def strength_by_community(self):
+        """ weighted sum of all edges within or between communities
         for each community
         Returns
         -------
-        weights : list
+        strengths : list
             list is size of total number of communities"""
         comm = self.communities
-        weights = [0] * len(comm)
-        all_degree_weights = self.graph.degree(weight='weight')
-        for node, weight in all_degree_weights.items():
+        strengths = [0] * len(comm)
+        all_strengths = self.graph.degree(weight='weight')
+        for node, strength in all_strengths.items():
             node_comm = self.get_node_community(node)
-            weights[node_comm] += weight
-        return weights
+            strengths[node_comm] += strength
+        return strengths
 
-    def degree_within_community(self):
-        """ sum of weighted edges strictly inside each community
+    def strength_within_community(self):
+        """ weighted sum of the edges strictly inside each community
         including self loops"""
         comm = self.communities
-        weights = [0] * len(comm)
+        strengths = [0] * len(comm)
         comm = self.communities
         for val, nodeset in enumerate(comm):
             for node in nodeset:
@@ -146,11 +146,11 @@ class WeightedPartition(object):
                 if len(nodes_within) < 1:
                     continue
                 if node in nodes_within:
-                    weights[val] += self.graph[node][node]['weight']
+                    strengths[val] += self.graph[node][node]['weight']
                     nodes_within.remove(node)
-                weights[val] += np.sum(self.graph[node][x]['weight']/ 2. \
+                strengths[val] += np.sum(self.graph[node][x]['weight']/ 2. \
                     for x in nodes_within)
-        return weights
+        return strengths
 
     def modularity(self):
         """Calculates the proportion of within community edges compared to
@@ -177,8 +177,8 @@ class WeightedPartition(object):
             raise TypeError('only valid on non directed graphs')
 
         m2 = self.total_edge_weight
-        internal_connect = np.array(self.degree_within_community())
-        total = np.array(self.degree_by_community())
+        internal_connect = np.array(self.strength_within_community())
+        total = np.array(self.strength_by_community())
         return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 
 
@@ -305,8 +305,8 @@ class LouvainCommunityDetection(object):
         """calculate the increase(s) in modularity if node is moved to other
         communities
         deltamod = inC - totc * ki / total_weight"""
-        noded = part.node_degree(node)
-        dnc = part.node_degree_by_community(node)
+        noded = part.node_strength(node)
+        dnc = part.node_strength_by_community(node)
         totc = self._communities_nodes_alledgesw(part, node)
         total_weight = part.total_edge_weight
         # cast to arrays to improve calc
@@ -328,17 +328,17 @@ class LouvainCommunityDetection(object):
         community, once the removed_node is removed
         this refers to totc in Blondel paper"""
         comm_wo_node = self._communities_without_node(part, removed_node)
-        weights = [0] * len(comm_wo_node)
-        ## make a list of all nodes degree weights
-        all_degree_weights = list(part.graph.degree(weight='weight').values())
-        all_degree_weights = np.array(all_degree_weights)
+        strengths = [0] * len(comm_wo_node)
+        ## make a list of all nodes strengths
+        all_strengths = list(part.graph.degree(weight='weight').values())
+        all_strengths = np.array(all_strengths)
         for val, nodeset in enumerate(comm_wo_node):
             node_index = np.array(list(nodeset)) #index of nodes in community
-            #sum the weighted degree of nodes in community
+            #sum the strength of nodes in community
             if len(node_index)<1:
                 continue
-            weights[val] = np.sum(all_degree_weights[node_index])
-        return weights
+            strengths[val] = np.sum(all_strengths[node_index])
+        return strengths
 
     @staticmethod
     def _move_node(part, node, new_comm):
