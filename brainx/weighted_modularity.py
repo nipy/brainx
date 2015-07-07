@@ -280,9 +280,9 @@ class WeightedPartition(object):
                     for x in nodes_within)
         return negative_strengths
 
-    def modularity(self):
-        """Calculates the proportion of within community edges compared to
-        between community edges for all nodes in graph with given partition
+    def modularity_positive(self):
+        """Calculates the proportion of positive within community edges compared to
+        positive between community edges for all nodes in graph with given partition
 
         Parameters
         ----------
@@ -292,21 +292,23 @@ class WeightedPartition(object):
         -------
         modularity : float
             value reflecting the relation of within community connection
-            to across community connections
+            to across community connections of the graph's positive weights
 
 
         References
         ----------
         .. [1] M. Newman, "Fast algorithm for detecting community structure
             in networks", Physical Review E vol. 69(6), 2004.
+        .. [2] M. Rubinov and O. Sporns, "Weight-conserving characterization of
+            complex functional brain networks", NeuroImage, vol. 56(4), 2011.
 
         """
         if self.graph.is_directed():
             raise TypeError('only valid on non directed graphs')
 
         m2 = self.total_edge_weight
-        internal_connect = np.array(self.strength_within_community())
-        total = np.array(self.strength_by_community())
+        internal_connect = np.array(self.positive_strength_within_community())
+        total = np.array(self.positive_strength_by_community())
         return np.sum(internal_connect/m2 - (total/(2*m2))**2)
 
 
@@ -334,7 +336,7 @@ class LouvainCommunityDetection(object):
     >>> louvain = LouvainCommunityDetection(graph)
     >>> partitions = louvain.run()
     >>> ## best partition
-    >>> partitions[-1].modularity()
+    >>> partitions[-1].modularity_positive()
 
     References
     ----------
@@ -382,10 +384,10 @@ class LouvainCommunityDetection(object):
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
-        mod = part.modularity()
+        mod = part.modularity_positive()
         dendogram = list()
         new_part = self._one_level(part, self.minthr)
-        new_mod = new_part.modularity()
+        new_mod = new_part.modularity_positive()
 
         dendogram.append(new_part)
         mod = new_mod
@@ -405,7 +407,7 @@ class LouvainCommunityDetection(object):
 
     def _one_level(self, part, min_modularity= .0000001):
         """run one level of patitioning"""
-        curr_mod = part.modularity()
+        curr_mod = part.modularity_positive()
         modified = True
         while modified:
             modified = False
@@ -423,7 +425,7 @@ class LouvainCommunityDetection(object):
                     new_part = self._move_node(part, node, best_comm)
                     part = new_part
                     modified = True
-            new_mod = part.modularity()
+            new_mod = part.modularity_positive()
             change_in_modularity = new_mod - curr_mod
             if change_in_modularity < min_modularity:
                 return part
