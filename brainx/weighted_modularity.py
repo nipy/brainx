@@ -93,15 +93,7 @@ class WeightedPartition(object):
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
-            
-    def communities_strength(self):
-        """ calculates the joint strength of a community"""
-        communities_strengths = []
-        for com in self.communities:
-            tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
-            communities_strengths.append(tmp)
-        return communities_strengths
-        
+
     def communities_positive_strength(self):
         """ calculates the joint positive strength of a community"""
         communities_positive_strengths = []
@@ -118,11 +110,6 @@ class WeightedPartition(object):
             communities_negative_strengths.append(tmp)
         return communities_negative_strengths
 
-    def node_strength(self, node):
-        """ find the weighted sum of all node edges
-        """
-        return self.graph.degree(weight='weight')[node]
-
     def node_positive_strength(self, node):
         """ find the weighted sum of all positive node edges
         """
@@ -133,21 +120,6 @@ class WeightedPartition(object):
         """
         return self.graph.degree(weight='negative_weight')[node]
 
-    def node_strength_by_community(self, node):
-        """ Find the weighted sum of the edges from a node to each community
-        Returns
-        -------
-        comm_strengths : list
-            list holding the strength of a node to each community
-        """
-        comm_strengths = [0] * len(self.communities)
-        for neighbor, data in self.graph[node].items():
-            if neighbor == node:
-                continue
-            tmpcomm = self.get_node_community(neighbor)
-            comm_strengths[tmpcomm] += data.get('weight', 1)
-        return comm_strengths
-        
     def node_positive_strength_by_community(self, node):
         """ Find the weighted sum of the positive edges from a node to each community
         Returns
@@ -177,22 +149,7 @@ class WeightedPartition(object):
             tmpcomm = self.get_node_community(neighbor)
             comm_negative_strengths[tmpcomm] += data.get('negative_weight', 1)
         return comm_negative_strengths
-
-    def strength_by_community(self):
-        """ weighted sum of all edges within or between communities
-        for each community
-        Returns
-        -------
-        strengths : list
-            list is size of total number of communities"""
-        comm = self.communities
-        strengths = [0] * len(comm)
-        all_strengths = self.graph.degree(weight='weight')
-        for node, strength in all_strengths.items():
-            node_comm = self.get_node_community(node)
-            strengths[node_comm] += strength
-        return strengths
-        
+     
     def positive_strength_by_community(self):
         """ weighted sum of all positive edges within or between communities
         for each community
@@ -223,25 +180,6 @@ class WeightedPartition(object):
             negative_strengths[node_comm] += strength
         return negative_strengths
 
-    def strength_within_community(self):
-        """ weighted sum of the edges strictly inside each community
-        including self loops"""
-        comm = self.communities
-        strengths = [0] * len(comm)
-        comm = self.communities
-        for val, nodeset in enumerate(comm):
-            for node in nodeset:
-                nodes_within = set([x for x in self.graph[node].keys() \
-                    if x in nodeset])
-                if len(nodes_within) < 1:
-                    continue
-                if node in nodes_within:
-                    strengths[val] += self.graph[node][node]['weight']
-                    nodes_within.remove(node)
-                strengths[val] += np.sum(self.graph[node][x]['weight']/ 2. \
-                    for x in nodes_within)
-        return strengths
-        
     def positive_strength_within_community(self):
         """ weighted sum of the positive edges strictly inside each community
         including self loops"""
