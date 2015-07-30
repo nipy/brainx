@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 import networkx as nx
-from . import util
+import util
 
 
 class WeightedPartition(object):
@@ -31,10 +31,8 @@ class WeightedPartition(object):
             self._communities = self._init_communities_from_nodes()
         else:
             self.set_communities(communities)
-        self.total_edge_weight = graph.size(weight='weight')
         self.total_positive_edge_weight = graph.size(weight='positive_weight')
         self.total_negative_edge_weight = graph.size(weight='negative_weight')
-        self.strengths = graph.degree(weight='weight')
         self.positive_strengths = graph.degree(weight='positive_weight')
         self.negative_strengths = graph.degree(weight='negative_weight')
 
@@ -60,10 +58,10 @@ class WeightedPartition(object):
                                dtype=float)
         nx.set_edge_attributes(self.graph, 'positive_weight',\
                                dict(zip(nx.get_edge_attributes(self.graph,'weight').keys(),\
-                                        weights * np.array(weights > 0.,dtype=bool)))
+                                        abs(weights * np.array(weights > 0.,dtype=bool)))))
         nx.set_edge_attributes(self.graph, 'negative_weight',\
                                dict(zip(nx.get_edge_attributes(self.graph,'weight').keys(),\
-                                        weights * np.array(weights < 0.,dtype=bool))))
+                                        abs(weights * np.array(weights < 0.,dtype=bool)))))
 
     def get_node_community(self, node):
         """returns the node's community"""
@@ -93,14 +91,6 @@ class WeightedPartition(object):
         ## simple count to check for all nodes
         return len(self.graph.nodes()) == \
             len([item for com in communities for item in com])
-            
-    def communities_strength(self):
-        """ calculates the joint strength of a community"""
-        communities_strengths = []
-        for com in self.communities:
-            tmp = np.sum([self.graph.degree(weight='weight')[x] for x in com])
-            communities_strengths.append(tmp)
-        return communities_strengths
         
     def communities_positive_strength(self):
         """ calculates the joint positive strength of a community"""
@@ -118,11 +108,6 @@ class WeightedPartition(object):
             communities_negative_strengths.append(tmp)
         return communities_negative_strengths
 
-    def node_strength(self, node):
-        """ find the weighted sum of all node edges
-        """
-        return self.graph.degree(weight='weight')[node]
-
     def node_positive_strength(self, node):
         """ find the weighted sum of all positive node edges
         """
@@ -132,21 +117,6 @@ class WeightedPartition(object):
         """ find the weighted sum of all negative node edges
         """
         return self.graph.degree(weight='negative_weight')[node]
-
-    def node_strength_by_community(self, node):
-        """ Find the weighted sum of the edges from a node to each community
-        Returns
-        -------
-        comm_strengths : list
-            list holding the strength of a node to each community
-        """
-        comm_strengths = [0] * len(self.communities)
-        for neighbor, data in self.graph[node].items():
-            if neighbor == node:
-                continue
-            tmpcomm = self.get_node_community(neighbor)
-            comm_strengths[tmpcomm] += data.get('weight', 1)
-        return comm_strengths
         
     def node_positive_strength_by_community(self, node):
         """ Find the weighted sum of the positive edges from a node to each community
@@ -177,21 +147,6 @@ class WeightedPartition(object):
             tmpcomm = self.get_node_community(neighbor)
             comm_negative_strengths[tmpcomm] += data.get('negative_weight', 1)
         return comm_negative_strengths
-
-    def strength_by_community(self):
-        """ weighted sum of all edges within or between communities
-        for each community
-        Returns
-        -------
-        strengths : list
-            list is size of total number of communities"""
-        comm = self.communities
-        strengths = [0] * len(comm)
-        all_strengths = self.graph.degree(weight='weight')
-        for node, strength in all_strengths.items():
-            node_comm = self.get_node_community(node)
-            strengths[node_comm] += strength
-        return strengths
         
     def positive_strength_by_community(self):
         """ weighted sum of all positive edges within or between communities
@@ -222,25 +177,6 @@ class WeightedPartition(object):
             node_comm = self.get_node_community(node)
             negative_strengths[node_comm] += strength
         return negative_strengths
-
-    def strength_within_community(self):
-        """ weighted sum of the edges strictly inside each community
-        including self loops"""
-        comm = self.communities
-        strengths = [0] * len(comm)
-        comm = self.communities
-        for val, nodeset in enumerate(comm):
-            for node in nodeset:
-                nodes_within = set([x for x in self.graph[node].keys() \
-                    if x in nodeset])
-                if len(nodes_within) < 1:
-                    continue
-                if node in nodes_within:
-                    strengths[val] += self.graph[node][node]['weight']
-                    nodes_within.remove(node)
-                strengths[val] += np.sum(self.graph[node][x]['weight']/ 2. \
-                    for x in nodes_within)
-        return strengths
         
     def positive_strength_within_community(self):
         """ weighted sum of the positive edges strictly inside each community
@@ -280,13 +216,21 @@ class WeightedPartition(object):
                     for x in nodes_within)
         return negative_strengths
 
-    def modularity_positive(self):
+    def modularity(self, qtype='pos'):
         """Calculates the proportion of positive within community edges compared to
         positive between community edges for all nodes in graph with given partition
 
         Parameters
         ----------
         partition : weighted graph partition object
+
+        qtype : string
+            See [2] for details on each measure.
+            'pos' Q_+
+            'neg' Q_-
+            'smp' Q_simple
+            'sta' Q_*
+            'gja' Q_GJA
 
         Returns
         -------
@@ -301,19 +245,47 @@ class WeightedPartition(object):
             in networks", Physical Review E vol. 69(6), 2004.
         .. [2] M. Rubinov and O. Sporns, "Weight-conserving characterization of
             complex functional brain networks", NeuroImage, vol. 56(4), 2011.
+        .. [3] S. Gomez, P. Jensen, A. Arenas, "Analysis of community structure
+            in networks of correlated data". Physical Review E vol. 80(1), 2009.
 
         """
         if self.graph.is_directed():
             raise TypeError('only valid on non directed graphs')
+        
+        m2_pos = self.total_positive_edge_weight
+        m2_neg = self.total_negative_edge_weight
+        internal_connect_pos = np.array(self.positive_strength_within_community())
+        internal_connect_neg = np.array(self.negative_strength_within_community())
+        total_pos = np.array(self.positive_strength_by_community())
+        total_neg = np.array(self.negative_strength_by_community())
 
-        m2 = self.total_edge_weight
-        internal_connect = np.array(self.positive_strength_within_community())
-        total = np.array(self.positive_strength_by_community())
-        return np.sum(internal_connect/m2 - (total/(2*m2))**2)
+        if qtype == 'pos':
+            return np.sum(internal_connect_pos/m2_pos - (total_pos/(2*m2_pos))**2)
+
+        elif qtype == 'neg':
+            return np.sum(internal_connect_neg/m2_neg - (total_neg/(2*m2_neg))**2)
+
+        elif qtype == 'smp':
+            q_pos = modularity(self, 'pos')
+            q_neg = modularity(self, 'neg')
+            return q_pos + q_neg
+
+        elif qtype == 'sta':
+            q_pos = modularity(self, 'pos')
+            q_neg = np.sum(internal_connect_neg/(m2_pos+m2_neg)\
+                               - (total_neg/(2*(m2_pos+m2_neg)))**2)
+            return q_pos - q_neg            
+
+        elif qtype == 'gja':
+            q_pos = np.sum(internal_connect_pos/(m2_pos+m2_neg)\
+                               - (total_pos/(2*m2_pos + 2*m2_neg))**2)
+            q_neg = np.sum(internal_connect_neg/(m2_pos+m2_neg)\
+                               - (total_neg/(2*m2_pos + 2*m2_neg))**2)
+            return q_pos - q_neg
 
 
 
-class LouvainCommunityDetection(object):
+class LouvainCommunityDetection(object, qtype='pos'):
     """ Uses the Louvain Community Detection algorithm to detect
     communities in networks
 
@@ -336,7 +308,7 @@ class LouvainCommunityDetection(object):
     >>> louvain = LouvainCommunityDetection(graph)
     >>> partitions = louvain.run()
     >>> ## best partition
-    >>> partitions[-1].modularity_positive()
+    >>> partitions[-1].modularity()
 
     References
     ----------
@@ -384,10 +356,10 @@ class LouvainCommunityDetection(object):
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
-        mod = part.modularity_positive()
+        mod = part.modularity(qtype)
         dendogram = list()
         new_part = self._one_level(part, self.minthr)
-        new_mod = new_part.modularity_positive()
+        new_mod = new_part.modularity(qtype)
 
         dendogram.append(new_part)
         mod = new_mod
@@ -396,7 +368,7 @@ class LouvainCommunityDetection(object):
         while True :
             partition = WeightedPartition(current_graph)
             newpart = self._one_level(partition, self.minthr)
-            new_mod = newpart.modularity()
+            new_mod = newpart.modularity(qtype)
             if new_mod - mod < self.minthr :
                 break
 
@@ -407,7 +379,7 @@ class LouvainCommunityDetection(object):
 
     def _one_level(self, part, min_modularity= .0000001):
         """run one level of patitioning"""
-        curr_mod = part.modularity_positive()
+        curr_mod = part.modularity(qtype)
         modified = True
         while modified:
             modified = False
@@ -415,7 +387,7 @@ class LouvainCommunityDetection(object):
             np.random.shuffle(all_nodes)
             for node in all_nodes:
                 node_comm = part.get_node_community(node)
-                delta_mod = self._calc_delta_modularity(node, part)
+                delta_mod = self._calc_delta_modularity(node, part, qtype)
                 #print node, delta_mod
                 if delta_mod.max() <= 0.0:
                     # no increase by moving this node
@@ -425,19 +397,28 @@ class LouvainCommunityDetection(object):
                     new_part = self._move_node(part, node, best_comm)
                     part = new_part
                     modified = True
-            new_mod = part.modularity_positive()
+            new_mod = part.modularity(qtype)
             change_in_modularity = new_mod - curr_mod
             if change_in_modularity < min_modularity:
                 return part
         return part
 
-    def _calc_delta_modularity(self, node, part):
+    def _calc_delta_modularity(self, node, part, qtype):
         """calculate the increase(s) in modularity if node is moved to other
         communities
         deltamod = inC - totc * ki / total_weight"""
-        noded = part.node_strength(node)
+        if qtype == 'pos':
+            node_strength = part.node_positive_strength(node)
+        elif qtype == 'neg':
+            node_strength = part.node_negative_strength(node)
+        elif qtype == 'smp':
+            pass
+        elif qtype == 'sta':
+            pass
+        elif qtype == 'gja':
+            pass
         dnc = part.node_strength_by_community(node)
-        totc = self._communities_nodes_alledgesw(part, node)
+        totc = self._communities_nodes_alledgesw(part, node, qtype)
         total_weight = part.total_edge_weight
         # cast to arrays to improve calc
         dnc = np.array(dnc)
@@ -453,16 +434,34 @@ class LouvainCommunityDetection(object):
         newpart[node_comm].remove(node)
         return newpart
 
-    def _communities_nodes_alledgesw(self, part, removed_node):
+    def _communities_nodes_alledgesw(self, part, removed_node, qtype):
         """ returns the sum of all weighted edges to nodes in each
         community, once the removed_node is removed
         this refers to totc in Blondel paper"""
         comm_wo_node = self._communities_without_node(part, removed_node)
-        strengths = [0] * len(comm_wo_node)
         ## make a list of all nodes strengths
-        all_strengths = list(part.graph.degree(weight='weight').values())
-        all_strengths = np.array(all_strengths)
-        for val, nodeset in enumerate(comm_wo_node):
+        positive_strengths = list(part.graph.degree(weight='positive_weight').values())
+        positive_strengths = np.array(positive_strengths)
+        negative_strengths = list(part.graph.degree(weight='negative_weight').values())
+        negative_strengths = np.array(negative_strengths)
+        if qtype == 'pos':
+            return self._communities_node_strengths(self, comm_wo_node, positive_strengths)
+        elif qtype == 'neg':
+            return self._communities_node_strengths(self, comm_wo_node, negative_strengths)
+        elif qtype == 'smp':
+            smp_positive_strengths = self._communities_nodes_alledgesw(part, node, 'pos')
+            smp_negative_strengths = self._communities_nodes_alledgesw(part, removed_node, 'neg')
+            return smp_positive_strengths - smp_negative_strengths
+        elif qtype == 'sta':
+            pass
+        elif qtype == 'gja':
+            pass
+
+    def _communities_node_strengths(self, part, all_strengths):
+         """ returns the sum of all weighted edges to nodes in each
+        community of the given partition"""
+        strengths = [0] * len(part)
+        for val, nodeset in enumerate(part):
             node_index = np.array(list(nodeset)) #index of nodes in community
             #sum the strength of nodes in community
             if len(node_index)<1:
