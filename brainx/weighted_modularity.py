@@ -218,13 +218,20 @@ class WeightedPartition(object):
                     for x in nodes_within)
         return negative_strengths
 
-    def modularity_positive(self):
+    def modularity(self, qtype='pos'):
         """Calculates the proportion of positive within community edges compared to
         positive between community edges for all nodes in graph with given partition
 
         Parameters
         ----------
         partition : weighted graph partition object
+        qtype: string
+          See [2] for details on each measure.
+          'pos' Q_+
+          'neg' Q_-
+          'smp' Q_simple
+          'sta' Q_*
+          'gja' Q_GJA
 
         Returns
         -------
@@ -239,19 +246,46 @@ class WeightedPartition(object):
             in networks", Physical Review E vol. 69(6), 2004.
         .. [2] M. Rubinov and O. Sporns, "Weight-conserving characterization of
             complex functional brain networks", NeuroImage, vol. 56(4), 2011.
+        .. [3] S. Gomez, P. Jensen, A. Arenas, "Analysis of community structure
+            in networks of correlated data". Physical Review E vol. 80(1), 2009.
 
         """
         if self.graph.is_directed():
             raise TypeError('only valid on non directed graphs')
 
-        m2 = self.total_edge_weight
-        internal_connect = np.array(self.positive_strength_within_community())
-        total = np.array(self.positive_strength_by_community())
-        return np.sum(internal_connect/m2 - (total/(2*m2))**2)
+        m2_pos = self.total_positive_edge_weight
+        m2_neg = self.total_negative_edge_weight
+        internal_connect_pos = np.array(self.positive_strength_within_community())
+        internal_connect_neg = np.array(self.negative_strength_within_community())
+        total_pos = np.array(self.positive_strength_by_community())
+        total_neg = np.array(self.negative_strength_by_community())
+
+        if qtype == 'pos':
+            return np.sum(internal_connect_pos/m2_pos - (total_pos/(2*m2_pos))**2)
+
+        elif qtype == 'neg':
+            return np.sum(internal_connect_neg/m2_neg - (total_neg/(2*m2_neg))**2)
+
+        elif qtype == 'smp':
+            q_pos = modularity(self, 'pos')
+            q_neg = modularity(self, 'neg')
+            return q_pos + q_neg
+
+        elif qtype == 'sta':
+            q_pos = modularity(self, 'pos')
+            q_neg = np.sum(internal_connect_neg/(m2_pos+m2_neg)\
+                               - (total_neg/(2*(m2_pos+m2_neg)))**2)
+            return q_pos - q_neg    
+
+        elif qtype == 'gja':
+            q_pos = np.sum(internal_connect_pos/(m2_pos+m2_neg)\
+                               - (total_pos/(2*m2_pos + 2*m2_neg))**2)
+            q_neg = np.sum(internal_connect_neg/(m2_pos+m2_neg)\
+                               - (total_neg/(2*m2_pos + 2*m2_neg))**2)
+            return q_pos - q_neg
 
 
-
-class LouvainCommunityDetection(object):
+class LouvainCommunityDetection(object, qtype='pos'):
     """ Uses the Louvain Community Detection algorithm to detect
     communities in networks
 
