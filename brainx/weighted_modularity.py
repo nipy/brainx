@@ -31,12 +31,12 @@ class WeightedPartition(object):
             self._communities = self._init_communities_from_nodes()
         else:
             self.set_communities(communities)
-        self.total_edge_weight = graph.size(weight='weight')
-        self.total_positive_edge_weight = graph.size(weight='positive_weight')
-        self.total_negative_edge_weight = graph.size(weight='negative_weight')
-        self.strengths = graph.degree(weight='weight')
-        self.positive_strengths = graph.degree(weight='positive_weight')
-        self.negative_strengths = graph.degree(weight='negative_weight')
+        self.total_strength = graph.size(weight = 'weight')
+        self.total_positive_strength = graph.size(weight = 'positive_weight')
+        self.total_negative_strength = graph.size(weight = 'negative_weight')
+        self.node_strengths = graph.degree(weight = 'weight')
+        self.positive_node_strengths = graph.degree(weight = 'positive_weight')
+        self.negative_node_strengths = graph.degree(weight = 'negative_weight')
 
     @property
     def communities(self):
@@ -356,10 +356,10 @@ class LouvainCommunityDetection(object, qtype='pos'):
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
-        mod = part.modularity_positive()
+        mod = part.modularity(qtype=qtype)
         dendogram = list()
         new_part = self._one_level(part, self.minthr)
-        new_mod = new_part.modularity_positive()
+        new_mod = new_part.modularity(qtype=qtype)
 
         dendogram.append(new_part)
         mod = new_mod
@@ -368,7 +368,7 @@ class LouvainCommunityDetection(object, qtype='pos'):
         while True :
             partition = WeightedPartition(current_graph)
             newpart = self._one_level(partition, self.minthr)
-            new_mod = newpart.modularity()
+            new_mod = newpart.modularity(qtype=qtype)
             if new_mod - mod < self.minthr :
                 break
 
@@ -403,11 +403,20 @@ class LouvainCommunityDetection(object, qtype='pos'):
                 return part
         return part
 
-    def _calc_delta_modularity(self, node, part):
+    def _calc_delta_modularity(self, node, part, qtype):
         """calculate the increase(s) in modularity if node is moved to other
         communities
         deltamod = inC - totc * ki / total_weight"""
-        noded = part.node_strength(node)
++        if qtype == 'pos':
++            node_strength = part.node_positive_strength(node)
++        elif qtype == 'neg':
++            node_strength = part.node_negative_strength(node)
++        elif qtype == 'smp':
++            pass
++        elif qtype == 'sta':
++            pass
++        elif qtype == 'gja':
++            pass
         dnc = part.node_strength_by_community(node)
         totc = self._communities_nodes_alledgesw(part, node)
         total_weight = part.total_edge_weight
