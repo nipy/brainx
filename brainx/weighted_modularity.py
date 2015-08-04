@@ -31,11 +31,11 @@ class WeightedPartition(object):
             self._communities = self._init_communities_from_nodes()
         else:
             self.set_communities(communities)
-        # whole-graph strength
+        ## whole-graph strength
         self.total_strength = graph.size(weight = 'weight')
         self.total_positive_strength = graph.size(weight = 'positive_weight')
         self.total_negative_strength = graph.size(weight = 'negative_weight')
-        # node strengths
+        ## node strengths
         self.node_strengths = graph.degree(weight = 'weight')
         self.positive_node_strengths = graph.degree(weight = 'positive_weight')
         self.negative_node_strengths = graph.degree(weight = 'negative_weight')
@@ -56,7 +56,7 @@ class WeightedPartition(object):
         return [set([node]) for node in self.graph.nodes()]
         
     def _init_weight_attributes(self):
-        """Adds edge attributes to graph to accomodate postive_ and 
+        """Adds edge attributes to graph to accomodate postive_weight and 
            negative_weight calculations"""
         weights = np.array(nx.get_edge_attributes(self.graph, 'weight').values(),\
                                dtype=float)
@@ -280,8 +280,8 @@ class WeightedPartition(object):
 
 
 class LouvainCommunityDetection(object):
-    """ Uses the Louvain Community Detection algorithm to detect
-    communities in networks
+    """Uses the Louvain Community Detection algorithm to detect
+       communities in networks
 
     Parameters
     ----------
@@ -320,24 +320,25 @@ class LouvainCommunityDetection(object):
         complex functional brain networks", NeuroImage, vol. 56(4), 2011.
     """
 
-    def __init__(self, graph, communities=None, minthr=0.0000001):
+    def __init__(self, graph, communities=None, minthr=0.0000001, qtype='pos'):
         """initialize the algorithm with a graph and (optional) initial
         community partition , use minthr to provide a stopping limit
         for the algorith (based on change in modularity)"""
         self.graph = graph
         self.initial_communities = communities
         self.minthr = minthr
+        self.qtype = qtype
 
     def run(self):
-        """ run the algorithm to find partitions in graph
+        """Run the algorithm to find partitions in graph
 
         Returns
         -------
         partitions : list
-        a list containing instances of a WeightedPartition with the
-        community partition reflecting that level of the algorithm
-        The last item in the list is the final partition
-        The first item was the initial partition
+            a list containing instances of a WeightedPartition with the
+            community partition reflecting that level of the algorithm
+            The last item in the list is the final partition
+            The first item was the initial partition
         """
         dendogram = self._gen_dendogram()
         partitions = self._partitions_from_dendogram(dendogram)
@@ -345,13 +346,12 @@ class LouvainCommunityDetection(object):
 
 
     def _gen_dendogram(self):
-        """generate dendogram based on muti-levels of partitioning
-        """
+        """Generate dendogram based on muti-levels of partitioning"""
         if type(self.graph) != nx.Graph :
             raise TypeError("Bad graph type, use only non directed graph")
 
-        #special case, when there is no link
-        #the best partition is everyone in its communities
+        ## special case, when there is no link
+        ## the best partition is everyone in its communities
         if self.graph.number_of_edges() == 0 :
             raise IOError('graph has no edges why do you want to partition?')
 
@@ -380,7 +380,7 @@ class LouvainCommunityDetection(object):
         return dendogram
 
     def _one_level(self, part, min_modularity= .0000001):
-        """run one level of patitioning"""
+        """Run one level of patitioning"""
         curr_mod = part.modularity_positive()
         modified = True
         while modified:
@@ -390,7 +390,7 @@ class LouvainCommunityDetection(object):
             for node in all_nodes:
                 node_comm = part.get_node_community(node)
                 delta_mod = self._calc_delta_modularity(node, part)
-                #print node, delta_mod
+                ## print node, delta_mod
                 if delta_mod.max() <= 0.0:
                     # no increase by moving this node
                     continue
@@ -406,8 +406,8 @@ class LouvainCommunityDetection(object):
         return part
 
     def _calc_delta_modularity(self, node, part, qtype):
-        """calculate the increase(s) in modularity if node is moved to other
-        communities
+        """Calculate the increase(s) in modularity if node is moved to other
+           communities
         deltamod = inC - totc * ki / total_weight"""
         if qtype == 'pos':
             node_strength = part.node_positive_strength(node)
@@ -422,24 +422,24 @@ class LouvainCommunityDetection(object):
         dnc = part.node_strength_by_community(node)
         totc = self._communities_nodes_alledgesw(part, node)
         total_weight = part.total_edge_weight
-        # cast to arrays to improve calc
+        ## cast to arrays to improve calc
         dnc = np.array(dnc)
         totc = np.array(totc)
         return dnc - totc*noded / (total_weight*2)
 
     @staticmethod
     def _communities_without_node(part, node):
-        """ returns a version of the partition with the node
-        removed, may result in empty communities"""
+        """Return a version of the partition with the node
+           removed, may result in empty communities"""
         node_comm = part.get_node_community(node)
         newpart = copy.deepcopy(part.communities)
         newpart[node_comm].remove(node)
         return newpart
 
     def _communities_nodes_alledgesw(self, part, removed_node):
-        """ returns the sum of all weighted edges to nodes in each
-        community, once the removed_node is removed
-        this refers to totc in Blondel paper"""
+        """Return the sum of all weighted edges to nodes in each
+           community, once the removed_node is removed
+           this refers to totc in Blondel paper"""
         comm_wo_node = self._communities_without_node(part, removed_node)
         strengths = [0] * len(comm_wo_node)
         ## make a list of all nodes strengths
@@ -455,8 +455,8 @@ class LouvainCommunityDetection(object):
 
     @staticmethod
     def _move_node(part, node, new_comm):
-        """generate a new partition with node put into new community
-        designated by index (new_comm) into existing part.communities"""
+        """Generate a new partition with node put into new community
+           designated by index (new_comm) into existing part.communities"""
         ## copy
         new_community = [x.copy() for x in part.communities]
         ## update
@@ -464,13 +464,12 @@ class LouvainCommunityDetection(object):
         ## remove
         new_community[curr_node_comm].remove(node)
         new_community[new_comm].add(node)
-        # Remove any empty sets from ne
+        # remove any empty sets
         new_community = [x for x in new_community if len(x) > 0]
         return WeightedPartition(part.graph, new_community)
 
     def _partitions_from_dendogram(self, dendo):
-        """ returns community partitions based on results in dendogram
-        """
+        """Return community partitions based on results in dendogram"""
         all_partitions = []
         init_part = dendo[0].communities
         all_partitions.append(init_part)
@@ -481,9 +480,9 @@ class LouvainCommunityDetection(object):
 
     @staticmethod
     def _combine(prev, next):
-        """combines nodes in sets (prev) based on mapping defined by
-        (next) (which now treats a previous communitity as a node)
-        but maintains specification of all original nodes
+        """Combine nodes in sets (prev) based on mapping defined by
+           (next) (which now treats a previous communitity as a node)
+           but maintains specification of all original nodes
 
         Parameters
         ----------
@@ -513,14 +512,14 @@ class LouvainCommunityDetection(object):
 
 
 def meta_graph(partition):
-    """creates a new graph object based on input graph and partition
+    """Create a new graph object based on input graph and partition
 
     Takes WeightedPartition object with specified communities and
-    creates a new graph object where
-    1. communities are now the nodes in the new graph
-    2. the new edges are created based on the node to node connections (weights)
-        from communities in the original graph, and weighted accordingly,
-        (this includes self-loops)
+        creates a new graph object where
+        1. communities are now the nodes in the new graph
+        2. the new edges are created based on the node to node connections (weights)
+           from communities in the original graph, and weighted accordingly,
+           (this includes self-loops)
 
     Returns
     -------
