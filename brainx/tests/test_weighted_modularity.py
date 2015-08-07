@@ -67,7 +67,6 @@ class TestWeightedPartition(unittest.TestCase):
         cstrength = part.communities_strength()
         self.assertEqual(round(cstrength[0]), 1462.0)
 
-
     def test_set_communities(self):
         part = wm.WeightedPartition(self.graph, self.communities)
         self.assertEqual(part.communities, self.communities)
@@ -126,8 +125,6 @@ class TestWeightedPartition(unittest.TestCase):
         ## this inlcudes self links so
         self.assertEqual(weights[0], 1.0)
 
-
-
     def test_node_strength_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
@@ -184,7 +181,6 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         # other communities are made up of just one node
         self.assertEqual(weights[1], self.graph.degree(weight='weight')[1])
 
-
     def test_calc_delta_modularity(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
@@ -225,7 +221,6 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         self.assertEqual(final_partitions[-1].modularity() > .38,
                          True)
         self.assertEqual(len(final_partitions), 2)
-
 
     def test_combine(self):
 

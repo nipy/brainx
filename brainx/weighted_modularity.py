@@ -408,21 +408,20 @@ class LouvainCommunityDetection(object):
         """Calculate the increase(s) in modularity if node is moved to other
            communities
         deltamod = inC - totc * ki / total_weight"""
-        pos_node_strength = np.array(part.node_positive_strength(node))
-        neg_node_strength = np.array(part.node_negative_strength(node))
+        pos_node_strength = part.node_positive_strength(node)
+        neg_node_strength = part.node_negative_strength(node)
         pos_node_community_strength = np.array(part.node_positive_strength_by_community(node))
         neg_node_community_strength = np.array(part.node_negative_strength_by_community(node))
         pos_totc = np.array(self._communities_nodes_alledgesw(part, node, 'pos'))
         neg_totc = np.array(self._communities_nodes_alledgesw(part, node, 'neg'))
-        pos_m = np.array(part.total_positive_strength)
-        neg_m = np.array(part.total_negative_strength)
+        pos_m = part.total_positive_strength
+        neg_m = part.total_negative_strength
         if self.qtype or arg == 'pos':
              return pos_node_community_strength - \
                  pos_totc * pos_node_strength / (pos_m * 2)
         elif self.qtype or arg == 'neg':
              return neg_node_community_strength - \
                  neg_totc * neg_node_strength / (neg_m * 2)
-        # SHOULD THIS BE Q_+ - Q_- or Q_+ + Q_- ???
         elif self.qtype == 'smp':
             pos_delta_modularity = self._calc_delta_modularity(node, part, 'pos')
             neg_delta_modularity = self._calc_delta_modularity(node, part, 'neg')
