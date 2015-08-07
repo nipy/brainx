@@ -45,8 +45,8 @@ class TestWeightedPartition(unittest.TestCase):
 
     def test_init(self):
         part = wm.WeightedPartition(self.graph)
-        self.assertEqual(type(part.strengths), type({}))
-        npt.assert_array_almost_equal(part.total_edge_weight, 1500.5653444)
+        self.assertEqual(type(part.positive_node_strengths), type({}))
+        npt.assert_array_almost_equal(part.total_positive_strength, 1500.5653444)
         # generated communities
         comm = [set([node]) for node in self.graph.nodes()]
         self.assertEqual(part.communities, comm)
@@ -60,11 +60,11 @@ class TestWeightedPartition(unittest.TestCase):
         part.communities = comm
         self.assertEqual(part.communities, comm)
 
-    def test_communities_strength(self):
+    def test_communities_positive_strength(self):
         ## if no community, method will raise error
         part = wm.WeightedPartition(self.graph)
         part = wm.WeightedPartition(self.graph, self.communities)
-        cstrength = part.communities_strength()
+        cstrength = part.communities_positive_strength()
         self.assertEqual(round(cstrength[0]), 1462.0)
 
     def test_set_communities(self):
@@ -97,47 +97,46 @@ class TestWeightedPartition(unittest.TestCase):
         part = wm.WeightedPartition(self.graph)
         self.assertEqual(part.get_node_community(0), 0)
 
-    def test_node_strength(self):
+    def test_node_positive_strength(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
-        res = part.node_strength(node)
+        res = part.node_positive_strength(node)
         npt.assert_almost_equal(res, 37.94151675 )
 
     def test_modularity(self):
         part = wm.WeightedPartition(self.graph, self.communities)
         npt.assert_almost_equal(part.modularity(), 0.0555463)
 
-
-    def test_strength_by_community(self):
+    def test_positive_strength_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         ## summ of all links in or out of communities
         ## since one per scommunity, just strength of each node
-        tot_per_comm = part.strength_by_community()
-        degw = list(self.graph.degree(weight='weight').values())
+        tot_per_comm = part.positive_strength_by_community()
+        degw = list(self.graph.degree(weight='positive_weight').values())
         self.assertEqual(tot_per_comm, degw)
         ## This isnt true of we have communities with multiple nodes
         part_2comm = wm.WeightedPartition(self.graph, self.communities)
         self.assertEqual(part_2comm == degw, False)
 
-    def test_strength_within_community(self):
+    def test_positive_strength_within_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
-        weights = part.strength_within_community()
+        weights = part.positive_strength_within_community()
         ## this inlcudes self links so
         self.assertEqual(weights[0], 1.0)
 
-    def test_node_strength_by_community(self):
+    def test_node_positive_strength_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
-        node2comm_weights = part.node_strength_by_community(node)
+        node2comm_weights = part.node_positive_strength_by_community(node)
         # self loops not added to weight
         # so communities made only of node should be zero
         npt.assert_equal(node2comm_weights[0],0)
         # this should be equal to weight between two nodes
         neighbor = 1
-        expected = self.graph[node][neighbor]['weight']
+        expected = self.graph[node][neighbor]['positive_weight']
         npt.assert_equal(node2comm_weights[neighbor],expected)
         part = wm.WeightedPartition(self.graph, self.communities)
-        node2comm_weights = part.node_strength_by_community(node)
+        node2comm_weights = part.node_positive_strength_by_community(node)
         npt.assert_equal(len(node2comm_weights), 2)
 
 
@@ -172,16 +171,17 @@ class TestLouvainCommunityDetection(unittest.TestCase):
     def test_communities_nodes_alledgesw(self):
         part = wm.WeightedPartition(self.graph, self.communities)
         node = 0
-        weights = self.louvain_comm._communities_nodes_alledgesw(part, node)
+        weights = self.louvain_comm._communities_nodes_alledgesw(part, node, 'pos')
         npt.assert_almost_equal(weights[0], 1424.0220362)
         ## test with possible empty node set
         part = wm.WeightedPartition(self.graph)
-        weights = self.louvain._communities_nodes_alledgesw(part, node)
+        weights = self.louvain._communities_nodes_alledgesw(part, node, 'pos')
         self.assertEqual(weights[0], 0)
         # other communities are made up of just one node
         self.assertEqual(weights[1], self.graph.degree(weight='weight')[1])
 
     def test_calc_delta_modularity(self):
+        # check calc for 'pos'
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
         change = self.louvain._calc_delta_modularity(node, part)
@@ -216,14 +216,17 @@ class TestLouvainCommunityDetection(unittest.TestCase):
 
     def test_run(self):
         karate = nx.karate_club_graph()
-        louvain = wm.LouvainCommunityDetection(karate)
+        nx.set_edge_attributes(karate, 'weight', \
+                                   dict(zip(karate.edges(), \
+                                                np.ones(len(karate.edges())))))
+        part = wm.WeightedPartition(karate)
+        louvain = wm.LouvainCommunityDetection(part.graph)
         final_partitions = louvain.run()
         self.assertEqual(final_partitions[-1].modularity() > .38,
                          True)
         self.assertEqual(len(final_partitions), 2)
 
     def test_combine(self):
-
         first = [set([0,1,2]), set([3,4,5]), set([6,7])]
         second = [set([0,2]), set([1])]
         npt.assert_raises(ValueError, self.louvain._combine, second, first)

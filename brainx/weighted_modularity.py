@@ -195,7 +195,7 @@ class WeightedPartition(object):
                 if node in nodes_within:
                     positive_strengths[val] += self.graph[node][node]['positive_weight']
                     nodes_within.remove(node)
-                positive_strengths[val] += np.sum(self.graph[node][x]['positive_weight']/ 2. \
+                positive_strengths[val] += np.sum(self.graph[node][x]['positive_weight'] / 2. \
                     for x in nodes_within)
         return positive_strengths
         
