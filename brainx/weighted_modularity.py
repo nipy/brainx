@@ -250,32 +250,32 @@ class WeightedPartition(object):
         """
         if self.graph.is_directed():
             raise TypeError('Only valid on non directed graphs')
-        m2_pos = self.total_positive_strength
-        m2_neg = self.total_negative_strength
-        internal_connect_pos = np.array(self.positive_strength_within_community())
-        internal_connect_neg = np.array(self.negative_strength_within_community())
-        total_pos = np.array(self.positive_strength_by_community())
-        total_neg = np.array(self.negative_strength_by_community())
+        pos_m2 = self.total_positive_strength
+        neg_m2 = self.total_negative_strength
+        pos_win_community = np.array(self.positive_strength_within_community())
+        neg_win_community = np.array(self.negative_strength_within_community())
+        pos_tot_community = np.array(self.positive_strength_by_community())
+        neg_tot_community = np.array(self.negative_strength_by_community())
         if qtype == 'pos':
-            return np.sum(internal_connect_pos / m2_pos\
-                              - (total_pos / (2 * m2_pos)) ** 2)
+            return np.sum(pos_win_community / pos_m2\
+                              - (pos_tot_community / (2 * pos_m2)) ** 2)
         elif qtype == 'neg':
-            return np.sum(internal_connect_neg / m2_neg\
-                              - (total_neg / (2 * m2_neg)) ** 2)
+            return np.sum(neg_win_community / neg_m2\
+                              - (neg_tot_community / (2 * neg_m2)) ** 2)
         elif qtype == 'smp':
             q_pos = self.modularity(qtype='pos')
             q_neg = self.modularity(qtype='neg')
             return q_pos + q_neg
         elif qtype == 'sta':
             q_pos = self.modularity(qtype='pos')
-            q_neg = np.sum(internal_connect_neg / (m2_pos + m2_neg)\
-                               - (total_neg / (2 * (m2_pos + m2_neg))) ** 2)
+            q_neg = np.sum(neg_win_community / (pos_m2 + neg_m2)\
+                               - (neg_tot_community / (2 * (pos_m2 + neg_m2))) ** 2)
             return q_pos - q_neg    
         elif qtype == 'gja':
-            q_pos = np.sum(internal_connect_pos / (m2_pos + m2_neg)\
-                               - (total_pos / (2 * m2_pos + 2 * m2_neg)) ** 2)
-            q_neg = np.sum(internal_connect_neg / (m2_pos + m2_neg)\
-                               - (total_neg / (2 * m2_pos + 2 * m2_neg)) ** 2)
+            q_pos = np.sum(pos_win_community / (pos_m2 + neg_m2)\
+                               - (pos_tot_community / (2 * pos_m2 + 2 * neg_m2)) ** 2)
+            q_neg = np.sum(neg_win_community / (pos_m2 + neg_m2)\
+                               - (neg_tot_community / (2 *  pos_m2 + 2 * neg_m2)) ** 2)
             return q_pos - q_neg
 
 
@@ -309,7 +309,7 @@ class LouvainCommunityDetection(object):
     >>> louvain = LouvainCommunityDetection(graph)
     >>> partitions = louvain.run()
     >>> ## best partition
-    >>> partitions[-1].modularity_positive()
+    >>> partitions[-1].modularity()
 
     References
     ----------
@@ -322,8 +322,8 @@ class LouvainCommunityDetection(object):
 
     def __init__(self, graph, communities=None, minthr=0.0000001, qtype='pos'):
         """initialize the algorithm with a graph and (optional) initial
-        community partition , use minthr to provide a stopping limit
-        for the algorith (based on change in modularity)"""
+           community partition , use minthr to provide a stopping limit
+           for the algorith (based on change in modularity)"""
         self.graph = graph
         self.initial_communities = communities
         self.minthr = minthr
@@ -358,11 +358,10 @@ class LouvainCommunityDetection(object):
         current_graph = self.graph.copy()
         part = WeightedPartition(self.graph, self.initial_communities)
         # first pass
-        mod = part.modularity(qtype=qtype)
+        mod = part.modularity(qtype=self.qtype)
         dendogram = list()
         new_part = self._one_level(part, self.minthr)
-        new_mod = new_part.modularity(qtype=qtype)
-
+        new_mod = new_part.modularity(qtype=self.qtype)
         dendogram.append(new_part)
         mod = new_mod
         current_graph, _ = meta_graph(new_part)
@@ -370,7 +369,7 @@ class LouvainCommunityDetection(object):
         while True :
             partition = WeightedPartition(current_graph)
             newpart = self._one_level(partition, self.minthr)
-            new_mod = newpart.modularity(qtype=qtype)
+            new_mod = newpart.modularity(qtype=self.qtype)
             if new_mod - mod < self.minthr :
                 break
 
@@ -379,9 +378,9 @@ class LouvainCommunityDetection(object):
             current_graph,_ = meta_graph(newpart)
         return dendogram
 
-    def _one_level(self, part, min_modularity= .0000001):
+    def _one_level(self, part, min_modularity=0.0000001):
         """Run one level of patitioning"""
-        curr_mod = part.modularity_positive()
+        curr_mod = part.modularity(qtype=self.qtype)
         modified = True
         while modified:
             modified = False
@@ -399,33 +398,46 @@ class LouvainCommunityDetection(object):
                     new_part = self._move_node(part, node, best_comm)
                     part = new_part
                     modified = True
-            new_mod = part.modularity_positive()
+            new_mod = part.modularity(qtype=self.qtype)
             change_in_modularity = new_mod - curr_mod
             if change_in_modularity < min_modularity:
                 return part
         return part
 
-    def _calc_delta_modularity(self, node, part, qtype):
+    def _calc_delta_modularity(self, node, part, arg=None):
         """Calculate the increase(s) in modularity if node is moved to other
            communities
         deltamod = inC - totc * ki / total_weight"""
-        if qtype == 'pos':
-            node_strength = part.node_positive_strength(node)
-        elif qtype == 'neg':
-            node_strength = part.node_negative_strength(node)
-        elif qtype == 'smp':
-            pass
-        elif qtype == 'sta':
-            pass
-        elif qtype == 'gja':
-            pass
-        dnc = part.node_strength_by_community(node)
-        totc = self._communities_nodes_alledgesw(part, node)
-        total_weight = part.total_edge_weight
-        ## cast to arrays to improve calc
-        dnc = np.array(dnc)
-        totc = np.array(totc)
-        return dnc - totc*noded / (total_weight*2)
+        pos_node_strength = np.array(part.node_positive_strength(node))
+        neg_node_strength = np.array(part.node_negative_strength(node))
+        pos_node_community_strength = np.array(part.node_positive_strength_by_community(node))
+        neg_node_community_strength = np.array(part.node_negative_strength_by_community(node))
+        pos_totc = np.array(self._communities_nodes_alledgesw(part, node, 'pos'))
+        neg_totc = np.array(self._communities_nodes_alledgesw(part, node, 'neg'))
+        pos_m = np.array(part.total_positive_strength)
+        neg_m = np.array(part.total_negative_strength)
+        if self.qtype or arg == 'pos':
+             return pos_node_community_strength - \
+                 pos_totc * pos_node_strength / (pos_m * 2)
+        elif self.qtype or arg == 'neg':
+             return neg_node_community_strength - \
+                 neg_totc * neg_node_strength / (neg_m * 2)
+        # SHOULD THIS BE Q_+ - Q_- or Q_+ + Q_- ???
+        elif self.qtype == 'smp':
+            pos_delta_modularity = self._calc_delta_modularity(node, part, 'pos')
+            neg_delta_modularity = self._calc_delta_modularity(node, part, 'neg')
+            return pos_delta_modularity + neg_delta_modularity
+        elif self.qtype == 'sta':
+            pos_delta_modularity = self._calc_delta_modularity(node, part, 'pos')
+            neg_delta_modularity = (neg_node_community_strength - \
+                neg_totc * neg_node_strength) * (neg_m / (pos_m + neg_m) * 2)
+            return pos_delta_modularity - neg_delta_modularity
+        elif self.qtype == 'gja':
+            pos_delta_modularity = pos_node_community_strength - \
+                pos_totc * pos_node_strength / ((pos_m + neg_m_) * 2)
+            neg_delta_modularity = neg_node_community_strength - \
+                neg_totc * neg_node_strength / ((pos_m + neg_m_) * 2)
+            return pos_delta_modularity - neg_delta_modularity
 
     @staticmethod
     def _communities_without_node(part, node):
@@ -436,19 +448,22 @@ class LouvainCommunityDetection(object):
         newpart[node_comm].remove(node)
         return newpart
 
-    def _communities_nodes_alledgesw(self, part, removed_node):
+    def _communities_nodes_alledgesw(self, part, removed_node, sign):
         """Return the sum of all weighted edges to nodes in each
            community, once the removed_node is removed
            this refers to totc in Blondel paper"""
         comm_wo_node = self._communities_without_node(part, removed_node)
         strengths = [0] * len(comm_wo_node)
-        ## make a list of all nodes strengths
-        all_strengths = list(part.graph.degree(weight='weight').values())
+        if sign == 'pos':
+            all_strengths = list(part.graph.degree(weight='positive_weight').values())
+        elif sign == 'neg':
+            all_strengths = list(part.graph.degree(weight='negative_weight').values())
+        ## make a list of all nodes strengths        
         all_strengths = np.array(all_strengths)
         for val, nodeset in enumerate(comm_wo_node):
             node_index = np.array(list(nodeset)) #index of nodes in community
             #sum the strength of nodes in community
-            if len(node_index)<1:
+            if len(node_index)< 1:
                 continue
             strengths[val] = np.sum(all_strengths[node_index])
         return strengths
