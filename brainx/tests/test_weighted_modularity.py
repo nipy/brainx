@@ -29,19 +29,39 @@ def get_test_data():
     testdir = os.path.join(pth, 'tdata_corr_txt')
     data_file = os.path.join(testdir, '101_Block01.txt')
     mat = np.loadtxt(data_file)
-    mat[mat<0] = 0
+    #mat[mat<0] = 0
     graph = nx.from_numpy_matrix(mat)
     # graph has 85 nodes, make generic communities
     communities = [set(range(42)), set(range(42,86))]
     return graph, communities
 
+def get_toy_data():
+    """ grabs local txt file with adj matrices
+    Returns
+    =======
+    graph : networkx graph
+    communities : list of sets
+    """
+    pth, _ = os.path.split(__file__)
+    testdir = os.path.join(pth, 'data_toy_graph')
+    data_file = os.path.join(testdir, 'toy_data.txt')
+    mat = np.loadtxt(data_file)
+    graph = nx.from_numpy_matrix(mat)
+    communities = [set(range(3)), set(range(3,7))]
+    return graph, communities
+
+
 class TestWeightedPartition(unittest.TestCase):
 
     def setUp(self):
-        ## generate a default graph and communities
+        ## default graph and communities
         graph, communities = get_test_data()
         self.graph = graph
         self.communities = communities
+        # toy data
+        toy_graph, toy_communities = get_toy_data()
+        self.toy_graph = graph
+        self.toy_communities = communities
 
     def test_init(self):
         part = wm.WeightedPartition(self.graph)
@@ -67,6 +87,13 @@ class TestWeightedPartition(unittest.TestCase):
         cstrength = part.communities_positive_strength()
         self.assertEqual(round(cstrength[0]), 1462.0)
 
+    def test_communities_negative_strength(self):
+        ## if no community, method will raise error
+        part = wm.WeightedPartition(self.graph)
+        part = wm.WeightedPartition(self.graph, self.communities)
+        cstrength = part.communities_negative_strength()
+        self.assertEqual(round(cstrength[0]), 18.0)
+
     def test_set_communities(self):
         part = wm.WeightedPartition(self.graph, self.communities)
         self.assertEqual(part.communities, self.communities)
@@ -87,7 +114,6 @@ class TestWeightedPartition(unittest.TestCase):
         self.assertTrue(part._allnodes_in_communities(self.communities))
         self.assertFalse(part._allnodes_in_communities([self.communities[0]]))
 
-
     def test_get_node_community(self):
         part = wm.WeightedPartition(self.graph, self.communities)
         self.assertEqual(part.get_node_community(0), 0)
@@ -101,18 +127,39 @@ class TestWeightedPartition(unittest.TestCase):
         part = wm.WeightedPartition(self.graph) # one comm per node
         node = 0
         res = part.node_positive_strength(node)
-        npt.assert_almost_equal(res, 37.94151675 )
+        npt.assert_almost_equal(res, 37.94151675)
+
+    def test_node_negative_strength(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        node = 2
+        res = part.node_negative_strength(node)
+        npt.assert_almost_equal(res, 0.5355463)
 
     def test_modularity(self):
-        part = wm.WeightedPartition(self.graph, self.communities)
-        npt.assert_almost_equal(part.modularity(), 0.0555463)
+        part = wm.WeightedPartition(self.toy_graph, self.toy_communities)
+        npt.assert_almost_equal(part.modularity(qtype='pos'), 0.4444444)
+        npt.assertEqual(part.modularity(qtype='neg'), -0.5)
+        npt.assert_almost_equal(part.modularity(qtype='smp'), -0.0555555)
+        npt.assert_almost_equal(part.modularity(qtype='sta'), 0.4458295)
+        npt.assert_almost_equal(part.modularity(qtype='gja'), 0.4501385)
 
     def test_positive_strength_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
-        ## summ of all links in or out of communities
+        ## sum of all links in or out of communities
         ## since one per scommunity, just strength of each node
         tot_per_comm = part.positive_strength_by_community()
         degw = list(self.graph.degree(weight='positive_weight').values())
+        self.assertEqual(tot_per_comm, degw)
+        ## This isnt true of we have communities with multiple nodes
+        part_2comm = wm.WeightedPartition(self.graph, self.communities)
+        self.assertEqual(part_2comm == degw, False)
+
+    def test_negative_strength_by_community(self):
+        part = wm.WeightedPartition(self.graph) # one comm per node
+        ## sum of all links in or out of communities
+        ## since one per scommunity, just strength of each node
+        tot_per_comm = part.negative_strength_by_community()
+        degw = list(self.graph.degree(weight='negative_weight').values())
         self.assertEqual(tot_per_comm, degw)
         ## This isnt true of we have communities with multiple nodes
         part_2comm = wm.WeightedPartition(self.graph, self.communities)
@@ -123,6 +170,12 @@ class TestWeightedPartition(unittest.TestCase):
         weights = part.positive_strength_within_community()
         ## this inlcudes self links so
         self.assertEqual(weights[0], 1.0)
+
+    def test_negative_strength_within_community(self):
+        part = wm.WeightedPartition(self.graph, self.communities)
+        weights = part.negative_strength_within_community()
+        pass
+        #self.assert_almost_equal(weights[0], )
 
     def test_node_positive_strength_by_community(self):
         part = wm.WeightedPartition(self.graph) # one comm per node
