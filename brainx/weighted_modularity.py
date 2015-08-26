@@ -260,7 +260,7 @@ class WeightedPartition(object):
             return np.sum(pos_win_community / pos_m2\
                               - (pos_tot_community / (2 * pos_m2)) ** 2)
         elif qtype == 'neg':
-            return np.sum(neg_win_community / neg_m2\
+            return - np.sum(neg_win_community / neg_m2\
                               - (neg_tot_community / (2 * neg_m2)) ** 2)
         elif qtype == 'smp':
             q_pos = self.modularity(qtype='pos')
@@ -420,7 +420,7 @@ class LouvainCommunityDetection(object):
              return pos_node_community_strength - \
                  pos_totc * pos_node_strength / (pos_m * 2)
         elif self.qtype or arg == 'neg':
-             return neg_node_community_strength - \
+             return - neg_node_community_strength - \
                  neg_totc * neg_node_strength / (neg_m * 2)
         elif self.qtype == 'smp':
             pos_delta_modularity = self._calc_delta_modularity(node, part, 'pos')
