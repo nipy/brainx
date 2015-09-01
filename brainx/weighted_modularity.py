@@ -218,7 +218,7 @@ class WeightedPartition(object):
                     for x in nodes_within)
         return negative_strengths
 
-    def modularity(self, qtype='pos'):
+    def modularity(self, qtype):
         """Calculates the proportion of within community edges compared to between community
            edges for all nodes in graph with given partition.
 
@@ -306,7 +306,7 @@ class LouvainCommunityDetection(object):
 
     Examples
     --------
-    >>> louvain = LouvainCommunityDetection(graph)
+    >>> louvain = LouvainCommunityDetection(graph, 'pos')
     >>> partitions = louvain.run()
     >>> ## best partition
     >>> partitions[-1].modularity()
