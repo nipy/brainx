@@ -286,11 +286,6 @@ class LouvainCommunityDetection(object):
     Parameters
     ----------
     graph : netwrokx Graph object
-    communities : list of sets, optional
-        initial identified communties
-    minthr : float, optional
-        minimum threshold value for change in modularity
-        default(0.0000001)
     qtype : str
         type of normalization (see [2] for details)
         'pos' (Q_+]) 
@@ -298,6 +293,11 @@ class LouvainCommunityDetection(object):
         'smp' (Q_simple)
         'sta' (Q_*)
         'gja' (Q_GJA)
+    communities : list of sets, optional
+        initial identified communties
+    minthr : float, optional
+        minimum threshold value for change in modularity
+        default(0.0000001)
 
     Methods
     -------
@@ -320,14 +320,14 @@ class LouvainCommunityDetection(object):
         complex functional brain networks", NeuroImage, vol. 56(4), 2011.
     """
 
-    def __init__(self, graph, communities=None, minthr=0.0000001, qtype='pos'):
+    def __init__(self, graph, qtype, communities=None, minthr=0.0000001):
         """initialize the algorithm with a graph and (optional) initial
            community partition , use minthr to provide a stopping limit
            for the algorith (based on change in modularity)"""
         self.graph = graph
+        self.qtype = qtype
         self.initial_communities = communities
         self.minthr = minthr
-        self.qtype = qtype
 
     def run(self):
         """Run the algorithm to find partitions in graph
