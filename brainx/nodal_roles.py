@@ -1,10 +1,12 @@
 #Author: Maxwell Bertolero, bertolero@berkeley.edu, bertolero@berkeley.edu
+#Author: Katelyn Arnemann, klarnemann@berkeley.edu
+
 
 import numpy as np
 from random import choice
 import networkx as nx
 
-def within_community_strength(weighted_partition, edgeless = np.nan, catch_edgeless_node=True):
+def within_community_strength(weighted_partition, calc_type='pos', edgeless = np.nan, catch_edgeless_node=True):
     ''' Computes "within-module strength" (i.e. weighted degree) z-score for each node 
     (Guimera 2005, Nature)
 
@@ -15,6 +17,10 @@ def within_community_strength(weighted_partition, edgeless = np.nan, catch_edgel
         louvain = weighted_modularity.LouvainCommunityDetection(graph)
         weighted_partitions = louvain.run()
         weighted_partition = weighted_partition[0], where index is the partition level
+    calc_type : str
+        'all' = calculate within community strength on all weights
+        'pos' = calculate within community strength on positive weights only
+        'neg' = calculate within community strength on negative weights only
     edgeless : int
         number to replace edgeless nodes with
         default = 0.0
@@ -33,24 +39,34 @@ def within_community_strength(weighted_partition, edgeless = np.nan, catch_edgel
     wc_dict = {}
     for c, community in enumerate(weighted_partition.communities):
         community_strengths = []
+        community_wc_dict = {}
         for node in community: #get average within-community strength (i.e. weighted degree)
-            node_strength = weighted_partition.node_strength(node)
+            if calc_type == 'all':
+                node_strength = weighted_partition.node_strengths(node)
+                community_strengths.append(weighted_partition.node_strength_by_community(node)[c])
+            elif calc_type == 'pos':
+                node_strength = weighted_partition.node_positive_strengths(node)
+                community_strengths.append(weighted_partition.node_positive_strength_by_community(node)[c])
+            elif calc_type == 'neg':
+                node_strength = weighted_partition.node_negative_strengths(node)
+                community_strengths.append(weighted_partition.node_negative_strength_by_community(node)[c])
+            else:
+                raise ValueError('%s not supported; only all, pos, and neg options are supported.' % (calc_type))
             if node_strength == 0.0: #catch edgeless nodes, this shouldn't count towards avg wcd
                 if catch_edgeless_node:
+                    wc_dict[node] = edgeless
                     raise ValueError("Node {} is edgeless".format(node))
                 continue
-            community_strengths.append(weighted_partition.node_strength_by_community(node)[c])
         std = np.std(community_strengths) # std of community's strengths
         mean = np.mean(community_strengths) # mean of community's strengths
-        for node in community: #get node's within_community-strength z-score
-            if weighted_partition.node_strength(node) == 0:
-                wc_dict[node] = edgeless
-                continue
-            within_community_strength = weighted_partition.node_strength_by_community(node)[c]
-            if std == 0.0: #so we don't divide by 0
-                wc_dict[node] = (float(within_community_strength) - float(mean)) #z_score
-                continue
-            wc_dict[node] = ((float(within_community_strength) - float(mean)) / std) #z_score
+        if std == 0.0: #so we don't divide by 0
+            wc = ((float(community_strengths) - float(mean)) #z_score
+            community_wc_dict = dict(zip(community, wc))
+            wc_dict.update(community_wc_dict)
+            continue
+        wc = ((float(community_strengths) - float(mean)) / std) #z_score
+        community_wc_dict = dict(zip(community, wc))
+        wc_dict.update(community_wc_dict)
     return wc_dict
 
 def participation_coefficient(weighted_partition, edgeless =np.nan, catch_edgeless_node=True):
