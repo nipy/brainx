@@ -60,8 +60,8 @@ class TestWeightedPartition(unittest.TestCase):
         self.communities = communities
         # toy data
         toy_graph, toy_communities = get_toy_data()
-        self.toy_graph = graph
-        self.toy_communities = communities
+        self.toy_graph = toy_graph
+        self.toy_communities = toy_communities
 
     def test_init(self):
         part = wm.WeightedPartition(self.graph)
@@ -138,8 +138,8 @@ class TestWeightedPartition(unittest.TestCase):
     def test_modularity(self):
         part = wm.WeightedPartition(self.toy_graph, self.toy_communities)
         npt.assert_almost_equal(part.modularity(qtype='pos'), 0.4444444)
-        npt.assertEqual(part.modularity(qtype='neg'), -0.5)
-        npt.assert_almost_equal(part.modularity(qtype='smp'), -0.0555555)
+        self.assertEqual(part.modularity(qtype='neg'), 0.5)
+        npt.assert_almost_equal(part.modularity(qtype='smp'), 0.9444444)
         npt.assert_almost_equal(part.modularity(qtype='sta'), 0.4458295)
         npt.assert_almost_equal(part.modularity(qtype='gja'), 0.4501385)
 
@@ -200,8 +200,8 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         graph, communities = get_test_data()
         self.graph = graph
         self.communities = communities
-        self.louvain = wm.LouvainCommunityDetection(graph)
-        self.louvain_comm = wm.LouvainCommunityDetection(graph, communities)
+        self.louvain = wm.LouvainCommunityDetection(graph, qtype='pos')
+        self.louvain_comm = wm.LouvainCommunityDetection(graph, 'pos', communities)
 
     def test_init(self):
         louvain = self.louvain
@@ -264,18 +264,18 @@ class TestLouvainCommunityDetection(unittest.TestCase):
         graph = nx.Graph()
         nodeslist = [0,1,2,3,4]
         graph.add_nodes_from(nodeslist, weight=True)
-        louvain = wm.LouvainCommunityDetection(graph)
+        louvain = wm.LouvainCommunityDetection(graph, qtype='pos')
         self.assertRaises(IOError, louvain._gen_dendogram)
 
-    def test_run(self):
+    def test_run(self, qtype='pos'):
         karate = nx.karate_club_graph()
         nx.set_edge_attributes(karate, 'weight', \
                                    dict(zip(karate.edges(), \
                                                 np.ones(len(karate.edges())))))
         part = wm.WeightedPartition(karate)
-        louvain = wm.LouvainCommunityDetection(part.graph)
+        louvain = wm.LouvainCommunityDetection(part.graph, qtype='pos')
         final_partitions = louvain.run()
-        self.assertEqual(final_partitions[-1].modularity() > .38,
+        self.assertEqual(final_partitions[-1].modularity(qtype='pos') > .38,
                          True)
         self.assertEqual(len(final_partitions), 2)
 
