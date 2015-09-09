@@ -120,6 +120,21 @@ class WeightedPartition(object):
         """Find the weighted sum of all negative node edges"""
         return self.graph.degree(weight = 'negative_weight')[node]
 
+    def node_strength_by_community(self, node):
+        """Find the weighted sum of the all edges from a node to each community
+        Returns
+        -------
+        comm_strengths : list
+            list holding the strength of a node to each community
+        """
+        comm_strengths = [0] * len(self.communities)
+        for neighbor, data in self.graph[node].items():
+            if neighbor == node:
+                continue
+            tmpcomm = self.get_node_community(neighbor)
+            comm_strengths[tmpcomm] += data.get('weight', 1)
+        return comm_strengths
+
     def node_positive_strength_by_community(self, node):
         """Find the weighted sum of the positive edges from a node to each community
         Returns
