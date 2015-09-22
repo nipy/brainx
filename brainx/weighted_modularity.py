@@ -58,13 +58,13 @@ class WeightedPartition(object):
     def _init_weight_attributes(self):
         """Adds edge attributes to graph to accomodate postive_weight and 
            negative_weight calculations"""
-        weights = np.array(nx.get_edge_attributes(self.graph, 'weight').values(),\
-                               dtype=float)
+        edge_dict = nx.get_edge_attributes(self.graph, 'weight')
+        weights = np.array(edge_dict.values(), dtype=float)
         nx.set_edge_attributes(self.graph, 'positive_weight',\
-                               dict(zip(nx.get_edge_attributes(self.graph, 'weight').keys(),\
+                               dict(zip(edge_dict.keys(),\
                                         weights * np.array(weights > 0., dtype=bool))))
         nx.set_edge_attributes(self.graph, 'negative_weight',\
-                               dict(zip(nx.get_edge_attributes(self.graph, 'weight').keys(),\
+                               dict(zip(edge_dict.keys(),\
                                        np.abs(weights * np.array(weights < 0., dtype=bool)))))
 
     def set_communities(self, communities):
