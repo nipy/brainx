@@ -29,7 +29,8 @@ import scipy.linalg as sl
 from matplotlib import pyplot as plt
 
 # Our own modules
-from . import util
+#from . import util
+import util
 
 
 #-----------------------------------------------------------------------------
