@@ -6,7 +6,7 @@ from random import choice
 import networkx as nx
 
 
-def within_community_strength(weighted_partition, calc_type='pos', edgeless = np.nan, catch_edgeless_node=True):
+def within_community_strength(weighted_partition, calc_type, edgeless = np.nan, catch_edgeless_node=True):
     ''' Computes "within-module strength" (i.e. weighted degree) z-score for each node 
 
     See:
@@ -96,7 +96,7 @@ def within_community_strength(weighted_partition, calc_type='pos', edgeless = np
     return wc_dict
 
 
-def participation_coefficient(weighted_partition, calc_type='pos', edgeless =np.nan, catch_edgeless_node=True):
+def participation_coefficient(weighted_partition, calc_type, edgeless =np.nan, catch_edgeless_node=True):
     '''
     Computes the participation coefficient for each node 
     
@@ -135,6 +135,29 @@ def participation_coefficient(weighted_partition, calc_type='pos', edgeless =np.
         elif calc_type == 'neg':
             node_strength = weighted_partition.node_negative_strength(node)
             node_community_strengths = weighted_partition.node_negative_strength_by_community(node)
+        elif calc_type == 'smp':
+            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
+            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
+            nodes = pos_pc.keys()
+            pc = pos_pc.values() - neg_pc.values()
+            return dict(zip(nodes, pc))
+        elif calc_type == 'sta':
+            pos_m2 = weighted_partition.total_positive_strength
+            neg_m2 = weighted_partition.total_negative_strength
+            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
+            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
+            nodes = pos_pc.keys()
+            pc = pos_pc.values() - ((neg_m2 / (pos_m2 + neg_m2)) * neg_pc.values())
+            return dict(zip(nodes, pc))
+        elif calc_type == 'gja':
+            pos_m2 = weighted_partition.total_positive_strength
+            neg_m2 = weighted_partition.total_negative_strength
+            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
+            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
+            nodes = pos_pc.keys()
+            pc = ((pos_m2 / (pos_m2 + neg_m2)) * pos_pc.values()) \
+                - ((neg_m2 / (pos_m2 + neg_m2)) * neg_pc.values())
+            return dict(zip(nodes, pc))
         else:
             raise ValueError('%s not supported.' % (calc_type))
         if node_strength == 0.0: 
