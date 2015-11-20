@@ -43,6 +43,7 @@ def within_community_strength(weighted_partition, calc_type, edgeless = np.nan, 
     '''
     wc_dict = {}
     for c, community in enumerate(weighted_partition.communities):
+        nodes = weighted_partition.graph.nodes()
         community_strengths = []
         community_wc_dict = {}
         for node in community: #get average within-community strength (i.e. weighted degree)
@@ -53,28 +54,25 @@ def within_community_strength(weighted_partition, calc_type, edgeless = np.nan, 
                 node_strength = weighted_partition.node_negative_strength(node)
                 community_strengths.append(weighted_partition.node_negative_strength_by_community(node)[c])
             elif calc_type == 'smp':
-                pos_wc_dict =  within_community_strength(weighted_partition, calc_type='pos')
-                neg_wc_dict =  within_community_strength(weighted_partition, calc_type='neg')
-                keys = pos_wc_dict.keys()
-                vals = pos_wc_dict.values() - neg_wc_dict.values()
-                return dict(zip(keys,vals))
+                pos_wc =  np.array(within_community_strength(weighted_partition, calc_type='pos').values())
+                neg_wc =  np.array(within_community_strength(weighted_partition, calc_type='neg').values())
+                wc = pos_wc - neg_wc
+                return dict(zip(nodes, wc))
             elif calc_type == 'sta':
-                pos_wc_dict =  within_community_strength(weighted_partition, calc_type='pos')
-                neg_wc_dict =  within_community_strength(weighted_partition, calc_type='neg')
-                keys = pos_wc_dict.keys()
+                pos_wc =  np.array(within_community_strength(weighted_partition, calc_type='pos').values())
+                neg_wc =  np.array(within_community_strength(weighted_partition, calc_type='neg').values())
                 pos_m2 = weighted_partition.total_positive_strength
                 neg_m2 = weighted_partition.total_negative_strength
-                vals = pos_wc_dict.values - (neg_wc_dict.values * (neg_m2 / pos_m2 + neg_m2))
-                return dict(zip(keys,vals))                
+                wc = pos_wc - neg_wc * (neg_m2 / (pos_m2 + neg_m2))
+                return dict(zip(nodes, wc))                
             elif calc_type == 'gja':
-                pos_wc_dict =  within_community_strength(weighted_partition, calc_type='pos')
-                neg_wc_dict =  within_community_strength(weighted_partition, calc_type='neg')
-                keys = pos_wc_dict.keys()
+                pos_wc =  np.array(within_community_strength(weighted_partition, calc_type='pos').values())
+                neg_wc =  np.array(within_community_strength(weighted_partition, calc_type='neg').values())
                 pos_m2 = weighted_partition.total_positive_strength
                 neg_m2 = weighted_partition.total_negative_strength
-                vals = (pos_wc_dict.values * (pos_m2 / (pos_m2 + neg_m2))) \
-                    - (neg_wc_dict.values * (neg_m2 / (pos_m2 + neg_m2)))
-                return dict(zip(keys,vals))   
+                wc = pos_wc * (pos_m2 / (pos_m2 + neg_m2)) \
+                    - neg_wc * (neg_m2 / (pos_m2 + neg_m2))
+                return dict(zip(nodes, wc))   
             else:
                 raise ValueError('%s not supported.' % (calc_type))
             if node_strength == 0.0: #catch edgeless nodes, this shouldn't count towards avg wcd
@@ -128,7 +126,8 @@ def participation_coefficient(weighted_partition, calc_type, edgeless =np.nan, c
         Dictionary of the participation coefficient of each node.
     '''
     pc_dict = {}
-    for node in weighted_partition.graph:
+    nodes = weighted_partition.graph.nodes()
+    for node in nodes:
         if calc_type == 'pos':
             node_strength = weighted_partition.node_positive_strength(node)
             node_community_strengths = weighted_partition.node_positive_strength_by_community(node)
@@ -136,27 +135,24 @@ def participation_coefficient(weighted_partition, calc_type, edgeless =np.nan, c
             node_strength = weighted_partition.node_negative_strength(node)
             node_community_strengths = weighted_partition.node_negative_strength_by_community(node)
         elif calc_type == 'smp':
-            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
-            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
-            nodes = pos_pc.keys()
-            pc = pos_pc.values() - neg_pc.values()
+            pos_pc = np.array(participation_coefficient(weighted_partition, calc_type='pos').values())
+            neg_pc = np.array(participation_coefficient(weighted_partition, calc_type='neg').values())
+            pc = pos_pc - neg_pc
             return dict(zip(nodes, pc))
         elif calc_type == 'sta':
             pos_m2 = weighted_partition.total_positive_strength
             neg_m2 = weighted_partition.total_negative_strength
-            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
-            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
-            nodes = pos_pc.keys()
-            pc = pos_pc.values() - ((neg_m2 / (pos_m2 + neg_m2)) * neg_pc.values())
+            pos_pc = np.array(participation_coefficient(weighted_partition, calc_type='pos').values())
+            neg_pc = np.array(participation_coefficient(weighted_partition, calc_type='neg').values())
+            pc = pos_pc - (neg_m2 / (pos_m2 + neg_m2)) * neg_pc
             return dict(zip(nodes, pc))
         elif calc_type == 'gja':
             pos_m2 = weighted_partition.total_positive_strength
             neg_m2 = weighted_partition.total_negative_strength
-            pos_pc = participation_coefficient(weighted_partition, calc_type='pos')
-            neg_pc = participation_coefficient(weighted_partition, calc_type='neg')
-            nodes = pos_pc.keys()
-            pc = ((pos_m2 / (pos_m2 + neg_m2)) * pos_pc.values()) \
-                - ((neg_m2 / (pos_m2 + neg_m2)) * neg_pc.values())
+            pos_pc = np.array(participation_coefficient(weighted_partition, calc_type='pos').values())
+            neg_pc = np.array(participation_coefficient(weighted_partition, calc_type='neg').values())
+            pc = (pos_m2 / (pos_m2 + neg_m2)) * pos_pc \
+                - (neg_m2 / (pos_m2 + neg_m2)) * neg_pc
             return dict(zip(nodes, pc))
         else:
             raise ValueError('%s not supported.' % (calc_type))
@@ -206,32 +202,32 @@ def connection_strength(weighted_partition, calc_type):
     if calc_type == 'pos':
         strengths = []
         for node in nodes:
-            strengths.append((1/n-1)*node_positive_strength(node))
+            strengths.append((1. / (n - 1)) * weighted_partition.node_positive_strength(node))
         return dict(zip(nodes, strengths))
     elif calc_type == 'neg':
         strengths = []
         for node in nodes:
-            strengths.append((1/n-1)*node_negative_strength(node))
+            strengths.append((1. / (n - 1)) * weighted_partition.node_negative_strength(node))
         return dict(zip(nodes, strengths))
     elif calc_type == 'smp':
-        pos_strengths = connection_strength(weighted_partition, calc_type='pos')
-        neg_strengths = connection_strength(weighted_partition, calc_type='neg')
+        pos_strengths = np.array(connection_strength(weighted_partition, calc_type='pos').values())
+        neg_strengths = np.array(connection_strength(weighted_partition, calc_type='neg').values())
         return dict(zip(nodes, pos_strengths - neg_strengths))
     elif calc_type == 'sta':
-        pos_strengths = connection_strength(weighted_partition, calc_type='pos')
-        neg_strengths = connection_strength(weighted_partition, calc_type='neg')
+        pos_strengths = np.array(connection_strength(weighted_partition, calc_type='pos').values())
+        neg_strengths = np.array(connection_strength(weighted_partition, calc_type='neg').values())
         pos_m2 = weighted_partition.total_positive_strength
         neg_m2 = weighted_partition.total_negative_strength
-        strengths = pos_strengths - ((neg_m2 / (pos_m2 + neg_m2)) * neg_strenghts)
-        return dict(zip(nodes, strenghts))
+        strengths = pos_strengths - (neg_m2 / (pos_m2 + neg_m2)) * neg_strengths
+        return dict(zip(nodes, strengths))
     elif calc_type == 'gja':
-        pos_strengths = connection_strength(weighted_partition, calc_type='pos')
-        neg_strengths = connection_strength(weighted_partition, calc_type='neg')
+        pos_strengths = np.array(connection_strength(weighted_partition, calc_type='pos').values())
+        neg_strengths = np.array(connection_strength(weighted_partition, calc_type='neg').values())
         pos_m2 = weighted_partition.total_positive_strength
         neg_m2 = weighted_partition.total_negative_strength
-        strengths = ((pos_m2 / (pos_m2 + neg_m2)) * pos_strengths) \
-            - ((neg_m2 / (pos_m2 + neg_m2)) * neg_strenghts)
-        return dict(zip(nodes, strenghts))
+        strengths = (pos_m2 / (pos_m2 + neg_m2)) * pos_strengths \
+            - (neg_m2 / (pos_m2 + neg_m2)) * neg_strengths
+        return dict(zip(nodes, strengths))
     else:
         raise ValueError('%s not supported.' % (calc_type))
 
@@ -266,39 +262,49 @@ def connection_diversity(weighted_partition, calc_type):
         diversity = []
         for node in nodes:
             node_strength = weighted_partition.node_positive_strength(node)
-            node_community_strength = weighted_partition.node_positive_strength_by_community(node)
-            node_diversity = -(1 / np.log(m)) * \
-                sum(node_community_strength * (np.log(node_community_strength)))
+            node_community_strength = np.array(weighted_partition.node_positive_strength_by_community(node))
+            mask = node_community_strength == 0.
+            node_community_strength = node_community_strength[~mask]# remove zero values
+            p_i = node_community_strength / node_strength
+            try:
+                node_diversity = -(1 / np.log(m)) * sum(p_i * (np.log(p_i)))
+            except:
+                node_diversity = 0.
             diversity.append(node_diversity)
         return dict(zip(nodes, diversity))
     elif calc_type == 'neg':
         diversity = []
         for node in nodes:
             node_strength = weighted_partition.node_negative_strength(node)
-            node_community_strength = weighted_partition.node_negative_strength_by_community(node)
-            node_diversity = -(1 / np.log(m)) * \
-                sum(node_community_strength * (np.log(node_community_strength)))
+            node_community_strength = np.array(weighted_partition.node_negative_strength_by_community(node))
+            mask = node_community_strength == 0.
+            node_community_strength = node_community_strength[~mask]# remove zero values
+            p_i = node_community_strength / node_strength
+            try:
+                node_diversity = -(1 / np.log(m)) * sum(p_i * (np.log(p_i)))
+            except:
+                node_diversity = 0.
             diversity.append(node_diversity)
         return dict(zip(nodes, diversity))
     elif calc_type == 'smp':
-        pos_diversity = connection_diversity(weighted_partition, 'pos')
-        neg_diversity = connection_diversity(weighted_partition, 'neg')
-        diversity = pos_diversity.values() -  neg_diversity.values()
+        pos_diversity = np.array(connection_diversity(weighted_partition, 'pos').values())
+        neg_diversity = np.array(connection_diversity(weighted_partition, 'neg').values())
+        diversity = pos_diversity -  neg_diversity
         return dict(zip(nodes, diversity))
     elif calc_type == 'sta':
         pos_m2 = weighted_partition.total_positive_strength
         neg_m2 = weighted_partition.total_negative_strength
-        pos_diversity = connection_diversity(weighted_partition, 'pos')
-        neg_diversity = connection_diversity(weighted_partition, 'neg')
-        diversity = pos_diversity.values() - ((neg_m2 / pos_m2 + neg_m2) * neg_diversity.values())
+        pos_diversity = np.array(connection_diversity(weighted_partition, 'pos').values())
+        neg_diversity = np.array(connection_diversity(weighted_partition, 'neg').values())
+        diversity = pos_diversity - (neg_m2 / (pos_m2 + neg_m2)) * neg_diversity
         return dict(zip(nodes, diversity))
     elif calc_type == 'gja':
         pos_m2 = weighted_partition.total_positive_strength
         neg_m2 = weighted_partition.total_negative_strength
-        pos_diversity = connection_diversity(weighted_partition, 'pos')
-        neg_diversity = connection_diversity(weighted_partition, 'neg')
-        diversity = ((pos_m2 / pos_m2 + neg_m2) * pos_diversity.values() \
-            - ((neg_m2 / pos_m2 + neg_m2) * neg_diversity.values())
+        pos_diversity = np.array(connection_diversity(weighted_partition, 'pos').values())
+        neg_diversity = np.array(connection_diversity(weighted_partition, 'neg').values())
+        diversity = (pos_m2 / (pos_m2 + neg_m2)) * pos_diversity \
+            - (neg_m2 / (pos_m2 + neg_m2)) * neg_diversity
         return dict(zip(nodes, diversity))
     else:
         raise ValueError('%s not supported.' % (calc_type))
